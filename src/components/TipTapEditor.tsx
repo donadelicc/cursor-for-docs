@@ -186,15 +186,28 @@ export const TiptapEditor = () => {
         if (!editor || suggestionToolbarVisible) return;
 
         const { empty } = editor.state.selection;
-        if (empty) return;
+        
+        if (!empty) {
+          // Has selection - position chatbot near selection
+          const selection = window.getSelection();
+          if (selection && selection.rangeCount > 0) {
+            const range = selection.getRangeAt(0);
+            const rect = range.getBoundingClientRect();
+            const position = calculatePosition(rect);
 
-        const selection = window.getSelection();
-        if (selection && selection.rangeCount > 0) {
-          const range = selection.getRangeAt(0);
-          const rect = range.getBoundingClientRect();
-          const position = calculatePosition(rect);
-
-          if (position) {
+            if (position) {
+              setChatbotPosition(position);
+              setChatbotVisible(true);
+            }
+          }
+        } else {
+          // No selection - position chatbot in center of editor
+          const editorRect = editorContainerRef.current?.getBoundingClientRect();
+          if (editorRect) {
+            const position = {
+              x: editorRect.width / 2,
+              y: editorRect.height / 3, // Position in upper third of editor
+            };
             setChatbotPosition(position);
             setChatbotVisible(true);
           }
@@ -257,18 +270,33 @@ export const TiptapEditor = () => {
   const handleSuggestion = (suggestion: string, intent: SuggestionIntent) => {
     if (!editor) return;
 
-    const { from, to } = editor.state.selection;
-    const originalText = editor.state.doc.textBetween(from, to);
+    const { from, to, empty } = editor.state.selection;
+    
+    let actualFrom: number;
+    let actualTo: number;
+    let originalText: string;
+
+    if (empty) {
+      // No selection - use entire document
+      actualFrom = 0;
+      actualTo = editor.state.doc.content.size - 1;
+      originalText = editor.state.doc.textContent;
+    } else {
+      // Has selection - use selected range
+      actualFrom = from;
+      actualTo = to;
+      originalText = editor.state.doc.textBetween(from, to);
+    }
 
     // Save the original content and intent
-    setOriginalContent({ text: originalText, from, to });
+    setOriginalContent({ text: originalText, from: actualFrom, to: actualTo });
     setSuggestionIntent(intent);
 
     // Mark the original text as "to be replaced" (gray styling)
     editor
       .chain()
       .focus()
-      .setTextSelection({ from, to })
+      .setTextSelection({ from: actualFrom, to: actualTo })
       .setMark(OriginalTextMark.name)
       .run();
 
@@ -280,7 +308,7 @@ export const TiptapEditor = () => {
     });
 
     // Parse markdown and apply formatting directly using TipTap commands
-    applyMarkdownFormatting(editor, suggestion.trim(), from, to, intent);
+    applyMarkdownFormatting(editor, suggestion.trim(), actualFrom, actualTo, intent);
 
     // Find and mark the suggestion text by searching for it in the document
     setTimeout(() => {
@@ -405,9 +433,20 @@ export const TiptapEditor = () => {
   // Get selected text as markdown for AI processing
   const selectedText = editor
     ? (() => {
-        const { from, to } = editor.state.selection;
+        const { from, to, empty } = editor.state.selection;
 
-        // Simple approach: get current selection's HTML and convert to markdown
+        if (empty) {
+          // No selection - use entire document content
+          try {
+            const html = editor.getHTML();
+            return htmlToMarkdown(html) || editor.state.doc.textContent;
+          } catch {
+            console.warn("Failed to extract document HTML, using plain text");
+            return editor.state.doc.textContent;
+          }
+        }
+
+        // Has selection - use selected content
         try {
           const selection = window.getSelection();
           if (selection && selection.rangeCount > 0) {
