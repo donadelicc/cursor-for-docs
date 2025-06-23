@@ -1,0 +1,8 @@
+.editorContainer {
+  display: flex;
+  justify-content: center;
+  padding: 2rem;
+  min-height: 100vh;
+  background: #f1f3f4;
+  box-sizing: border-box;
+} 
