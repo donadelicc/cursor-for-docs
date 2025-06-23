@@ -1,0 +1,57 @@
+.toolbar {
+  position: absolute;
+  z-index: 1000;
+  display: flex;
+  gap: 0.5rem;
+  background-color: #2c2c2c;
+  padding: 0.375rem;
+  border-radius: 6px;
+  border: 1px solid #444;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  transform: translateX(-50%);
+  animation: fadeIn 0.15s ease-out;
+}
+
+.button {
+  padding: 0.375rem 0.75rem;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.1s;
+  color: white;
+}
+
+.button:hover {
+  transform: translateY(-1px);
+}
+
+.accept {
+  background-color: #2a723e;
+  border: 1px solid #3a8f50;
+}
+
+.accept:hover {
+  background-color: #3a8f50;
+}
+
+.reject {
+  background-color: #8c2a2a;
+  border: 1px solid #a83b3b;
+}
+
+.reject:hover {
+  background-color: #a83b3b;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-5px) translateX(-50%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) translateX(-50%);
+  }
+} 

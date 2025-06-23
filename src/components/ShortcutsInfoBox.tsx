@@ -15,6 +15,7 @@ const shortcuts: ShortcutItem[] = [
   { action: 'Heading 3', shortcut: 'Ctrl + Shift + 3', description: 'Apply heading level 3' },
   { action: 'Undo', shortcut: 'Ctrl + Z', description: 'Undo last action' },
   { action: 'Redo', shortcut: 'Ctrl + Y', description: 'Redo last action' },
+  { action: 'AI Assistant', shortcut: 'Ctrl + K', description: 'Open AI assistant for selected text' },
 ];
 
 export const ShortcutsInfoBox: React.FC = () => {
