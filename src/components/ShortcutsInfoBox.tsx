@@ -32,6 +32,11 @@ const shortcuts: ShortcutItem[] = [
     shortcut: "Ctrl + K",
     description: "Open AI assistant for selected text",
   },
+  {
+    action: "Page Break",
+    shortcut: "Ctrl + Shift + P",
+    description: "Insert a page break",
+  },
 ];
 
 export const ShortcutsInfoBox: React.FC = () => {

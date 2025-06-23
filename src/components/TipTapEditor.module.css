@@ -9,6 +9,14 @@
   margin: 1.25rem 1rem 1.25rem 0.4rem;
 }
 
+.tiptap ul {
+  list-style-type: disc;
+}
+
+.tiptap ol {
+  list-style-type: decimal;
+}
+
 .tiptap ul li p,
 .tiptap ol li p {
   margin-top: 0.25em;
@@ -84,6 +92,52 @@
   border: none;
   border-top: 1px solid #dadce0;
   margin: 2rem 0;
+}
+
+/* Page break styles */
+.tiptap hr[data-type="pagebreak"] {
+  border-top: 2px dashed #dadce0;
+  margin-top: 10px;
+  margin-bottom: 10px;
+  display: block;
+  padding-bottom: 0.25rem;
+}
+
+/* Selected page break styling */
+.tiptap hr.ProseMirror-selectednode {
+  border-color: #93C5FD;
+}
+
+/* Page break print styles */
+@media print {
+  .tiptap hr[data-type="pagebreak"] {
+    break-before: always;
+    page-break-before: always;
+    padding-bottom: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+    border-width: 0;
+  }
+}
+
+/* Additional formatting support */
+.tiptap mark {
+  background-color: #ffeb3b;
+  padding: 0.1em 0.2em;
+  border-radius: 2px;
+}
+
+.tiptap s,
+.tiptap strike {
+  text-decoration: line-through;
+}
+
+.tiptap strong {
+  font-weight: bold;
+}
+
+.tiptap em {
+  font-style: italic;
 }
 
 /* Editor container */

@@ -102,9 +102,20 @@ export async function POST(req: Request) {
     // Adjust system message based on intent
     let systemMessage = "";
     const baseFormatting =
-      "Use markdown formatting in your response (e.g., **bold**, *italic*, # headings). " +
-      "Available formatting: **bold text**, *italic text*, # Heading 1, ## Heading 2, ### Heading 3. " +
-      "Return only the content without explanations or conversational filler.";
+      "Use markdown formatting in your response. " +
+      "Available formatting options:\n" +
+      "- **bold text** for emphasis\n" +
+      "- *italic text* for emphasis\n" +
+      "- ~~strikethrough text~~ for crossed out text\n" +
+      "- `inline code` for code snippets\n" +
+      "- ```code blocks``` for multi-line code\n" +
+      "- # Heading 1, ## Heading 2, ### Heading 3 for headers\n" +
+      "- > blockquotes for quoted text\n" +
+      "- ==highlighted text== for highlighting\n" +
+      "- --- for horizontal rules/dividers\n" +
+      "- - bullet lists or 1. numbered lists\n" +
+      "- [link text](url) for links\n" +
+      "Return only the formatted content without explanations or conversational filler.";
 
     if (intent === "replace") {
       systemMessage =

@@ -3,6 +3,7 @@ import styles from "./TipTapEditor.module.css";
 import { useEditor, EditorContent } from "@tiptap/react";
 import Highlight from "@tiptap/extension-highlight";
 import Typography from "@tiptap/extension-typography";
+import HorizontalRule from "@tiptap/extension-horizontal-rule";
 import StarterKit from "@tiptap/starter-kit";
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import ShortcutsInfoBox from "./ShortcutsInfoBox";
@@ -15,6 +16,30 @@ import {
   downloadMarkdown,
   markdownToHtml,
 } from "../utils/markdownConverter";
+import { downloadAsDocx, getCurrentDateString } from "../utils/docxConverter";
+import { SaveFormat } from "./SaveButton";
+
+// Custom PageBreak extension that extends HorizontalRule
+const PageBreak = HorizontalRule.extend({
+  addAttributes() {
+    return {
+      type: {
+        default: null,
+        // Customize the HTML parsing (for example, to load the initial content)
+        parseHTML: element => element.getAttribute('data-type'),
+        // … and customize the HTML rendering.
+        renderHTML: attributes => {
+          if (attributes.type) {
+            return {
+              'data-type': attributes.type
+            }
+          }
+          return {}
+        },
+      },
+    }
+  },
+});
 
 const extensions = [
   StarterKit.configure({
@@ -26,6 +51,7 @@ const extensions = [
   Typography,
   SuggestionMark,
   OriginalTextMark,
+  PageBreak,
 ];
 
 // Type for storing original content before a suggestion is applied
@@ -212,6 +238,15 @@ export const TiptapEditor = () => {
             setChatbotVisible(true);
           }
         }
+      }
+
+      // Insert page break with Ctrl+Shift+P
+      if (e.ctrlKey && e.shiftKey && e.key === "P") {
+        e.preventDefault();
+        
+        if (!editor || suggestionToolbarVisible || chatbotVisible) return;
+        
+        editor.chain().focus().insertContent('<hr data-type="pagebreak" /><p></p>').run();
       }
     };
 
@@ -417,17 +452,33 @@ export const TiptapEditor = () => {
     resetSuggestionState();
   };
 
-  const handleSave = () => {
+  const handleSave = async (format: SaveFormat) => {
     if (!editor) return;
 
     const html = editor.getHTML();
-    const markdown = htmlToMarkdown(html);
+    const dateString = getCurrentDateString();
 
-    const now = new Date();
-    const dateString = now.toISOString().split("T")[0];
-    const filename = `document-${dateString}.md`;
+    try {
+      if (format === 'docx') {
+        const filename = `document-${dateString}.docx`;
+        await downloadAsDocx(html, filename);
+      } else {
+        // Default to markdown
+        const markdown = htmlToMarkdown(html);
+        const filename = `document-${dateString}.md`;
+        downloadMarkdown(markdown, filename);
+      }
+    } catch (error) {
+      console.error('Error saving document:', error);
+      // You could add a toast notification here to inform the user
+      alert('Error saving document: ' + (error as Error).message);
+    }
+  };
 
-    downloadMarkdown(markdown, filename);
+  const handlePageBreak = () => {
+    if (!editor || suggestionToolbarVisible || chatbotVisible) return;
+    
+    editor.chain().focus().insertContent('<hr data-type="pagebreak" /><p></p>').run();
   };
 
   // Get selected text as markdown for AI processing
@@ -475,6 +526,28 @@ export const TiptapEditor = () => {
       <ShortcutsInfoBox />
       <EditorContent editor={editor} />
       <SaveButton onSave={handleSave} disabled={!editor} />
+      
+      {/* Page Break Button */}
+      <button 
+        onClick={handlePageBreak}
+        disabled={!editor || suggestionToolbarVisible || chatbotVisible}
+        style={{
+          position: 'absolute',
+          bottom: '20px',
+          right: '120px',
+          padding: '8px 12px',
+          backgroundColor: '#f8f9fa',
+          border: '1px solid #dadce0',
+          borderRadius: '4px',
+          cursor: 'pointer',
+          fontSize: '12px',
+          fontWeight: '500',
+          color: '#202124',
+        }}
+        title="Insert Page Break (Ctrl+Shift+P)"
+      >
+        📄 Page Break
+      </button>
 
       <InlineChatbot
         ref={chatbotRef}
@@ -525,14 +598,19 @@ const applyMarkdownFormatting = (
     markdown.includes("_") ||
     markdown.includes("~");
 
+  // Check if text has paragraph breaks (double newlines or multiple lines)
+  const hasMultipleParagraphs = 
+    markdown.includes("\n\n") || 
+    markdown.split('\n').filter(line => line.trim().length > 0).length > 1;
+
   let content: string;
 
-  if (hasMarkdownSyntax) {
-    // Use Showdown for actual markdown content
+  if (hasMarkdownSyntax || hasMultipleParagraphs) {
+    // Use Showdown for markdown content or text with paragraph breaks
     content = markdownToHtml(markdown);
     console.log("🔧 Converted markdown to HTML with Showdown:", content);
   } else {
-    // For plain text, just use it directly
+    // For plain text without paragraph breaks, just use it directly
     content = markdown;
     console.log("🔧 Using plain text directly:", content);
   }

@@ -145,6 +145,21 @@ export function markdownToHtml(markdown: string): string {
 
   console.log("📝 markdownToHtml input:", markdown);
 
+  // Preprocess markdown to ensure proper paragraph breaks
+  let processedMarkdown = markdown;
+  
+  // If the text doesn't have double newlines but has single newlines separating sentences/paragraphs
+  // Convert single newlines to double newlines for paragraph breaks
+  if (!processedMarkdown.includes('\n\n')) {
+    // Split by single newlines and rejoin with double newlines for proper paragraph separation
+    const lines = processedMarkdown.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+    if (lines.length > 1) {
+      processedMarkdown = lines.join('\n\n');
+    }
+  }
+
+  console.log("📝 Processed markdown:", processedMarkdown);
+
   // Create Showdown converter with options optimized for TipTap
   const converter = new Converter({
     headerLevelStart: 1,
@@ -155,12 +170,12 @@ export function markdownToHtml(markdown: string): string {
     smoothLivePreview: true,
     smartIndentationFix: true,
     disableForced4SpacesIndentedSublists: true,
-    simpleLineBreaks: true,
+    simpleLineBreaks: false, // Changed to false to preserve paragraph structure
     requireSpaceBeforeHeadingText: true,
   });
 
   // Convert markdown to HTML
-  const html = converter.makeHtml(markdown);
+  const html = converter.makeHtml(processedMarkdown);
 
   console.log("📝 markdownToHtml final output:", html);
 
