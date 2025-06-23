@@ -1,12 +1,28 @@
 import { Mark } from '@tiptap/core';
 
+// Mark for original text that will be replaced (gray styling)
+export const OriginalTextMark = Mark.create({
+  name: 'original-text',
+  exclusive: true,
+  group: 'suggestion',
+
+  parseHTML() {
+    return [
+      {
+        tag: 'span[data-original-text]',
+      },
+    ];
+  },
+
+  renderHTML({ HTMLAttributes }) {
+    return ['span', { ...HTMLAttributes, 'data-original-text': true }, 0];
+  },
+});
+
+// Mark for suggested text (blue background)
 export const SuggestionMark = Mark.create({
   name: 'suggestion',
-
-  // This makes it so other marks (like bold, italic) can't be applied on top of it.
   exclusive: true,
-
-  // This tells the editor to treat this as a single, unbreakable block when deleting.
   group: 'suggestion',
 
   parseHTML() {

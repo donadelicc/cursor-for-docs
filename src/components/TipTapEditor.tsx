@@ -9,7 +9,7 @@ import ShortcutsInfoBox from './ShortcutsInfoBox'
 import SaveButton from './SaveButton'
 import InlineChatbot from './InlineChatbot'
 import SuggestionToolbar from './SuggestionToolbar'
-import { SuggestionMark } from '@/utils/suggestion-mark'
+import { SuggestionMark, OriginalTextMark } from '@/utils/suggestion-mark'
 import { htmlToMarkdown, downloadMarkdown } from '../utils/markdownConverter'
 
 const extensions = [
@@ -21,6 +21,7 @@ const extensions = [
   Highlight,
   Typography,
   SuggestionMark,
+  OriginalTextMark,
 ]
 
 // Type for storing original content before a suggestion is applied
@@ -34,10 +35,97 @@ export const TiptapEditor = () => {
   const [chatbotVisible, setChatbotVisible] = useState(false);
   const [chatbotPosition, setChatbotPosition] = useState<{ x: number; y: number } | null>(null);
   const [suggestionToolbarVisible, setSuggestionToolbarVisible] = useState(false);
+  const [suggestionToolbarPosition, setSuggestionToolbarPosition] = useState<{ x: number; y: number } | null>(null);
   const [originalContent, setOriginalContent] = useState<OriginalContent | null>(null);
   
   const editorContainerRef = useRef<HTMLDivElement>(null);
   const chatbotRef = useRef<HTMLDivElement>(null);
+
+  // Helper function to reset suggestion state
+  const resetSuggestionState = useCallback(() => {
+    setSuggestionToolbarVisible(false);
+    setSuggestionToolbarPosition(null);
+    setOriginalContent(null);
+  }, []);
+
+  // Helper function to reset chatbot state
+  const resetChatbotState = useCallback(() => {
+    setChatbotVisible(false);
+    setChatbotPosition(null);
+  }, []);
+
+  // Helper function to calculate position relative to editor
+  const calculatePosition = useCallback((rect: DOMRect): { x: number; y: number } | null => {
+    const editorRect = editorContainerRef.current?.getBoundingClientRect();
+    if (!editorRect) return null;
+    
+    return {
+      x: rect.left - editorRect.left + rect.width / 2,
+      y: rect.bottom - editorRect.top + 10,
+    };
+  }, []);
+
+  // Function to sync component state with document state
+  const syncStateWithDocument = useCallback((editor: ReturnType<typeof useEditor>) => {
+    if (!editor) return;
+
+    // Don't sync if chatbot is visible and user might be typing
+    if (chatbotVisible) return;
+
+    const { originalRange, suggestionRange } = findSuggestionRanges(editor);
+    const hasOriginalMark = originalRange.from !== -1;
+    const hasSuggestionMark = suggestionRange.from !== -1;
+
+    if (hasOriginalMark && hasSuggestionMark) {
+      // Both marks exist - we're in suggestion state
+      if (!suggestionToolbarVisible) {
+        setSuggestionToolbarVisible(true);
+        
+        // Calculate toolbar position
+        setTimeout(() => {
+          const selection = window.getSelection();
+          if (selection && selection.rangeCount > 0) {
+            const range = selection.getRangeAt(0);
+            const rect = range.getBoundingClientRect();
+            const position = calculatePosition(rect);
+
+            if (position) {
+              setSuggestionToolbarPosition(position);
+            }
+          }
+        }, 50);
+
+        // Restore original content info if we don't have it
+        if (!originalContent) {
+          const originalText = editor.state.doc.textBetween(originalRange.from, originalRange.to);
+          setOriginalContent({ 
+            text: originalText, 
+            from: originalRange.from, 
+            to: originalRange.to 
+          });
+        }
+      }
+    } else if (hasOriginalMark && !hasSuggestionMark) {
+      // Only original mark exists - this is an intermediate state, remove the mark
+      editor.chain().focus()
+        .setTextSelection({ from: originalRange.from, to: originalRange.to })
+        .unsetMark(OriginalTextMark.name)
+        .run();
+      
+      // Reset component state
+      resetSuggestionState();
+    } else {
+      // No marks or incomplete marks - reset state
+      if (suggestionToolbarVisible) {
+        resetSuggestionState();
+      }
+      
+      // Close chatbot if it's open and we're back to clean state
+      if (chatbotVisible) {
+        resetChatbotState();
+      }
+    }
+  }, [suggestionToolbarVisible, originalContent, chatbotVisible, resetSuggestionState, resetChatbotState, calculatePosition]);
 
   const editor = useEditor({
     extensions,
@@ -46,6 +134,10 @@ export const TiptapEditor = () => {
       attributes: {
         class: styles.tiptap,
       },
+    },
+    onUpdate: ({ editor }) => {
+      // Sync component state with document state after any change (including undo/redo)
+      syncStateWithDocument(editor);
     },
   })
 
@@ -64,42 +156,42 @@ export const TiptapEditor = () => {
         if (selection && selection.rangeCount > 0) {
           const range = selection.getRangeAt(0);
           const rect = range.getBoundingClientRect();
-          const editorRect = editorContainerRef.current?.getBoundingClientRect();
+          const position = calculatePosition(rect);
 
-          if (editorRect) {
-            setChatbotPosition({
-              x: rect.left - editorRect.left + rect.width / 2,
-              y: rect.bottom - editorRect.top + 10,
-            });
+          if (position) {
+            setChatbotPosition(position);
+            setChatbotVisible(true);
           }
-          setChatbotVisible(true);
         }
       }
     };
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [editor, suggestionToolbarVisible]);
+  }, [editor, suggestionToolbarVisible, calculatePosition]);
 
   const handleRejectSuggestion = useCallback(() => {
     if (!editor || !originalContent) return;
     
-    // Find the marked text, delete it, and insert the original text back.
-    const { from, to } = findSuggestionRange(editor);
-    if(from === -1) { // Failsafe if mark not found
-        setSuggestionToolbarVisible(false);
-        setOriginalContent(null);
-        return;
+    // Find the original text range
+    const { originalRange } = findSuggestionRanges(editor);
+    
+    if (originalRange.from === -1) {
+      resetSuggestionState();
+      return;
     }
 
+    // Simple approach: replace everything from original start to end of document with just the original text
+    const docEndPos = editor.state.doc.content.size - 1;
+    
+    // Delete everything from the original position to the end
     editor.chain().focus()
-      .deleteRange({ from, to })
+      .deleteRange({ from: originalRange.from, to: docEndPos })
       .insertContent(originalContent.text)
       .run();
 
-    setOriginalContent(null);
-    setSuggestionToolbarVisible(false);
-  }, [editor, originalContent]);
+    resetSuggestionState();
+  }, [editor, originalContent, resetSuggestionState]);
 
   // Handle closing popups
   useEffect(() => {
@@ -110,14 +202,14 @@ export const TiptapEditor = () => {
         if(suggestionToolbarVisible) {
           handleRejectSuggestion();
         } else {
-          handleCloseChatbot();
+          resetChatbotState();
         }
       }
     };
 
     document.addEventListener('keydown', handleEscapeKey);
     return () => document.removeEventListener('keydown', handleEscapeKey);
-  }, [chatbotVisible, suggestionToolbarVisible, handleRejectSuggestion]);
+  }, [chatbotVisible, suggestionToolbarVisible, handleRejectSuggestion, resetChatbotState]);
 
   const handleSuggestion = (suggestion: string) => {
     if (!editor) return;
@@ -128,32 +220,81 @@ export const TiptapEditor = () => {
     // Save the original content
     setOriginalContent({ text: originalText, from, to });
     
-    // Replace the text with the suggestion and mark it
+    // Mark the original text as "to be replaced" (gray styling)
     editor.chain().focus()
-      .deleteRange({ from, to })
-      .insertContent(suggestion)
-      .setTextSelection({ from, to: from + suggestion.length })
-      .setMark(SuggestionMark.name)
+      .setTextSelection({ from, to })
+      .setMark(OriginalTextMark.name)
       .run();
+
+    // Clean the suggestion text to prevent any unwanted formatting
+    const cleanSuggestion = suggestion.replace(/^-+$/gm, '').trim();
+
+    // Insert the suggestion using TipTap's insertContentAt command with plain text
+    const newParagraph = `<p>${cleanSuggestion}</p>`;
+    editor.chain().focus()
+      .insertContentAt(to, newParagraph)
+      .run();
+
+    // Find and mark the suggestion text by searching for it in the document
+    setTimeout(() => {
+      const { suggestionRange } = findSuggestionRanges(editor);
+      if (suggestionRange.from !== -1) {
+        editor.chain().focus()
+          .setTextSelection({ from: suggestionRange.from, to: suggestionRange.to })
+          .setMark(SuggestionMark.name)
+          .run();
+      } else {
+        // Fallback: mark the text that was just inserted
+        const currentDocSize = editor.state.doc.content.size;
+        const estimatedStart = currentDocSize - cleanSuggestion.length - 1;
+        if (estimatedStart >= 0) {
+          editor.chain().focus()
+            .setTextSelection({ from: estimatedStart, to: estimatedStart + cleanSuggestion.length })
+            .setMark(SuggestionMark.name)
+            .run();
+        }
+      }
+    }, 10);
+
+    // Calculate position for suggestion toolbar
+    setTimeout(() => {
+      const selection = window.getSelection();
+      if (selection && selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+        const rect = range.getBoundingClientRect();
+        const position = calculatePosition(rect);
+
+        if (position) {
+          setSuggestionToolbarPosition(position);
+        }
+      }
+    }, 50);
 
     setSuggestionToolbarVisible(true);
   };
 
   const handleAcceptSuggestion = () => {
-    if (!editor) return;
+    if (!editor || !originalContent) return;
 
-    // Find the suggestion mark and just remove the mark
+    // Find both the original text and suggestion ranges
+    const { originalRange, suggestionRange } = findSuggestionRanges(editor);
+    
+    if (originalRange.from === -1 || suggestionRange.from === -1) {
+      resetSuggestionState();
+      return;
+    }
+
+    // Get the suggestion text (clean, without any markup)
+    const suggestionText = editor.state.doc.textBetween(suggestionRange.from, suggestionRange.to);
+    
+    // Replace everything from original start to end with clean suggestion text
+    const docEndPos = editor.state.doc.content.size - 1;
     editor.chain().focus()
-      .unsetMark(SuggestionMark.name)
+      .deleteRange({ from: originalRange.from, to: docEndPos })
+      .insertContent(suggestionText)
       .run();
 
-    setOriginalContent(null);
-    setSuggestionToolbarVisible(false);
-  };
-
-  const handleCloseChatbot = () => {
-    setChatbotVisible(false);
-    setChatbotPosition(null);
+    resetSuggestionState();
   };
 
   const handleSave = () => {
@@ -182,7 +323,7 @@ export const TiptapEditor = () => {
         isVisible={chatbotVisible}
         position={chatbotPosition}
         selectedText={selectedText}
-        onClose={handleCloseChatbot}
+        onClose={resetChatbotState}
         onSuggest={handleSuggestion}
       />
       
@@ -190,23 +331,33 @@ export const TiptapEditor = () => {
         <SuggestionToolbar 
           onAccept={handleAcceptSuggestion}
           onReject={handleRejectSuggestion}
-          position={chatbotPosition}
+          position={suggestionToolbarPosition}
         />
       )}
     </div>
   )
 }
 
-const findSuggestionRange = (editor: ReturnType<typeof useEditor>): { from: number; to: number } => {
-  let from = -1, to = -1;
+const findSuggestionRanges = (editor: ReturnType<typeof useEditor>) => {
+  const originalRange = { from: -1, to: -1 };
+  const suggestionRange = { from: -1, to: -1 };
+  
   editor?.state.doc.descendants((node, pos: number) => {
-    const hasMark = node.marks.some((mark) => mark.type.name === SuggestionMark.name);
-    if (hasMark) {
-      if (from === -1) from = pos;
-      to = pos + node.nodeSize;
+    const hasOriginalMark = node.marks.some((mark) => mark.type.name === OriginalTextMark.name);
+    const hasSuggestionMark = node.marks.some((mark) => mark.type.name === SuggestionMark.name);
+    
+    if (hasOriginalMark) {
+      if (originalRange.from === -1) originalRange.from = pos;
+      originalRange.to = pos + node.nodeSize;
+    }
+    
+    if (hasSuggestionMark) {
+      if (suggestionRange.from === -1) suggestionRange.from = pos;
+      suggestionRange.to = pos + node.nodeSize;
     }
   });
-  return { from, to };
-}
+  
+  return { originalRange, suggestionRange };
+};
 
 export default TiptapEditor

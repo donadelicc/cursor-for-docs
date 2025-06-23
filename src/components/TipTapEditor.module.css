@@ -100,9 +100,17 @@
   position: relative;
 }
 
+.tiptap span[data-original-text] {
+  color: #999;
+  background-color: #f5f5f5;
+  opacity: 0.8;
+  border-radius: 3px;
+  padding: 0 2px;
+}
+
 .tiptap span[data-suggestion] {
-  background-color: #e6f7ff; /* A light blue background */
-  border-bottom: 2px solid #91d5ff;
+  color: #000;
+  background-color: transparent;
 }
 
 /* Editor content area */
