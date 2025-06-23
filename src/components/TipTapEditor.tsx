@@ -4,7 +4,7 @@ import { useEditor, EditorContent } from '@tiptap/react'
 import Highlight from '@tiptap/extension-highlight'
 import Typography from '@tiptap/extension-typography'
 import StarterKit from '@tiptap/starter-kit'
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import ShortcutsInfoBox from './ShortcutsInfoBox'
 import SaveButton from './SaveButton'
 import InlineChatbot from './InlineChatbot'
@@ -57,7 +57,7 @@ export const TiptapEditor = () => {
         
         if (!editor || suggestionToolbarVisible) return;
         
-        const { from, to, empty } = editor.state.selection;
+        const { empty } = editor.state.selection;
         if (empty) return;
         
         const selection = window.getSelection();
@@ -81,6 +81,26 @@ export const TiptapEditor = () => {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [editor, suggestionToolbarVisible]);
 
+  const handleRejectSuggestion = useCallback(() => {
+    if (!editor || !originalContent) return;
+    
+    // Find the marked text, delete it, and insert the original text back.
+    const { from, to } = findSuggestionRange(editor);
+    if(from === -1) { // Failsafe if mark not found
+        setSuggestionToolbarVisible(false);
+        setOriginalContent(null);
+        return;
+    }
+
+    editor.chain().focus()
+      .deleteRange({ from, to })
+      .insertContent(originalContent.text)
+      .run();
+
+    setOriginalContent(null);
+    setSuggestionToolbarVisible(false);
+  }, [editor, originalContent]);
+
   // Handle closing popups
   useEffect(() => {
     if (!chatbotVisible && !suggestionToolbarVisible) return;
@@ -97,7 +117,7 @@ export const TiptapEditor = () => {
 
     document.addEventListener('keydown', handleEscapeKey);
     return () => document.removeEventListener('keydown', handleEscapeKey);
-  }, [chatbotVisible, suggestionToolbarVisible]);
+  }, [chatbotVisible, suggestionToolbarVisible, handleRejectSuggestion]);
 
   const handleSuggestion = (suggestion: string) => {
     if (!editor) return;
@@ -125,26 +145,6 @@ export const TiptapEditor = () => {
     // Find the suggestion mark and just remove the mark
     editor.chain().focus()
       .unsetMark(SuggestionMark.name)
-      .run();
-
-    setOriginalContent(null);
-    setSuggestionToolbarVisible(false);
-  };
-
-  const handleRejectSuggestion = () => {
-    if (!editor || !originalContent) return;
-    
-    // Find the marked text, delete it, and insert the original text back.
-    const { from, to } = findSuggestionRange(editor);
-    if(from === -1) { // Failsafe if mark not found
-        setSuggestionToolbarVisible(false);
-        setOriginalContent(null);
-        return;
-    }
-
-    editor.chain().focus()
-      .deleteRange({ from, to })
-      .insertContent(originalContent.text)
       .run();
 
     setOriginalContent(null);
@@ -197,10 +197,10 @@ export const TiptapEditor = () => {
   )
 }
 
-const findSuggestionRange = (editor: any): { from: number; to: number } => {
+const findSuggestionRange = (editor: ReturnType<typeof useEditor>): { from: number; to: number } => {
   let from = -1, to = -1;
-  editor.state.doc.descendants((node: any, pos: number) => {
-    const hasMark = node.marks.some((mark: any) => mark.type.name === SuggestionMark.name);
+  editor?.state.doc.descendants((node, pos: number) => {
+    const hasMark = node.marks.some((mark) => mark.type.name === SuggestionMark.name);
     if (hasMark) {
       if (from === -1) from = pos;
       to = pos + node.nodeSize;

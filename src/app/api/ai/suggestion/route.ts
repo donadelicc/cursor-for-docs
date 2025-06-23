@@ -2,19 +2,6 @@ import { AzureChatOpenAI } from "@langchain/openai";
 import { SystemMessage, HumanMessage } from "@langchain/core/messages";
 import { NextResponse } from "next/server";
 
-const endpoint = process.env.AZURE_OPENAI_ENDPOINT;
-const modelName = process.env.AZURE_OPENAI_MODEL_NAME;
-const deployment = process.env.AZURE_OPENAI_DEPLOYMENT;
-const instanceName = process.env.AZURE_OPENAI_INSTANCE_NAME;
-
-const apiKey = process.env.AZURE_OPENAI_API_KEY;
-const apiVersion = process.env.AZURE_OPENAI_API_VERSION;
-const azureOpenAIApiInstanceName = instanceName;
-const azureOpenAIApiDeploymentName = deployment;
-const options = { endpoint, apiKey, apiVersion, azureOpenAIApiInstanceName, azureOpenAIApiDeploymentName }
-
-console.log(options);
-
 const model = new AzureChatOpenAI({
     azureOpenAIEndpoint: process.env.AZURE_OPENAI_ENDPOINT,
     azureOpenAIApiKey: process.env.AZURE_OPENAI_API_KEY,
