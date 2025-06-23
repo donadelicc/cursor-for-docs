@@ -1,12 +1,15 @@
-import React from 'react';
-import styles from './SaveButton.module.css';
+import React from "react";
+import styles from "./SaveButton.module.css";
 
 interface SaveButtonProps {
   onSave: () => void;
   disabled?: boolean;
 }
 
-export const SaveButton: React.FC<SaveButtonProps> = ({ onSave, disabled = false }) => {
+export const SaveButton: React.FC<SaveButtonProps> = ({
+  onSave,
+  disabled = false,
+}) => {
   return (
     <button
       className={styles.saveButton}
@@ -34,4 +37,4 @@ export const SaveButton: React.FC<SaveButtonProps> = ({ onSave, disabled = false
   );
 };
 
-export default SaveButton; 
+export default SaveButton;

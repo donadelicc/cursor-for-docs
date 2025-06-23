@@ -1,4 +1,4 @@
-/* No longer needed */ 
+/* No longer needed */
 
 .inlineChatbot {
   position: absolute;
@@ -67,4 +67,4 @@
     opacity: 1;
     transform: translateY(0) translateX(-50%);
   }
-} 
+}

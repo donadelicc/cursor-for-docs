@@ -1,13 +1,18 @@
-import React from 'react';
-import styles from './SuggestionToolbar.module.css';
+import React from "react";
+import styles from "./SuggestionToolbar.module.css";
 
 interface SuggestionToolbarProps {
   onAccept: () => void;
   onReject: () => void;
   position: { x: number; y: number } | null;
+  intent?: "replace" | "add_after" | "add_before";
 }
 
-const SuggestionToolbar: React.FC<SuggestionToolbarProps> = ({ onAccept, onReject, position }) => {
+const SuggestionToolbar: React.FC<SuggestionToolbarProps> = ({
+  onAccept,
+  onReject,
+  position,
+}) => {
   if (!position) {
     return null;
   }
@@ -21,14 +26,20 @@ const SuggestionToolbar: React.FC<SuggestionToolbarProps> = ({ onAccept, onRejec
       }}
       aria-live="polite"
     >
-      <button onClick={onAccept} className={`${styles.button} ${styles.accept}`}>
+      <button
+        onClick={onAccept}
+        className={`${styles.button} ${styles.accept}`}
+      >
         Accept
       </button>
-      <button onClick={onReject} className={`${styles.button} ${styles.reject}`}>
+      <button
+        onClick={onReject}
+        className={`${styles.button} ${styles.reject}`}
+      >
         Reject
       </button>
     </div>
   );
 };
 
-export default SuggestionToolbar; 
+export default SuggestionToolbar;

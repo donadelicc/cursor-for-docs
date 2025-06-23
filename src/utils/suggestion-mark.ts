@@ -1,39 +1,39 @@
-import { Mark } from '@tiptap/core';
+import { Mark } from "@tiptap/core";
 
 // Mark for original text that will be replaced (gray styling)
 export const OriginalTextMark = Mark.create({
-  name: 'original-text',
+  name: "original-text",
   exclusive: true,
-  group: 'suggestion',
+  group: "suggestion",
 
   parseHTML() {
     return [
       {
-        tag: 'span[data-original-text]',
+        tag: "span[data-original-text]",
       },
     ];
   },
 
   renderHTML({ HTMLAttributes }) {
-    return ['span', { ...HTMLAttributes, 'data-original-text': true }, 0];
+    return ["span", { ...HTMLAttributes, "data-original-text": true }, 0];
   },
 });
 
 // Mark for suggested text (blue background)
 export const SuggestionMark = Mark.create({
-  name: 'suggestion',
+  name: "suggestion",
   exclusive: true,
-  group: 'suggestion',
+  group: "suggestion",
 
   parseHTML() {
     return [
       {
-        tag: 'span[data-suggestion]',
+        tag: "span[data-suggestion]",
       },
     ];
   },
 
   renderHTML({ HTMLAttributes }) {
-    return ['span', { ...HTMLAttributes, 'data-suggestion': true }, 0];
+    return ["span", { ...HTMLAttributes, "data-suggestion": true }, 0];
   },
-}); 
+});

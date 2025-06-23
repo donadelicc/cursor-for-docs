@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import styles from './ShortcutsInfoBox.module.css';
+import React, { useState } from "react";
+import styles from "./ShortcutsInfoBox.module.css";
 
 interface ShortcutItem {
   action: string;
@@ -8,14 +8,30 @@ interface ShortcutItem {
 }
 
 const shortcuts: ShortcutItem[] = [
-  { action: 'Bold', shortcut: 'Ctrl + B', description: 'Make text bold' },
-  { action: 'Italic', shortcut: 'Ctrl + I', description: 'Make text italic' },
-  { action: 'Heading 1', shortcut: 'Ctrl + Shift + 1', description: 'Apply heading level 1' },
-  { action: 'Heading 2', shortcut: 'Ctrl + Shift + 2', description: 'Apply heading level 2' },
-  { action: 'Heading 3', shortcut: 'Ctrl + Shift + 3', description: 'Apply heading level 3' },
-  { action: 'Undo', shortcut: 'Ctrl + Z', description: 'Undo last action' },
-  { action: 'Redo', shortcut: 'Ctrl + Y', description: 'Redo last action' },
-  { action: 'AI Assistant', shortcut: 'Ctrl + K', description: 'Open AI assistant for selected text' },
+  { action: "Bold", shortcut: "Ctrl + B", description: "Make text bold" },
+  { action: "Italic", shortcut: "Ctrl + I", description: "Make text italic" },
+  {
+    action: "Heading 1",
+    shortcut: "Ctrl + Shift + 1",
+    description: "Apply heading level 1",
+  },
+  {
+    action: "Heading 2",
+    shortcut: "Ctrl + Shift + 2",
+    description: "Apply heading level 2",
+  },
+  {
+    action: "Heading 3",
+    shortcut: "Ctrl + Shift + 3",
+    description: "Apply heading level 3",
+  },
+  { action: "Undo", shortcut: "Ctrl + Z", description: "Undo last action" },
+  { action: "Redo", shortcut: "Ctrl + Y", description: "Redo last action" },
+  {
+    action: "AI Assistant",
+    shortcut: "Ctrl + K",
+    description: "Open AI assistant for selected text",
+  },
 ];
 
 export const ShortcutsInfoBox: React.FC = () => {
@@ -78,9 +94,13 @@ export const ShortcutsInfoBox: React.FC = () => {
               <div key={index} className={styles.shortcutItem}>
                 <div className={styles.shortcutAction}>
                   <span className={styles.actionName}>{shortcut.action}</span>
-                  <span className={styles.shortcutKeys}>{shortcut.shortcut}</span>
+                  <span className={styles.shortcutKeys}>
+                    {shortcut.shortcut}
+                  </span>
                 </div>
-                <p className={styles.shortcutDescription}>{shortcut.description}</p>
+                <p className={styles.shortcutDescription}>
+                  {shortcut.description}
+                </p>
               </div>
             ))}
           </div>
@@ -90,4 +110,4 @@ export const ShortcutsInfoBox: React.FC = () => {
   );
 };
 
-export default ShortcutsInfoBox; 
+export default ShortcutsInfoBox;

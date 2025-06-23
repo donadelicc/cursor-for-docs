@@ -1,16 +1,20 @@
-import styles from './TipTapEditor.module.css'
+import styles from "./TipTapEditor.module.css";
 
-import { useEditor, EditorContent } from '@tiptap/react'
-import Highlight from '@tiptap/extension-highlight'
-import Typography from '@tiptap/extension-typography'
-import StarterKit from '@tiptap/starter-kit'
-import React, { useState, useEffect, useRef, useCallback } from 'react'
-import ShortcutsInfoBox from './ShortcutsInfoBox'
-import SaveButton from './SaveButton'
-import InlineChatbot from './InlineChatbot'
-import SuggestionToolbar from './SuggestionToolbar'
-import { SuggestionMark, OriginalTextMark } from '@/utils/suggestion-mark'
-import { htmlToMarkdown, downloadMarkdown } from '../utils/markdownConverter'
+import { useEditor, EditorContent } from "@tiptap/react";
+import Highlight from "@tiptap/extension-highlight";
+import Typography from "@tiptap/extension-typography";
+import StarterKit from "@tiptap/starter-kit";
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import ShortcutsInfoBox from "./ShortcutsInfoBox";
+import SaveButton from "./SaveButton";
+import InlineChatbot from "./InlineChatbot";
+import SuggestionToolbar from "./SuggestionToolbar";
+import { SuggestionMark, OriginalTextMark } from "@/utils/suggestion-mark";
+import {
+  htmlToMarkdown,
+  downloadMarkdown,
+  markdownToHtml,
+} from "../utils/markdownConverter";
 
 const extensions = [
   StarterKit.configure({
@@ -22,7 +26,7 @@ const extensions = [
   Typography,
   SuggestionMark,
   OriginalTextMark,
-]
+];
 
 // Type for storing original content before a suggestion is applied
 type OriginalContent = {
@@ -31,13 +35,26 @@ type OriginalContent = {
   to: number;
 };
 
+// Type for suggestion intent
+type SuggestionIntent = "replace" | "add_after" | "add_before";
+
 export const TiptapEditor = () => {
   const [chatbotVisible, setChatbotVisible] = useState(false);
-  const [chatbotPosition, setChatbotPosition] = useState<{ x: number; y: number } | null>(null);
-  const [suggestionToolbarVisible, setSuggestionToolbarVisible] = useState(false);
-  const [suggestionToolbarPosition, setSuggestionToolbarPosition] = useState<{ x: number; y: number } | null>(null);
-  const [originalContent, setOriginalContent] = useState<OriginalContent | null>(null);
-  
+  const [chatbotPosition, setChatbotPosition] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
+  const [suggestionToolbarVisible, setSuggestionToolbarVisible] =
+    useState(false);
+  const [suggestionToolbarPosition, setSuggestionToolbarPosition] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
+  const [originalContent, setOriginalContent] =
+    useState<OriginalContent | null>(null);
+  const [suggestionIntent, setSuggestionIntent] =
+    useState<SuggestionIntent>("replace");
+
   const editorContainerRef = useRef<HTMLDivElement>(null);
   const chatbotRef = useRef<HTMLDivElement>(null);
 
@@ -46,6 +63,7 @@ export const TiptapEditor = () => {
     setSuggestionToolbarVisible(false);
     setSuggestionToolbarPosition(null);
     setOriginalContent(null);
+    setSuggestionIntent("replace");
   }, []);
 
   // Helper function to reset chatbot state
@@ -55,77 +73,95 @@ export const TiptapEditor = () => {
   }, []);
 
   // Helper function to calculate position relative to editor
-  const calculatePosition = useCallback((rect: DOMRect): { x: number; y: number } | null => {
-    const editorRect = editorContainerRef.current?.getBoundingClientRect();
-    if (!editorRect) return null;
-    
-    return {
-      x: rect.left - editorRect.left + rect.width / 2,
-      y: rect.bottom - editorRect.top + 10,
-    };
-  }, []);
+  const calculatePosition = useCallback(
+    (rect: DOMRect): { x: number; y: number } | null => {
+      const editorRect = editorContainerRef.current?.getBoundingClientRect();
+      if (!editorRect) return null;
+
+      return {
+        x: rect.left - editorRect.left + rect.width / 2,
+        y: rect.bottom - editorRect.top + 10,
+      };
+    },
+    [],
+  );
 
   // Function to sync component state with document state
-  const syncStateWithDocument = useCallback((editor: ReturnType<typeof useEditor>) => {
-    if (!editor) return;
+  const syncStateWithDocument = useCallback(
+    (editor: ReturnType<typeof useEditor>) => {
+      if (!editor) return;
 
-    // Don't sync if chatbot is visible and user might be typing
-    if (chatbotVisible) return;
+      // Don't sync if chatbot is visible and user might be typing
+      if (chatbotVisible) return;
 
-    const { originalRange, suggestionRange } = findSuggestionRanges(editor);
-    const hasOriginalMark = originalRange.from !== -1;
-    const hasSuggestionMark = suggestionRange.from !== -1;
+      const { originalRange, suggestionRange } = findSuggestionRanges(editor);
+      const hasOriginalMark = originalRange.from !== -1;
+      const hasSuggestionMark = suggestionRange.from !== -1;
 
-    if (hasOriginalMark && hasSuggestionMark) {
-      // Both marks exist - we're in suggestion state
-      if (!suggestionToolbarVisible) {
-        setSuggestionToolbarVisible(true);
-        
-        // Calculate toolbar position
-        setTimeout(() => {
-          const selection = window.getSelection();
-          if (selection && selection.rangeCount > 0) {
-            const range = selection.getRangeAt(0);
-            const rect = range.getBoundingClientRect();
-            const position = calculatePosition(rect);
+      if (hasOriginalMark && hasSuggestionMark) {
+        // Both marks exist - we're in suggestion state
+        if (!suggestionToolbarVisible) {
+          setSuggestionToolbarVisible(true);
 
-            if (position) {
-              setSuggestionToolbarPosition(position);
+          // Calculate toolbar position
+          setTimeout(() => {
+            const selection = window.getSelection();
+            if (selection && selection.rangeCount > 0) {
+              const range = selection.getRangeAt(0);
+              const rect = range.getBoundingClientRect();
+              const position = calculatePosition(rect);
+
+              if (position) {
+                setSuggestionToolbarPosition(position);
+              }
             }
-          }
-        }, 50);
+          }, 50);
 
-        // Restore original content info if we don't have it
-        if (!originalContent) {
-          const originalText = editor.state.doc.textBetween(originalRange.from, originalRange.to);
-          setOriginalContent({ 
-            text: originalText, 
-            from: originalRange.from, 
-            to: originalRange.to 
-          });
+          // Restore original content info if we don't have it
+          if (!originalContent) {
+            const originalText = editor.state.doc.textBetween(
+              originalRange.from,
+              originalRange.to,
+            );
+            setOriginalContent({
+              text: originalText,
+              from: originalRange.from,
+              to: originalRange.to,
+            });
+          }
+        }
+      } else if (hasOriginalMark && !hasSuggestionMark) {
+        // Only original mark exists - this is an intermediate state, remove the mark
+        editor
+          .chain()
+          .focus()
+          .setTextSelection({ from: originalRange.from, to: originalRange.to })
+          .unsetMark(OriginalTextMark.name)
+          .run();
+
+        // Reset component state
+        resetSuggestionState();
+      } else {
+        // No marks or incomplete marks - reset state
+        if (suggestionToolbarVisible) {
+          resetSuggestionState();
+        }
+
+        // Close chatbot if it's open and we're back to clean state
+        if (chatbotVisible) {
+          resetChatbotState();
         }
       }
-    } else if (hasOriginalMark && !hasSuggestionMark) {
-      // Only original mark exists - this is an intermediate state, remove the mark
-      editor.chain().focus()
-        .setTextSelection({ from: originalRange.from, to: originalRange.to })
-        .unsetMark(OriginalTextMark.name)
-        .run();
-      
-      // Reset component state
-      resetSuggestionState();
-    } else {
-      // No marks or incomplete marks - reset state
-      if (suggestionToolbarVisible) {
-        resetSuggestionState();
-      }
-      
-      // Close chatbot if it's open and we're back to clean state
-      if (chatbotVisible) {
-        resetChatbotState();
-      }
-    }
-  }, [suggestionToolbarVisible, originalContent, chatbotVisible, resetSuggestionState, resetChatbotState, calculatePosition]);
+    },
+    [
+      suggestionToolbarVisible,
+      originalContent,
+      chatbotVisible,
+      resetSuggestionState,
+      resetChatbotState,
+      calculatePosition,
+    ],
+  );
 
   const editor = useEditor({
     extensions,
@@ -139,19 +175,19 @@ export const TiptapEditor = () => {
       // Sync component state with document state after any change (including undo/redo)
       syncStateWithDocument(editor);
     },
-  })
+  });
 
   // Open chatbot on keydown
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.ctrlKey && e.key === 'k') {
+      if (e.ctrlKey && e.key === "k") {
         e.preventDefault();
-        
+
         if (!editor || suggestionToolbarVisible) return;
-        
+
         const { empty } = editor.state.selection;
         if (empty) return;
-        
+
         const selection = window.getSelection();
         if (selection && selection.rangeCount > 0) {
           const range = selection.getRangeAt(0);
@@ -166,16 +202,16 @@ export const TiptapEditor = () => {
       }
     };
 
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
   }, [editor, suggestionToolbarVisible, calculatePosition]);
 
   const handleRejectSuggestion = useCallback(() => {
     if (!editor || !originalContent) return;
-    
+
     // Find the original text range
     const { originalRange } = findSuggestionRanges(editor);
-    
+
     if (originalRange.from === -1) {
       resetSuggestionState();
       return;
@@ -183,9 +219,11 @@ export const TiptapEditor = () => {
 
     // Simple approach: replace everything from original start to end of document with just the original text
     const docEndPos = editor.state.doc.content.size - 1;
-    
+
     // Delete everything from the original position to the end
-    editor.chain().focus()
+    editor
+      .chain()
+      .focus()
       .deleteRange({ from: originalRange.from, to: docEndPos })
       .insertContent(originalContent.text)
       .run();
@@ -198,8 +236,8 @@ export const TiptapEditor = () => {
     if (!chatbotVisible && !suggestionToolbarVisible) return;
 
     const handleEscapeKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        if(suggestionToolbarVisible) {
+      if (event.key === "Escape") {
+        if (suggestionToolbarVisible) {
           handleRejectSuggestion();
         } else {
           resetChatbotState();
@@ -207,49 +245,69 @@ export const TiptapEditor = () => {
       }
     };
 
-    document.addEventListener('keydown', handleEscapeKey);
-    return () => document.removeEventListener('keydown', handleEscapeKey);
-  }, [chatbotVisible, suggestionToolbarVisible, handleRejectSuggestion, resetChatbotState]);
+    document.addEventListener("keydown", handleEscapeKey);
+    return () => document.removeEventListener("keydown", handleEscapeKey);
+  }, [
+    chatbotVisible,
+    suggestionToolbarVisible,
+    handleRejectSuggestion,
+    resetChatbotState,
+  ]);
 
-  const handleSuggestion = (suggestion: string) => {
+  const handleSuggestion = (suggestion: string, intent: SuggestionIntent) => {
     if (!editor) return;
-    
+
     const { from, to } = editor.state.selection;
     const originalText = editor.state.doc.textBetween(from, to);
-    
-    // Save the original content
+
+    // Save the original content and intent
     setOriginalContent({ text: originalText, from, to });
-    
+    setSuggestionIntent(intent);
+
     // Mark the original text as "to be replaced" (gray styling)
-    editor.chain().focus()
+    editor
+      .chain()
+      .focus()
       .setTextSelection({ from, to })
       .setMark(OriginalTextMark.name)
       .run();
 
-    // Clean the suggestion text to prevent any unwanted formatting
-    const cleanSuggestion = suggestion.replace(/^-+$/gm, '').trim();
+    // Debug logging
+    console.log("🔧 Markdown Conversion Debug:", {
+      originalSuggestion: suggestion,
+      trimmedSuggestion: suggestion.trim(),
+      intent: intent,
+    });
 
-    // Insert the suggestion using TipTap's insertContentAt command with plain text
-    const newParagraph = `<p>${cleanSuggestion}</p>`;
-    editor.chain().focus()
-      .insertContentAt(to, newParagraph)
-      .run();
+    // Parse markdown and apply formatting directly using TipTap commands
+    applyMarkdownFormatting(editor, suggestion.trim(), from, to, intent);
 
     // Find and mark the suggestion text by searching for it in the document
     setTimeout(() => {
       const { suggestionRange } = findSuggestionRanges(editor);
       if (suggestionRange.from !== -1) {
-        editor.chain().focus()
-          .setTextSelection({ from: suggestionRange.from, to: suggestionRange.to })
+        editor
+          .chain()
+          .focus()
+          .setTextSelection({
+            from: suggestionRange.from,
+            to: suggestionRange.to,
+          })
           .setMark(SuggestionMark.name)
           .run();
       } else {
         // Fallback: mark the text that was just inserted
         const currentDocSize = editor.state.doc.content.size;
-        const estimatedStart = currentDocSize - cleanSuggestion.length - 1;
+        const suggestionText = suggestion.trim();
+        const estimatedStart = currentDocSize - suggestionText.length - 1;
         if (estimatedStart >= 0) {
-          editor.chain().focus()
-            .setTextSelection({ from: estimatedStart, to: estimatedStart + cleanSuggestion.length })
+          editor
+            .chain()
+            .focus()
+            .setTextSelection({
+              from: estimatedStart,
+              to: estimatedStart + suggestionText.length,
+            })
             .setMark(SuggestionMark.name)
             .run();
         }
@@ -278,46 +336,107 @@ export const TiptapEditor = () => {
 
     // Find both the original text and suggestion ranges
     const { originalRange, suggestionRange } = findSuggestionRanges(editor);
-    
+
     if (originalRange.from === -1 || suggestionRange.from === -1) {
       resetSuggestionState();
       return;
     }
 
     // Get the suggestion text (clean, without any markup)
-    const suggestionText = editor.state.doc.textBetween(suggestionRange.from, suggestionRange.to);
-    
-    // Replace everything from original start to end with clean suggestion text
-    const docEndPos = editor.state.doc.content.size - 1;
-    editor.chain().focus()
-      .deleteRange({ from: originalRange.from, to: docEndPos })
-      .insertContent(suggestionText)
-      .run();
+    const suggestionText = editor.state.doc.textBetween(
+      suggestionRange.from,
+      suggestionRange.to,
+    );
+
+    // Handle different intents
+    if (suggestionIntent === "replace") {
+      // Replace: Remove original text and keep only the suggestion
+      const docEndPos = editor.state.doc.content.size - 1;
+      editor
+        .chain()
+        .focus()
+        .deleteRange({ from: originalRange.from, to: docEndPos })
+        .insertContent(suggestionText)
+        .run();
+    } else if (suggestionIntent === "add_after") {
+      // Add after: Keep original text, remove marks, and keep suggestion after it
+      editor
+        .chain()
+        .focus()
+        .setTextSelection({ from: originalRange.from, to: originalRange.to })
+        .unsetMark(OriginalTextMark.name)
+        .setTextSelection({
+          from: suggestionRange.from,
+          to: suggestionRange.to,
+        })
+        .unsetMark(SuggestionMark.name)
+        .run();
+    } else if (suggestionIntent === "add_before") {
+      // Add before: Keep original text, remove marks, suggestion should already be positioned correctly
+      editor
+        .chain()
+        .focus()
+        .setTextSelection({ from: originalRange.from, to: originalRange.to })
+        .unsetMark(OriginalTextMark.name)
+        .setTextSelection({
+          from: suggestionRange.from,
+          to: suggestionRange.to,
+        })
+        .unsetMark(SuggestionMark.name)
+        .run();
+    }
 
     resetSuggestionState();
   };
 
   const handleSave = () => {
     if (!editor) return;
-    
+
     const html = editor.getHTML();
     const markdown = htmlToMarkdown(html);
-    
+
     const now = new Date();
-    const dateString = now.toISOString().split('T')[0];
+    const dateString = now.toISOString().split("T")[0];
     const filename = `document-${dateString}.md`;
-    
+
     downloadMarkdown(markdown, filename);
   };
 
-  const selectedText = editor ? editor.state.doc.textBetween(editor.state.selection.from, editor.state.selection.to) : '';
+  // Get selected text as markdown for AI processing
+  const selectedText = editor
+    ? (() => {
+        const { from, to } = editor.state.selection;
+
+        // Simple approach: get current selection's HTML and convert to markdown
+        try {
+          const selection = window.getSelection();
+          if (selection && selection.rangeCount > 0) {
+            const range = selection.getRangeAt(0);
+            const contents = range.cloneContents();
+            const div = document.createElement("div");
+            div.appendChild(contents);
+            return (
+              htmlToMarkdown(div.innerHTML) ||
+              editor.state.doc.textBetween(from, to)
+            );
+          }
+        } catch {
+          console.warn(
+            "Failed to extract HTML selection, falling back to plain text",
+          );
+        }
+
+        // Fallback to plain text
+        return editor.state.doc.textBetween(from, to);
+      })()
+    : "";
 
   return (
     <div className={styles.tiptapEditor} ref={editorContainerRef}>
       <ShortcutsInfoBox />
       <EditorContent editor={editor} />
       <SaveButton onSave={handleSave} disabled={!editor} />
-      
+
       <InlineChatbot
         ref={chatbotRef}
         isVisible={chatbotVisible}
@@ -326,38 +445,102 @@ export const TiptapEditor = () => {
         onClose={resetChatbotState}
         onSuggest={handleSuggestion}
       />
-      
+
       {suggestionToolbarVisible && (
-        <SuggestionToolbar 
+        <SuggestionToolbar
           onAccept={handleAcceptSuggestion}
           onReject={handleRejectSuggestion}
           position={suggestionToolbarPosition}
+          intent={suggestionIntent}
         />
       )}
     </div>
-  )
-}
+  );
+};
+
+// Function to apply markdown formatting using Showdown
+const applyMarkdownFormatting = (
+  editor: ReturnType<typeof useEditor>,
+  markdown: string,
+  originalFrom: number,
+  originalTo: number,
+  intent: SuggestionIntent,
+) => {
+  if (!editor) return;
+
+  console.log("🔧 Applying markdown formatting:", {
+    markdown,
+    originalFrom,
+    originalTo,
+    intent,
+  });
+
+  // Check if the text actually contains markdown syntax
+  const hasMarkdownSyntax =
+    markdown.includes("**") ||
+    markdown.includes("*") ||
+    markdown.includes("#") ||
+    markdown.includes("`") ||
+    markdown.includes("[") ||
+    markdown.includes("]") ||
+    markdown.includes("_") ||
+    markdown.includes("~");
+
+  let content: string;
+
+  if (hasMarkdownSyntax) {
+    // Use Showdown for actual markdown content
+    content = markdownToHtml(markdown);
+    console.log("🔧 Converted markdown to HTML with Showdown:", content);
+  } else {
+    // For plain text, just use it directly
+    content = markdown;
+    console.log("🔧 Using plain text directly:", content);
+  }
+
+  // Apply the content based on intent
+  if (intent === "replace") {
+    editor
+      .chain()
+      .focus()
+      .deleteRange({ from: originalFrom, to: originalTo })
+      .insertContent(content)
+      .run();
+  } else {
+    const insertPos = intent === "add_before" ? originalFrom : originalTo;
+    editor
+      .chain()
+      .focus()
+      .setTextSelection({ from: insertPos, to: insertPos })
+      .insertContent(content)
+      .run();
+  }
+};
 
 const findSuggestionRanges = (editor: ReturnType<typeof useEditor>) => {
   const originalRange = { from: -1, to: -1 };
   const suggestionRange = { from: -1, to: -1 };
-  
+
   editor?.state.doc.descendants((node, pos: number) => {
-    const hasOriginalMark = node.marks.some((mark) => mark.type.name === OriginalTextMark.name);
-    const hasSuggestionMark = node.marks.some((mark) => mark.type.name === SuggestionMark.name);
-    
+    const hasOriginalMark = node.marks.some(
+      (mark) => mark.type.name === OriginalTextMark.name,
+    );
+    const hasSuggestionMark = node.marks.some(
+      (mark) => mark.type.name === SuggestionMark.name,
+    );
+
     if (hasOriginalMark) {
       if (originalRange.from === -1) originalRange.from = pos;
       originalRange.to = pos + node.nodeSize;
     }
-    
+
     if (hasSuggestionMark) {
       if (suggestionRange.from === -1) suggestionRange.from = pos;
       suggestionRange.to = pos + node.nodeSize;
     }
   });
-  
+
   return { originalRange, suggestionRange };
 };
 
-export default TiptapEditor
+export default TiptapEditor;

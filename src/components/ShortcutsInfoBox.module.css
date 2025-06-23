@@ -137,7 +137,7 @@
   border-radius: 4px;
   font-size: 12px;
   font-weight: 500;
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
   border: 1px solid #d1d5db;
 }
 
@@ -203,4 +203,4 @@
 
 .shortcutsList::-webkit-scrollbar-thumb:hover {
   background: #a8a8a8;
-} 
+}
