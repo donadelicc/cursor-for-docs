@@ -170,7 +170,8 @@
     min-height: 40px;
   }
 
-  .saveButton svg, .dropdownToggle svg {
+  .saveButton svg,
+  .dropdownToggle svg {
     width: 18px;
     height: 18px;
   }

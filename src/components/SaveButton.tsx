@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import styles from "./SaveButton.module.css";
 
-export type SaveFormat = 'markdown' | 'docx';
+export type SaveFormat = "markdown" | "docx";
 
 interface SaveButtonProps {
   onSave: (format: SaveFormat) => void;
@@ -19,14 +19,17 @@ export const SaveButton: React.FC<SaveButtonProps> = ({
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
         setIsDropdownOpen(false);
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
 
@@ -37,12 +40,12 @@ export const SaveButton: React.FC<SaveButtonProps> = ({
 
   const handleMainButtonClick = () => {
     // Default action: save as markdown
-    onSave('markdown');
+    onSave("markdown");
   };
 
   const handleDropdownToggle = (e: React.MouseEvent) => {
     e.stopPropagation();
-    
+
     if (!isDropdownOpen) {
       // Check if there's enough space below for the dropdown
       const buttonRect = dropdownRef.current?.getBoundingClientRect();
@@ -52,7 +55,7 @@ export const SaveButton: React.FC<SaveButtonProps> = ({
         setShouldDropUp(spaceBelow < dropdownHeight);
       }
     }
-    
+
     setIsDropdownOpen(!isDropdownOpen);
   };
 
@@ -81,7 +84,7 @@ export const SaveButton: React.FC<SaveButtonProps> = ({
         </svg>
         <span>Save</span>
       </button>
-      
+
       <button
         className={styles.dropdownToggle}
         onClick={handleDropdownToggle}
@@ -93,14 +96,14 @@ export const SaveButton: React.FC<SaveButtonProps> = ({
           width="14"
           height="14"
           viewBox="0 0 24 24"
-          fill="none" 
+          fill="none"
           stroke="currentColor"
           strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
-          style={{ 
-            transform: isDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)',
-            transition: 'transform 0.2s ease'
+          style={{
+            transform: isDropdownOpen ? "rotate(180deg)" : "rotate(0deg)",
+            transition: "transform 0.2s ease",
           }}
         >
           <polyline points="6,9 12,15 18,9" />
@@ -108,10 +111,12 @@ export const SaveButton: React.FC<SaveButtonProps> = ({
       </button>
 
       {isDropdownOpen && (
-        <div className={`${styles.dropdown} ${shouldDropUp ? styles.dropup : ''}`}>
+        <div
+          className={`${styles.dropdown} ${shouldDropUp ? styles.dropup : ""}`}
+        >
           <button
             className={styles.dropdownItem}
-            onClick={() => handleSaveClick('markdown')}
+            onClick={() => handleSaveClick("markdown")}
             disabled={disabled}
           >
             <svg
@@ -134,7 +139,7 @@ export const SaveButton: React.FC<SaveButtonProps> = ({
           </button>
           <button
             className={styles.dropdownItem}
-            onClick={() => handleSaveClick('docx')}
+            onClick={() => handleSaveClick("docx")}
             disabled={disabled}
           >
             <svg

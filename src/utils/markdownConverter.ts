@@ -147,14 +147,17 @@ export function markdownToHtml(markdown: string): string {
 
   // Preprocess markdown to ensure proper paragraph breaks
   let processedMarkdown = markdown;
-  
+
   // If the text doesn't have double newlines but has single newlines separating sentences/paragraphs
   // Convert single newlines to double newlines for paragraph breaks
-  if (!processedMarkdown.includes('\n\n')) {
+  if (!processedMarkdown.includes("\n\n")) {
     // Split by single newlines and rejoin with double newlines for proper paragraph separation
-    const lines = processedMarkdown.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+    const lines = processedMarkdown
+      .split("\n")
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0);
     if (lines.length > 1) {
-      processedMarkdown = lines.join('\n\n');
+      processedMarkdown = lines.join("\n\n");
     }
   }
 
