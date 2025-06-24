@@ -113,9 +113,9 @@
   align-items: center;
   justify-content: center;
   padding: 0;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  border: none;
+  background: white;
+  color: #333;
+  border: 1px solid #ddd;
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -125,7 +125,8 @@
 }
 
 .saveButton:hover {
-  background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+  background: #f8f8f8;
+  border-color: #999;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
   transform: translateY(-1px);
 }
@@ -142,7 +143,8 @@
 }
 
 .saveButton:disabled:hover {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: white;
+  border-color: #ddd;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   transform: none;
 }

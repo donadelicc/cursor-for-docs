@@ -13,10 +13,10 @@
   position: static;
   width: 100%;
   z-index: 1000;
-  background: #2c2c2c;
-  border: 1px solid #444;
-  border-radius: 8px;
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
   animation: fadeIn 0.15s ease-out;
   margin-bottom: 0.25rem;
 }
@@ -27,46 +27,29 @@
   padding: 0;
   gap: 0.5rem;
   width: 100%;
+  position: relative;
 }
 
 .input {
   flex: 1;
-  background: transparent;
-  border: none;
-  color: #e0e0e0;
+  background: white;
+  border: 1px solid #ddd;
+  color: #000;
   font-size: 0.875rem;
-  padding: 0.375rem;
+  padding: 0.625rem 0.875rem;
   min-width: 250px;
+  border-radius: 6px;
+  transition: border-color 0.2s, background-color 0.2s;
 }
 
 .input:focus {
   outline: none;
+  border-color: #999;
+  background: #f8f8f8;
 }
 
 .input::placeholder {
-  color: #888;
-}
-
-.submitButton {
-  background: #4a4a4a;
-  color: white;
-  border: 1px solid #666;
-  border-radius: 6px;
-  font-size: 0.8125rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color 0.2s;
-  padding: 0.375rem 0.75rem;
-  white-space: nowrap;
-}
-
-.submitButton:hover:not(:disabled) {
-  background: #5a5a5a;
-}
-
-.submitButton:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+  color: #666;
 }
 
 @keyframes fadeIn {
@@ -81,22 +64,21 @@
 }
 
 .loadingBox {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
   display: flex;
-  flex-direction: column;
   align-items: center;
-  margin-top: 0.5rem;
-  color: #e0e0e0;
-  font-size: 0.85rem;
 }
 
 .loadingSpinner {
-  border: 3px solid #444;
-  border-top: 3px solid #e0e0e0;
+  border: 2px solid #ddd;
+  border-top: 2px solid #000;
   border-radius: 50%;
-  width: 22px;
-  height: 22px;
+  width: 16px;
+  height: 16px;
   animation: spin 0.8s linear infinite;
-  margin-bottom: 0.25rem;
 }
 
 @keyframes spin {
@@ -106,14 +88,6 @@
   100% {
     transform: rotate(360deg);
   }
-}
-
-.loadingQuery {
-  color: #e0e0e0;
-  font-size: 0.85rem;
-  margin-top: 0.25rem;
-  text-align: center;
-  word-break: break-word;
 }
 
 .inlineChatbotRow {

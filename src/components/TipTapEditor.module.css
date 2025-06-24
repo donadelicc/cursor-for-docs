@@ -57,17 +57,17 @@
 }
 
 .tiptap code {
-  background-color: #f1f3f4;
+  background-color: #f0f0f0;
   border-radius: 0.4rem;
-  color: #3c4043;
+  color: #000;
   font-size: 0.85rem;
   padding: 0.25em 0.3em;
 }
 
 .tiptap pre {
-  background: #f8f9fa;
+  background: #f0f0f0;
   border-radius: 0.5rem;
-  color: #202124;
+  color: #000;
   font-family: "JetBrainsMono", monospace;
   margin: 1.5rem 0;
   padding: 0.75rem 1rem;
@@ -103,7 +103,7 @@
   overflow-x: hidden;
   padding: 96px;
   background: #fff;
-  color: #202124;
+  color: #000;
   min-height: 100%;
 
   /* Default font - Arial */
@@ -195,7 +195,7 @@
   max-width: 8.5in;
   height: 11in;
   max-height: 11in;
-  background: #f8f9fa;
+  background: #fff;
   border-bottom-left-radius: 8px;
   border-bottom-right-radius: 8px;
   border: 1px solid #dadce0;
@@ -209,8 +209,8 @@
 }
 
 .tiptap span[data-original-text] {
-  color: #999;
-  background-color: #f5f5f5;
+  color: #666;
+  background-color: #f0f0f0;
   opacity: 0.8;
   border-radius: 3px;
   padding: 0 2px;
@@ -287,8 +287,8 @@
   display: flex;
   width: 100%;
   max-width: 8.5in;
-  background: #2c2c2c;
-  border: 1px solid #444;
+  background: transparent;
+  border: none;
   border-top: none; /* Connect with FormattingToolbar */
   gap: 1rem;
   padding: 0.5rem;

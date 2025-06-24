@@ -38,7 +38,7 @@ const SuggestionToolbar: React.FC<SuggestionToolbarProps> = ({
         title={`Accept suggestion (${intent || "replace"})`}
         disabled={!hasActiveSuggestion}
       >
-        Accept
+        ✓
       </button>
       <button
         onClick={handleReject}
@@ -46,7 +46,7 @@ const SuggestionToolbar: React.FC<SuggestionToolbarProps> = ({
         title="Reject suggestion"
         disabled={!hasActiveSuggestion}
       >
-        Reject
+        ✕
       </button>
     </div>
   );

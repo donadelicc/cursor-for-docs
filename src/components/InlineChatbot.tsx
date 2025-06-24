@@ -93,22 +93,10 @@ const InlineChatbot = React.forwardRef<InlineChatbotRef, InlineChatbotProps>(
             className={styles.input}
             disabled={isLoading}
           />
-          <button
-            type="submit"
-            className={styles.submitButton}
-            disabled={!query.trim() || isLoading}
-          >
-            {isLoading ? (
-              <span className={styles.loadingSpinner}></span>
-            ) : (
-              "Generate"
-            )}
-          </button>
         </form>
         {isLoading && (
           <div className={styles.loadingBox}>
             <div className={styles.loadingSpinner}></div>
-            <div className={styles.loadingQuery}>{query}</div>
           </div>
         )}
       </div>
