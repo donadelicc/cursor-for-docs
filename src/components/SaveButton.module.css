@@ -1,154 +1,227 @@
 .saveButtonContainer {
-  position: fixed;
-  right: 20px;
-  bottom: 80px;
+  position: relative;
   display: flex;
-  align-items: center;
-  z-index: 1000;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  border-radius: 6px;
-  background-color: white;
 }
 
 .saveButton {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 12px 16px;
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
   border: none;
-  border-radius: 6px 0 0 6px;
-  cursor: pointer;
+  border-radius: 8px;
+  padding: 12px 18px;
   font-size: 14px;
   font-weight: 600;
-  color: white;
+  cursor: pointer;
   transition: all 0.2s ease;
-  min-height: 44px;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
 }
 
 .saveButton:hover:not(:disabled) {
-  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
 }
 
 .saveButton:active:not(:disabled) {
   transform: translateY(0);
-  box-shadow: 0 1px 4px rgba(59, 130, 246, 0.3);
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
 }
 
 .saveButton:disabled {
   opacity: 0.6;
   cursor: not-allowed;
-  background: #9ca3af;
+  transform: none;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
 }
 
 .saveButton svg {
-  flex-shrink: 0;
-  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.1));
+  width: 20px;
+  height: 20px;
 }
 
-.dropdownToggle {
+/* Modal Styles */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 12px 10px;
-  background: linear-gradient(135deg, #374151 0%, #1f2937 100%);
+  z-index: 1000;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.modal {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  width: 90%;
+  max-width: 400px;
+  animation: slideIn 0.2s ease;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateY(-20px) scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px 0;
+  border-bottom: 1px solid #f0f0f0;
+  margin-bottom: 20px;
+}
+
+.modalHeader h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+}
+
+.closeButton {
+  background: none;
   border: none;
-  border-left: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 0 6px 6px 0;
+  font-size: 24px;
+  color: #999;
   cursor: pointer;
-  transition: all 0.2s ease;
-  min-height: 44px;
-}
-
-.dropdownToggle:hover:not(:disabled) {
-  background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
-  transform: translateY(-1px);
-}
-
-.dropdownToggle:active:not(:disabled) {
-  transform: translateY(0);
-}
-
-.dropdownToggle:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  background: #6b7280;
-}
-
-.dropdownToggle svg {
-  color: white;
-  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.2));
-}
-
-.dropdown {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  background-color: white;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-  z-index: 1001;
-  margin-top: 8px;
-  overflow: hidden;
-  min-width: 200px;
-}
-
-.dropdown.dropup {
-  top: auto;
-  bottom: 100%;
-  margin-top: 0;
-  margin-bottom: 8px;
-}
-
-.dropdownItem {
+  padding: 0;
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
-  gap: 12px;
-  width: 100%;
-  padding: 12px 16px;
-  background-color: white;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+.closeButton:hover {
+  background: #f5f5f5;
+  color: #333;
+}
+
+.modalContent {
+  padding: 0 24px 24px;
+}
+
+.inputGroup {
+  margin-bottom: 20px;
+}
+
+.inputGroup label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: #333;
+  font-size: 14px;
+}
+
+.filenameContainer {
+  display: flex;
+  align-items: center;
+  border: 2px solid #e1e5e9;
+  border-radius: 8px;
+  overflow: hidden;
+  transition: border-color 0.2s ease;
+}
+
+.filenameContainer:focus-within {
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.filenameInput {
+  flex: 1;
   border: none;
-  cursor: pointer;
+  padding: 12px 16px;
+  font-size: 14px;
+  outline: none;
+  background: transparent;
+  color: #000;
+}
+
+.fileExtension {
+  padding: 12px 16px;
+  background: #f8f9fa;
+  color: #666;
   font-size: 14px;
   font-weight: 500;
-  color: #374151;
-  text-align: left;
+  border-left: 1px solid #e1e5e9;
+}
+
+.formatSelect {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #e1e5e9;
+  border-radius: 8px;
+  font-size: 14px;
+  background: white;
+  color: #000;
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+}
+
+.formatSelect:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.modalActions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 24px;
+}
+
+.cancelButton {
+  padding: 10px 20px;
+  border: 2px solid #e1e5e9;
+  background: white;
+  color: #666;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
   transition: all 0.2s ease;
-  border-bottom: 1px solid #f3f4f6;
 }
 
-.dropdownItem:last-child {
-  border-bottom: none;
+.cancelButton:hover {
+  border-color: #d1d5d9;
+  background: #f8f9fa;
 }
 
-.dropdownItem:hover:not(:disabled) {
-  background-color: #f8fafc;
-  color: #1f2937;
-  transform: translateX(2px);
+.modalActions .saveButton {
+  padding: 10px 20px;
+  font-size: 14px;
+  border-radius: 8px;
 }
 
-.dropdownItem:active:not(:disabled) {
-  background-color: #e2e8f0;
-}
-
-.dropdownItem:disabled {
+.modalActions .saveButton:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-}
-
-.dropdownItem svg {
-  flex-shrink: 0;
-  opacity: 0.7;
-}
-
-/* Add some visual indicators */
-.dropdownItem:hover:not(:disabled) svg {
-  opacity: 1;
-  color: #3b82f6;
 }
 
 /* Responsive design */
@@ -165,18 +238,13 @@
     min-height: 40px;
   }
 
-  .dropdownToggle {
-    padding: 10px 8px;
-    min-height: 40px;
-  }
-
-  .saveButton svg,
-  .dropdownToggle svg {
+  .saveButton svg {
     width: 18px;
     height: 18px;
   }
 
-  .dropdown {
-    min-width: 180px;
+  .modal {
+    width: 95%;
+    max-width: none;
   }
 }

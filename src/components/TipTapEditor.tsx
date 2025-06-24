@@ -3,11 +3,11 @@ import styles from "./TipTapEditor.module.css";
 import { useEditor, EditorContent } from "@tiptap/react";
 import Highlight from "@tiptap/extension-highlight";
 import Typography from "@tiptap/extension-typography";
-import HorizontalRule from "@tiptap/extension-horizontal-rule";
 import StarterKit from "@tiptap/starter-kit";
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import ShortcutsInfoBox from "./ShortcutsInfoBox";
-import SaveButton from "./SaveButton";
+import { SaveModal } from "./SaveButton";
+import FormattingToolbar from "./FormattingToolbar";
 import InlineChatbot from "./InlineChatbot";
 import SuggestionToolbar from "./SuggestionToolbar";
 import { SuggestionMark, OriginalTextMark } from "@/utils/suggestion-mark";
@@ -16,30 +16,11 @@ import {
   downloadMarkdown,
   markdownToHtml,
 } from "../utils/markdownConverter";
-import { downloadAsDocx, getCurrentDateString } from "../utils/docxConverter";
+import { downloadAsDocx } from "../utils/docxConverter";
+import { downloadAsPdf } from "../utils/pdfConverter";
 import { SaveFormat } from "./SaveButton";
 
-// Custom PageBreak extension that extends HorizontalRule
-const PageBreak = HorizontalRule.extend({
-  addAttributes() {
-    return {
-      type: {
-        default: null,
-        // Customize the HTML parsing (for example, to load the initial content)
-        parseHTML: (element) => element.getAttribute("data-type"),
-        // … and customize the HTML rendering.
-        renderHTML: (attributes) => {
-          if (attributes.type) {
-            return {
-              "data-type": attributes.type,
-            };
-          }
-          return {};
-        },
-      },
-    };
-  },
-});
+
 
 const extensions = [
   StarterKit.configure({
@@ -51,7 +32,6 @@ const extensions = [
   Typography,
   SuggestionMark,
   OriginalTextMark,
-  PageBreak,
 ];
 
 // Type for storing original content before a suggestion is applied
@@ -80,6 +60,7 @@ export const TiptapEditor = () => {
     useState<OriginalContent | null>(null);
   const [suggestionIntent, setSuggestionIntent] =
     useState<SuggestionIntent>("replace");
+  const [showSaveModal, setShowSaveModal] = useState(false);
 
   const editorContainerRef = useRef<HTMLDivElement>(null);
   const chatbotRef = useRef<HTMLDivElement>(null);
@@ -241,18 +222,7 @@ export const TiptapEditor = () => {
         }
       }
 
-      // Insert page break with Ctrl+Shift+P
-      if (e.ctrlKey && e.shiftKey && e.key === "P") {
-        e.preventDefault();
 
-        if (!editor || suggestionToolbarVisible || chatbotVisible) return;
-
-        editor
-          .chain()
-          .focus()
-          .insertContent('<hr data-type="pagebreak" /><p></p>')
-          .run();
-      }
     };
 
     document.addEventListener("keydown", handleKeyDown);
@@ -470,20 +440,22 @@ export const TiptapEditor = () => {
     resetSuggestionState();
   };
 
-  const handleSave = async (format: SaveFormat) => {
+  const handleSave = async (format: SaveFormat, customFilename: string) => {
     if (!editor) return;
 
     const html = editor.getHTML();
-    const dateString = getCurrentDateString();
 
     try {
       if (format === "docx") {
-        const filename = `document-${dateString}.docx`;
+        const filename = `${customFilename}.docx`;
         await downloadAsDocx(html, filename);
+      } else if (format === "pdf") {
+        const filename = `${customFilename}.pdf`;
+        await downloadAsPdf(html, filename);
       } else {
         // Default to markdown
         const markdown = htmlToMarkdown(html);
-        const filename = `document-${dateString}.md`;
+        const filename = `${customFilename}.md`;
         downloadMarkdown(markdown, filename);
       }
     } catch (error) {
@@ -493,15 +465,7 @@ export const TiptapEditor = () => {
     }
   };
 
-  const handlePageBreak = () => {
-    if (!editor || suggestionToolbarVisible || chatbotVisible) return;
 
-    editor
-      .chain()
-      .focus()
-      .insertContent('<hr data-type="pagebreak" /><p></p>')
-      .run();
-  };
 
   // Get selected text as markdown for AI processing
   const selectedText = editor
@@ -543,51 +507,46 @@ export const TiptapEditor = () => {
       })()
     : "";
 
+  const handleSaveClick = () => {
+    setShowSaveModal(true);
+  };
+
   return (
-    <div className={styles.tiptapEditor} ref={editorContainerRef}>
-      <ShortcutsInfoBox />
-      <EditorContent editor={editor} />
-      <SaveButton onSave={handleSave} disabled={!editor} />
-
-      {/* Page Break Button */}
-      <button
-        onClick={handlePageBreak}
-        disabled={!editor || suggestionToolbarVisible || chatbotVisible}
-        style={{
-          position: "absolute",
-          bottom: "20px",
-          right: "120px",
-          padding: "8px 12px",
-          backgroundColor: "#f8f9fa",
-          border: "1px solid #dadce0",
-          borderRadius: "4px",
-          cursor: "pointer",
-          fontSize: "12px",
-          fontWeight: "500",
-          color: "#202124",
-        }}
-        title="Insert Page Break (Ctrl+Shift+P)"
-      >
-        📄 Page Break
-      </button>
-
-      <InlineChatbot
-        ref={chatbotRef}
-        isVisible={chatbotVisible}
-        position={chatbotPosition}
-        selectedText={selectedText}
-        onClose={resetChatbotState}
-        onSuggest={handleSuggestion}
+    <div className={styles.editorWrapper}>
+      <FormattingToolbar 
+        editor={editor} 
+        onSave={handleSaveClick}
+        disabled={!editor}
       />
+      
+      <div className={styles.tiptapEditor} ref={editorContainerRef}>
+        <ShortcutsInfoBox />
+        <EditorContent editor={editor} />
 
-      {suggestionToolbarVisible && (
-        <SuggestionToolbar
-          onAccept={handleAcceptSuggestion}
-          onReject={handleRejectSuggestion}
-          position={suggestionToolbarPosition}
-          intent={suggestionIntent}
+        <InlineChatbot
+          ref={chatbotRef}
+          isVisible={chatbotVisible}
+          position={chatbotPosition}
+          selectedText={selectedText}
+          onClose={resetChatbotState}
+          onSuggest={handleSuggestion}
         />
-      )}
+
+        {suggestionToolbarVisible && (
+          <SuggestionToolbar
+            onAccept={handleAcceptSuggestion}
+            onReject={handleRejectSuggestion}
+            position={suggestionToolbarPosition}
+            intent={suggestionIntent}
+          />
+        )}
+      </div>
+      
+      <SaveModal 
+        isOpen={showSaveModal}
+        onClose={() => setShowSaveModal(false)}
+        onSave={handleSave}
+      />
     </div>
   );
 };

@@ -1,167 +1,218 @@
 import React, { useState, useRef, useEffect } from "react";
 import styles from "./SaveButton.module.css";
 
-export type SaveFormat = "markdown" | "docx";
+export type SaveFormat = "markdown" | "docx" | "pdf";
 
 interface SaveButtonProps {
-  onSave: (format: SaveFormat) => void;
+  onSave: (format: SaveFormat, filename: string) => void;
   disabled?: boolean;
 }
+
+interface SaveModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (format: SaveFormat, filename: string) => void;
+}
+
+export const SaveModal: React.FC<SaveModalProps> = ({ isOpen, onClose, onSave }) => {
+  const [filename, setFilename] = useState("document");
+  const [format, setFormat] = useState<SaveFormat>("markdown");
+  const modalRef = useRef<HTMLDivElement>(null);
+  const filenameInputRef = useRef<HTMLInputElement>(null);
+
+  // Focus filename input when modal opens
+  useEffect(() => {
+    if (isOpen && filenameInputRef.current) {
+      filenameInputRef.current.focus();
+      filenameInputRef.current.select();
+    }
+  }, [isOpen]);
+
+  // Close modal on escape key
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener("keydown", handleEscape);
+      return () => document.removeEventListener("keydown", handleEscape);
+    }
+  }, [isOpen, onClose]);
+
+  // Close modal when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+    }
+  }, [isOpen, onClose]);
+
+  const handleSave = () => {
+    if (filename.trim()) {
+      onSave(format, filename.trim());
+      onClose();
+    }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    handleSave();
+  };
+
+  const getFileExtension = () => {
+    switch (format) {
+      case "markdown": return ".md";
+      case "docx": return ".docx";
+      case "pdf": return ".pdf";
+      default: return ".md";
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className={styles.modalOverlay}>
+      <div className={styles.modal} ref={modalRef}>
+        <div className={styles.modalHeader}>
+          <h3>Save Document</h3>
+          <button 
+            className={styles.closeButton}
+            onClick={onClose}
+            aria-label="Close"
+          >
+            ×
+          </button>
+        </div>
+        
+        <form onSubmit={handleSubmit} className={styles.modalContent}>
+          <div className={styles.inputGroup}>
+            <label htmlFor="filename">File Name:</label>
+            <div className={styles.filenameContainer}>
+              <input
+                ref={filenameInputRef}
+                type="text"
+                id="filename"
+                value={filename}
+                onChange={(e) => setFilename(e.target.value)}
+                className={styles.filenameInput}
+                placeholder="Enter filename"
+                required
+              />
+              <span className={styles.fileExtension}>{getFileExtension()}</span>
+            </div>
+          </div>
+
+          <div className={styles.inputGroup}>
+            <label htmlFor="format">Format:</label>
+            <select
+              id="format"
+              value={format}
+              onChange={(e) => setFormat(e.target.value as SaveFormat)}
+              className={styles.formatSelect}
+            >
+              <option value="markdown">Markdown (.md)</option>
+              <option value="docx">Word Document (.docx)</option>
+              <option value="pdf">PDF Document (.pdf)</option>
+            </select>
+          </div>
+
+          <div className={styles.modalActions}>
+            <button
+              type="button"
+              onClick={onClose}
+              className={styles.cancelButton}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className={styles.saveButton}
+              disabled={!filename.trim()}
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+                <polyline points="17,21 17,13 7,13 7,21" />
+                <polyline points="7,3 7,8 15,8" />
+              </svg>
+              Save
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
 
 export const SaveButton: React.FC<SaveButtonProps> = ({
   onSave,
   disabled = false,
 }) => {
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [shouldDropUp, setShouldDropUp] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node)
-      ) {
-        setIsDropdownOpen(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, []);
-
-  const handleSaveClick = (format: SaveFormat) => {
-    onSave(format);
-    setIsDropdownOpen(false);
+  const handleSaveClick = () => {
+    setIsModalOpen(true);
   };
 
-  const handleMainButtonClick = () => {
-    // Default action: save as markdown
-    onSave("markdown");
+  const handleModalSave = (format: SaveFormat, filename: string) => {
+    onSave(format, filename);
   };
 
-  const handleDropdownToggle = (e: React.MouseEvent) => {
-    e.stopPropagation();
-
-    if (!isDropdownOpen) {
-      // Check if there's enough space below for the dropdown
-      const buttonRect = dropdownRef.current?.getBoundingClientRect();
-      if (buttonRect) {
-        const spaceBelow = window.innerHeight - buttonRect.bottom;
-        const dropdownHeight = 120; // Approximate height of dropdown with 2 items
-        setShouldDropUp(spaceBelow < dropdownHeight);
-      }
-    }
-
-    setIsDropdownOpen(!isDropdownOpen);
+  const handleModalClose = () => {
+    setIsModalOpen(false);
   };
 
   return (
-    <div className={styles.saveButtonContainer} ref={dropdownRef}>
-      <button
-        className={styles.saveButton}
-        onClick={handleMainButtonClick}
-        disabled={disabled}
-        title="Save as Markdown"
-        aria-label="Save document as markdown file"
-      >
-        <svg
-          width="20"
-          height="20"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
+    <>
+      <div className={styles.saveButtonContainer}>
+        <button
+          className={styles.saveButton}
+          onClick={handleSaveClick}
+          disabled={disabled}
+          title="Save document"
+          aria-label="Save document"
         >
-          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
-          <polyline points="17,21 17,13 7,13 7,21" />
-          <polyline points="7,3 7,8 15,8" />
-        </svg>
-        <span>Save</span>
-      </button>
-
-      <button
-        className={styles.dropdownToggle}
-        onClick={handleDropdownToggle}
-        disabled={disabled}
-        title="Choose save format"
-        aria-label="Choose save format"
-      >
-        <svg
-          width="14"
-          height="14"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          style={{
-            transform: isDropdownOpen ? "rotate(180deg)" : "rotate(0deg)",
-            transition: "transform 0.2s ease",
-          }}
-        >
-          <polyline points="6,9 12,15 18,9" />
-        </svg>
-      </button>
-
-      {isDropdownOpen && (
-        <div
-          className={`${styles.dropdown} ${shouldDropUp ? styles.dropup : ""}`}
-        >
-          <button
-            className={styles.dropdownItem}
-            onClick={() => handleSaveClick("markdown")}
-            disabled={disabled}
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
           >
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-              <polyline points="14,2 14,8 20,8" />
-              <line x1="16" y1="13" x2="8" y2="13" />
-              <line x1="16" y1="17" x2="8" y2="17" />
-              <polyline points="10,9 9,9 8,9" />
-            </svg>
-            Save as Markdown (.md)
-          </button>
-          <button
-            className={styles.dropdownItem}
-            onClick={() => handleSaveClick("docx")}
-            disabled={disabled}
-          >
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-              <polyline points="14,2 14,8 20,8" />
-              <line x1="12" y1="18" x2="12" y2="12" />
-              <line x1="9" y1="15" x2="15" y2="15" />
-            </svg>
-            Save as Word (.docx)
-          </button>
-        </div>
-      )}
-    </div>
+            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+            <polyline points="17,21 17,13 7,13 7,21" />
+            <polyline points="7,3 7,8 15,8" />
+          </svg>
+          <span>Save</span>
+        </button>
+      </div>
+
+      <SaveModal 
+        isOpen={isModalOpen}
+        onClose={handleModalClose}
+        onSave={handleModalSave}
+      />
+    </>
   );
 };
 
