@@ -14,7 +14,11 @@ interface SaveModalProps {
   onSave: (format: SaveFormat, filename: string) => void;
 }
 
-export const SaveModal: React.FC<SaveModalProps> = ({ isOpen, onClose, onSave }) => {
+export const SaveModal: React.FC<SaveModalProps> = ({
+  isOpen,
+  onClose,
+  onSave,
+}) => {
   const [filename, setFilename] = useState("document");
   const [format, setFormat] = useState<SaveFormat>("pdf");
   const modalRef = useRef<HTMLDivElement>(null);
@@ -45,14 +49,18 @@ export const SaveModal: React.FC<SaveModalProps> = ({ isOpen, onClose, onSave })
   // Close modal when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
+      if (
+        modalRef.current &&
+        !modalRef.current.contains(event.target as Node)
+      ) {
         onClose();
       }
     };
 
     if (isOpen) {
       document.addEventListener("mousedown", handleClickOutside);
-      return () => document.removeEventListener("mousedown", handleClickOutside);
+      return () =>
+        document.removeEventListener("mousedown", handleClickOutside);
     }
   }, [isOpen, onClose]);
 
@@ -70,10 +78,14 @@ export const SaveModal: React.FC<SaveModalProps> = ({ isOpen, onClose, onSave })
 
   const getFileExtension = () => {
     switch (format) {
-      case "markdown": return ".md";
-      case "docx": return ".docx";
-      case "pdf": return ".pdf";
-      default: return ".md";
+      case "pdf":
+        return ".pdf";
+      case "docx":
+        return ".docx";
+      case "markdown":
+        return ".md";
+      default:
+        return ".pdf";
     }
   };
 
@@ -84,7 +96,7 @@ export const SaveModal: React.FC<SaveModalProps> = ({ isOpen, onClose, onSave })
       <div className={styles.modal} ref={modalRef}>
         <div className={styles.modalHeader}>
           <h3>Save Document</h3>
-          <button 
+          <button
             className={styles.closeButton}
             onClick={onClose}
             aria-label="Close"
@@ -92,7 +104,7 @@ export const SaveModal: React.FC<SaveModalProps> = ({ isOpen, onClose, onSave })
             ×
           </button>
         </div>
-        
+
         <form onSubmit={handleSubmit} className={styles.modalContent}>
           <div className={styles.inputGroup}>
             <label htmlFor="filename">File Name:</label>
@@ -207,7 +219,7 @@ export const SaveButton: React.FC<SaveButtonProps> = ({
         </button>
       </div>
 
-      <SaveModal 
+      <SaveModal
         isOpen={isModalOpen}
         onClose={handleModalClose}
         onSave={handleModalSave}

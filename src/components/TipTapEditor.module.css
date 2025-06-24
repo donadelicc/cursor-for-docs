@@ -96,7 +96,7 @@
 
 .tiptap {
   position: relative;
-  
+
   /* Editor content area styles */
   height: 11in;
   overflow-y: auto;
@@ -105,9 +105,17 @@
   background: #fff;
   color: #202124;
   min-height: 100%;
+
+  /* Default font - Arial */
+  font-family: Arial, sans-serif;
+
+  /* Font rendering improvements */
+  font-feature-settings:
+    "kern" 1,
+    "liga" 1;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
-
-
 
 /* Additional formatting support */
 .tiptap mark {
@@ -127,6 +135,61 @@
 
 .tiptap em {
   font-style: italic;
+}
+
+.tiptap u {
+  text-decoration: underline;
+}
+
+/* Text alignment support */
+.tiptap p[style*="text-align: center"],
+.tiptap h1[style*="text-align: center"],
+.tiptap h2[style*="text-align: center"],
+.tiptap h3[style*="text-align: center"] {
+  text-align: center;
+}
+
+.tiptap p[style*="text-align: right"],
+.tiptap h1[style*="text-align: right"],
+.tiptap h2[style*="text-align: right"],
+.tiptap h3[style*="text-align: right"] {
+  text-align: right;
+}
+
+.tiptap p[style*="text-align: justify"],
+.tiptap h1[style*="text-align: justify"],
+.tiptap h2[style*="text-align: justify"],
+.tiptap h3[style*="text-align: justify"] {
+  text-align: justify;
+}
+
+/* Font family support */
+.tiptap *[style*="font-family"] {
+  /* Ensure font-family styles are applied with higher specificity */
+}
+
+/* Specific font family styles for better compatibility */
+.tiptap span[style*="font-family: Arial"],
+.tiptap p[style*="font-family: Arial"] {
+  font-family: Arial, sans-serif !important;
+}
+
+.tiptap span[style*="font-family: Helvetica"],
+.tiptap p[style*="font-family: Helvetica"] {
+  font-family: Helvetica, Arial, sans-serif !important;
+}
+
+.tiptap span[style*="font-family: Comic Sans"],
+.tiptap p[style*="font-family: Comic Sans"] {
+  font-family: "Comic Sans MS", cursive !important;
+}
+
+.tiptap span[style*="font-family: Impact"],
+.tiptap p[style*="font-family: Impact"] {
+  font-family:
+    Impact,
+    Arial Black,
+    sans-serif !important;
 }
 
 /* Editor container */
@@ -176,7 +239,24 @@
 }
 
 /* IMPROVED: Responsive design with better zoom handling */
+@media (max-width: 1024px) {
+  .editorWrapper {
+    max-width: 10in; /* Slightly smaller on tablets */
+    gap: 12px; /* Slightly less spacing on tablets */
+  }
+}
+
 @media (max-width: 768px) {
+  .editorWrapper {
+    max-width: 100vw; /* Full width on mobile */
+    padding: 0 10px; /* Add some padding on mobile */
+    gap: 8px; /* Smaller spacing on mobile to save space */
+  }
+
+  .tiptapEditor {
+    max-width: 100%;
+  }
+
   .buttonGroup {
     gap: 0.125rem;
   }
@@ -198,5 +278,7 @@
   display: flex;
   flex-direction: column;
   width: 100%;
-  max-width: 8.5in;
+  max-width: 12in; /* Allow toolbar to be wider */
+  align-items: center; /* Center the content */
+  gap: 16px; /* Add spacing between toolbar and editor */
 }

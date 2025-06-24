@@ -1,0 +1,68 @@
+/* Upload button styles */
+.uploadButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: #1976d2;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 36px;
+  height: 36px;
+}
+
+.uploadButton:hover:not(:disabled) {
+  background: #1565c0;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(25, 118, 210, 0.3);
+}
+
+.uploadButton:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 1px 4px rgba(25, 118, 210, 0.3);
+}
+
+.uploadButton:disabled {
+  background: #ccc;
+  color: #888;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.uploadButton svg {
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.uploadButton:hover:not(:disabled) svg {
+  transform: translateY(-1px);
+}
+
+/* Responsive adjustments */
+@media (max-width: 1024px) {
+  .uploadButton {
+    width: 32px;
+    height: 32px;
+  }
+
+  .uploadButton svg {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+@media (max-width: 768px) {
+  .uploadButton {
+    width: 28px;
+    height: 28px;
+  }
+
+  .uploadButton svg {
+    width: 14px;
+    height: 14px;
+  }
+}

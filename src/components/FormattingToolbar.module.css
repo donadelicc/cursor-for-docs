@@ -7,36 +7,42 @@
   border-bottom: 1px solid #dadce0;
   border-top-left-radius: 8px;
   border-top-right-radius: 8px;
-  gap: 4px;
-  min-height: 44px;
+  gap: 3px;
+  min-height: 48px;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
   position: relative;
   z-index: 100;
   pointer-events: auto;
+  width: 100%;
+  max-width: 1300px; /* Make toolbar even wider to fit all tools */
+  overflow-x: visible; /* Remove horizontal scrolling */
+  flex-wrap: nowrap; /* Prevent wrapping */
 }
 
 .toolbarSection {
   display: flex;
   align-items: center;
   gap: 2px;
+  flex-shrink: 0; /* Prevent sections from shrinking */
 }
 
 .separator {
   width: 1px;
-  height: 24px;
+  height: 28px;
   background: #dadce0;
-  margin: 0 8px;
+  margin: 0 6px;
+  flex-shrink: 0; /* Prevent separator from shrinking */
 }
 
 .toolbarButton {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   border: none;
   background: transparent;
-  border-radius: 4px;
+  border-radius: 6px;
   cursor: pointer;
   color: #3c4043;
   transition: all 0.2s ease;
@@ -44,6 +50,7 @@
   position: relative;
   z-index: 101;
   pointer-events: auto;
+  flex-shrink: 0; /* Prevent buttons from shrinking */
 }
 
 .toolbarButton:hover {
@@ -71,15 +78,16 @@
 }
 
 .styleSelect {
-  padding: 6px 12px;
+  padding: 6px 8px;
   border: 1px solid #dadce0;
-  border-radius: 4px;
+  border-radius: 6px;
   background: white;
-  font-size: 14px;
+  font-size: 13px;
   color: #3c4043;
   cursor: pointer;
-  min-width: 120px;
-  height: 32px;
+  min-width: 110px;
+  height: 36px;
+  flex-shrink: 0; /* Prevent shrinking */
 }
 
 .styleSelect:hover {
@@ -93,25 +101,27 @@
 }
 
 .saveSection {
-  margin-left: auto;
+  margin-left: 20px; /* Reduced from auto to a fixed smaller margin */
   display: flex;
   align-items: center;
+  gap: 6px;
+  flex-shrink: 0; /* Prevent save section from shrinking */
 }
 
 .saveButton {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
+  justify-content: center;
+  padding: 0;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   border: none;
   border-radius: 6px;
-  font-size: 14px;
-  font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  width: 36px;
+  height: 36px;
 }
 
 .saveButton:hover {
@@ -138,30 +148,71 @@
 }
 
 /* Responsive design */
-@media (max-width: 768px) {
+@media (max-width: 1600px) {
   .toolbar {
-    padding: 6px 12px;
+    padding: 6px 14px;
     gap: 2px;
-    min-height: 40px;
+    min-height: 44px;
+    min-width: 1300px; /* Smaller min-width for tablets */
+    max-width: 1500px;
   }
-  
+
+  .toolbarButton {
+    width: 32px;
+    height: 32px;
+  }
+
+  .styleSelect {
+    min-width: 120px;
+    height: 32px;
+    font-size: 13px;
+  }
+
+  .separator {
+    margin: 0 8px;
+  }
+
+  .saveButton {
+    width: 32px;
+    height: 32px;
+  }
+}
+
+@media (max-width: 1300px) {
+  .toolbar {
+    padding: 6px 10px;
+    gap: 1px;
+    min-height: 40px;
+    min-width: auto; /* Remove min-width on mobile */
+    max-width: 100vw; /* Allow full width on mobile */
+    overflow-x: auto; /* Allow horizontal scrolling if needed */
+  }
+
   .toolbarButton {
     width: 28px;
     height: 28px;
+    flex-shrink: 0; /* Prevent buttons from shrinking */
   }
-  
+
   .styleSelect {
     min-width: 100px;
     height: 28px;
-    font-size: 13px;
+    font-size: 12px;
+    flex-shrink: 0;
   }
-  
+
   .separator {
     margin: 0 4px;
+    flex-shrink: 0;
   }
-  
+
   .saveButton {
-    padding: 6px 12px;
-    font-size: 13px;
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
   }
-} 
+
+  .saveSection {
+    flex-shrink: 0;
+  }
+}

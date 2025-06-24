@@ -4,9 +4,14 @@ import { useEditor, EditorContent } from "@tiptap/react";
 import Highlight from "@tiptap/extension-highlight";
 import Typography from "@tiptap/extension-typography";
 import StarterKit from "@tiptap/starter-kit";
+import TextAlign from "@tiptap/extension-text-align";
+import Underline from "@tiptap/extension-underline";
+import TextStyle from "@tiptap/extension-text-style";
+import FontFamily from "@tiptap/extension-font-family";
+import Color from "@tiptap/extension-color";
+
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import ShortcutsInfoBox from "./ShortcutsInfoBox";
-import { SaveModal } from "./SaveButton";
 import FormattingToolbar from "./FormattingToolbar";
 import InlineChatbot from "./InlineChatbot";
 import SuggestionToolbar from "./SuggestionToolbar";
@@ -18,9 +23,8 @@ import {
 } from "../utils/markdownConverter";
 import { downloadAsDocx } from "../utils/docxConverter";
 import { downloadAsPdf } from "../utils/pdfConverter";
-import { SaveFormat } from "./SaveButton";
-
-
+import { SaveFormat, SaveModal } from "./SaveButton";
+import { importDocxFile } from "../utils/docxImporter";
 
 const extensions = [
   StarterKit.configure({
@@ -30,6 +34,15 @@ const extensions = [
   }),
   Highlight,
   Typography,
+  TextAlign.configure({
+    types: ["heading", "paragraph"],
+  }),
+  Underline,
+  TextStyle,
+  FontFamily.configure({
+    types: ["textStyle"],
+  }),
+  Color,
   SuggestionMark,
   OriginalTextMark,
 ];
@@ -92,8 +105,6 @@ export const TiptapEditor = () => {
     },
     [],
   );
-
-
 
   // Function to sync component state with document state
   const syncStateWithDocument = useCallback(
@@ -223,8 +234,6 @@ export const TiptapEditor = () => {
           }
         }
       }
-
-
     };
 
     document.addEventListener("keydown", handleKeyDown);
@@ -471,6 +480,25 @@ export const TiptapEditor = () => {
     setShowSaveModal(true);
   };
 
+  const handleUpload = async (file: File) => {
+    if (!editor) return;
+
+    try {
+      const result = await importDocxFile(file);
+
+      // Set the imported HTML content in the editor
+      editor.commands.setContent(result.html);
+
+      // Log any conversion messages/warnings
+      if (result.messages.length > 0) {
+        console.log("Import messages:", result.messages);
+      }
+    } catch (error) {
+      console.error("Error importing DOCX:", error);
+      throw error; // Re-throw so the Upload component can handle the error display
+    }
+  };
+
   // Get selected text as markdown for AI processing
   const selectedText = editor
     ? (() => {
@@ -513,12 +541,13 @@ export const TiptapEditor = () => {
 
   return (
     <div className={styles.editorWrapper}>
-      <FormattingToolbar 
-        editor={editor} 
+      <FormattingToolbar
+        editor={editor}
         onSave={handleSaveClick}
+        onUpload={handleUpload}
         disabled={!editor}
       />
-      
+
       <div className={styles.tiptapEditor} ref={editorContainerRef}>
         <ShortcutsInfoBox />
         <EditorContent editor={editor} />
@@ -541,8 +570,8 @@ export const TiptapEditor = () => {
           />
         )}
       </div>
-      
-      <SaveModal 
+
+      <SaveModal
         isOpen={showSaveModal}
         onClose={() => setShowSaveModal(false)}
         onSave={handleSave}
