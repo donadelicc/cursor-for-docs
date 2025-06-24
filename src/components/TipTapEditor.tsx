@@ -93,6 +93,8 @@ export const TiptapEditor = () => {
     [],
   );
 
+
+
   // Function to sync component state with document state
   const syncStateWithDocument = useCallback(
     (editor: ReturnType<typeof useEditor>) => {
@@ -465,7 +467,9 @@ export const TiptapEditor = () => {
     }
   };
 
-
+  const handleSaveClick = () => {
+    setShowSaveModal(true);
+  };
 
   // Get selected text as markdown for AI processing
   const selectedText = editor
@@ -506,10 +510,6 @@ export const TiptapEditor = () => {
         return editor.state.doc.textBetween(from, to);
       })()
     : "";
-
-  const handleSaveClick = () => {
-    setShowSaveModal(true);
-  };
 
   return (
     <div className={styles.editorWrapper}>

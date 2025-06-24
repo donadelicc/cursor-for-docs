@@ -38,3 +38,8 @@ body {
   color: var(--anti-flash-white);
   font-family: "Poppins", sans-serif;
 }
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+}

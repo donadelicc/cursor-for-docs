@@ -94,31 +94,20 @@
   margin: 2rem 0;
 }
 
-/* Page break styles */
-.tiptap hr[data-type="pagebreak"] {
-  border-top: 2px dashed #dadce0;
-  margin-top: 10px;
-  margin-bottom: 10px;
-  display: block;
-  padding-bottom: 0.25rem;
+.tiptap {
+  position: relative;
+  
+  /* Editor content area styles */
+  height: 11in;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 96px;
+  background: #fff;
+  color: #202124;
+  min-height: 100%;
 }
 
-/* Selected page break styling */
-.tiptap hr.ProseMirror-selectednode {
-  border-color: #93c5fd;
-}
 
-/* Page break print styles */
-@media print {
-  .tiptap hr[data-type="pagebreak"] {
-    break-before: always;
-    page-break-before: always;
-    padding-bottom: 0;
-    margin-top: 0;
-    margin-bottom: 0;
-    border-width: 0;
-  }
-}
 
 /* Additional formatting support */
 .tiptap mark {
@@ -146,8 +135,9 @@
   flex-direction: column;
   width: 100%;
   max-width: 8.5in;
-  min-height: 11in;
-  background: #fff;
+  height: 11in;
+  max-height: 11in;
+  background: #f8f9fa;
   border-bottom-left-radius: 8px;
   border-bottom-right-radius: 8px;
   border: 1px solid #dadce0;
@@ -155,7 +145,8 @@
   box-shadow:
     0 1px 3px rgba(0, 0, 0, 0.1),
     0 1px 2px rgba(0, 0, 0, 0.2);
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: hidden;
   position: relative;
 }
 
@@ -172,14 +163,7 @@
   background-color: transparent;
 }
 
-/* Editor content area */
-.tiptap {
-  flex-grow: 1;
-  overflow-y: auto;
-  padding: 4rem 5rem;
-  background: #fff;
-  color: #202124;
-}
+/* Editor focus styles */
 
 .tiptap:focus {
   outline: none;
@@ -191,7 +175,7 @@
   z-index: auto;
 }
 
-/* Responsive design */
+/* IMPROVED: Responsive design with better zoom handling */
 @media (max-width: 768px) {
   .buttonGroup {
     gap: 0.125rem;
@@ -208,8 +192,6 @@
     right: 10px;
   }
 }
-
-
 
 /* Wrapper for toolbar and editor */
 .editorWrapper {
