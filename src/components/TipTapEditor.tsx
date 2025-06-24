@@ -2,7 +2,7 @@ import styles from "./TipTapEditor.module.css";
 
 import { useEditor, EditorContent } from "@tiptap/react";
 import React, { useState, useRef, useEffect } from "react";
-import ShortcutsInfoBox from "./ShortcutsInfoBox";
+// import ShortcutsInfoBox from "./ShortcutsInfoBox";
 import FormattingToolbar from "./FormattingToolbar";
 import InlineChatbot, { InlineChatbotRef } from "./InlineChatbot";
 import SuggestionToolbar from "./SuggestionToolbar";
@@ -187,7 +187,8 @@ export const TiptapEditor = () => {
       </div>
 
       <div className={styles.tiptapEditor} ref={editorContainerRef}>
-        <ShortcutsInfoBox />
+        {/* <ShortcutsInfoBox />*/}
+
         <EditorContent editor={editor} />
       </div>
 

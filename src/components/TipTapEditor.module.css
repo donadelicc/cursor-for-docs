@@ -277,7 +277,7 @@
   display: flex;
   flex-direction: column;
   width: 100%;
-  max-width: 12in; /* Allow toolbar to be wider */
+  max-width: 8.5in; /* Match editor and toolbar width */
   align-items: center; /* Center the content */
   gap: 0; /* Remove gap since we have connected elements */
 }

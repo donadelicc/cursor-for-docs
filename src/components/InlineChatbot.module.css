@@ -39,7 +39,9 @@
   padding: 0.625rem 0.875rem;
   min-width: 250px;
   border-radius: 6px;
-  transition: border-color 0.2s, background-color 0.2s;
+  transition:
+    border-color 0.2s,
+    background-color 0.2s;
 }
 
 .input:focus {
