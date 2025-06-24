@@ -163,11 +163,6 @@
   text-align: justify;
 }
 
-/* Font family support */
-.tiptap *[style*="font-family"] {
-  /* Ensure font-family styles are applied with higher specificity */
-}
-
 /* Specific font family styles for better compatibility */
 .tiptap span[style*="font-family: Arial"],
 .tiptap p[style*="font-family: Arial"] {
