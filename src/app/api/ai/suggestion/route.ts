@@ -89,15 +89,19 @@ export async function POST(req: Request) {
   try {
     const { query, selectedText } = await req.json();
 
-    if (!query || !selectedText) {
+    if (!query) {
       return NextResponse.json(
-        { error: "Missing query or selectedText in request body" },
+        { error: "Missing query in request body" },
         { status: 400 },
       );
     }
 
+    // Handle empty selectedText by providing a default placeholder
+    const textToProcess =
+      selectedText || "[Empty document - create new content]";
+
     // Analyze the user's intent
-    const intent = await analyzeIntent(query, selectedText);
+    const intent = await analyzeIntent(query, textToProcess);
 
     // Adjust system message based on intent
     let systemMessage = "";
@@ -157,7 +161,7 @@ export async function POST(req: Request) {
     const messages = [
       new SystemMessage(systemMessage),
       new HumanMessage(
-        `Here is the selected text:\n\n---\n${selectedText}\n---\n\n` +
+        `Here is the selected text:\n\n---\n${textToProcess}\n---\n\n` +
           `Here is my request:\n\n---\n${query}\n---`,
       ),
     ];

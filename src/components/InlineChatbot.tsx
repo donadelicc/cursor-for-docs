@@ -1,30 +1,35 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useImperativeHandle } from "react";
 import styles from "./InlineChatbot.module.css";
 
 interface InlineChatbotProps {
-  isVisible: boolean;
-  position: { x: number; y: number } | null;
   selectedText: string;
-  onClose: () => void;
   onSuggest: (
     suggestion: string,
     intent: "replace" | "add_after" | "add_before",
   ) => void;
 }
 
-const InlineChatbot = React.forwardRef<HTMLDivElement, InlineChatbotProps>(
-  ({ isVisible, position, selectedText, onClose, onSuggest }, ref) => {
+export interface InlineChatbotRef {
+  focus: () => void;
+}
+
+const InlineChatbot = React.forwardRef<InlineChatbotRef, InlineChatbotProps>(
+  ({ selectedText, onSuggest }, ref) => {
     const [query, setQuery] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
 
+    // Expose focus method to parent component
+    useImperativeHandle(ref, () => ({
+      focus: () => {
+        inputRef.current?.focus();
+      },
+    }));
+
     useEffect(() => {
-      if (isVisible) {
-        setQuery("");
-        setIsLoading(false);
-        setTimeout(() => inputRef.current?.focus(), 0);
-      }
-    }, [isVisible]);
+      setIsLoading(false);
+      // Remove auto-focus since component is always visible
+    }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
       e.preventDefault();
@@ -38,7 +43,10 @@ const InlineChatbot = React.forwardRef<HTMLDivElement, InlineChatbotProps>(
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ query, selectedText }),
+          body: JSON.stringify({
+            query: query.trim(),
+            selectedText: selectedText || "",
+          }),
         });
 
         if (!response.ok) {
@@ -52,6 +60,7 @@ const InlineChatbot = React.forwardRef<HTMLDivElement, InlineChatbotProps>(
         // Log the detected intent for testing/debugging
         console.log("🤖 AI Intent Detection:", {
           query: query,
+          selectedText: selectedText || "[Empty document]",
           detectedIntent: detectedIntent,
           suggestion:
             data.suggestion.substring(0, 50) +
@@ -59,31 +68,28 @@ const InlineChatbot = React.forwardRef<HTMLDivElement, InlineChatbotProps>(
         });
 
         onSuggest(data.suggestion, detectedIntent);
+        setQuery(""); // Clear the input after successful suggestion
       } catch (error) {
         console.error("AI request failed:", error);
+        // Show user-friendly error message
+        alert("Failed to get AI suggestion. Please try again.");
+        // Don't call onClose since component is always visible
       } finally {
-        onClose();
+        setIsLoading(false);
       }
     };
 
-    if (!isVisible || !position) return null;
-
     return (
-      <div
-        ref={ref}
-        className={styles.inlineChatbot}
-        style={{
-          left: position.x,
-          top: position.y,
-        }}
-      >
+      <div className={styles.inlineChatbotRow}>
         <form onSubmit={handleSubmit} className={styles.form}>
           <input
             ref={inputRef}
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Ask AI to edit..."
+            placeholder={
+              selectedText ? "Ask AI to edit..." : "Ask AI to create content..."
+            }
             className={styles.input}
             disabled={isLoading}
           />
@@ -92,9 +98,19 @@ const InlineChatbot = React.forwardRef<HTMLDivElement, InlineChatbotProps>(
             className={styles.submitButton}
             disabled={!query.trim() || isLoading}
           >
-            {isLoading ? "..." : "Generate"}
+            {isLoading ? (
+              <span className={styles.loadingSpinner}></span>
+            ) : (
+              "Generate"
+            )}
           </button>
         </form>
+        {isLoading && (
+          <div className={styles.loadingBox}>
+            <div className={styles.loadingSpinner}></div>
+            <div className={styles.loadingQuery}>{query}</div>
+          </div>
+        )}
       </div>
     );
   },

@@ -1,40 +1,34 @@
 import styles from "./TipTapEditor.module.css";
 
 import { useEditor, EditorContent } from "@tiptap/react";
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import ShortcutsInfoBox from "./ShortcutsInfoBox";
 import FormattingToolbar from "./FormattingToolbar";
-import InlineChatbot from "./InlineChatbot";
+import InlineChatbot, { InlineChatbotRef } from "./InlineChatbot";
 import SuggestionToolbar from "./SuggestionToolbar";
 import { SaveFormat, SaveModal } from "./SaveButton";
 import { importDocxFile } from "../utils/docxImporter";
 import { downloadAsDocx } from "../utils/docxConverter";
 import { downloadAsPdf } from "../utils/pdfConverter";
 import { htmlToMarkdown, downloadMarkdown } from "../utils/markdownConverter";
+import { SuggestionIntent } from "@/types/editor";
 
 // Custom hooks
 import { useTipTapExtensions } from "@/hooks/useTipTapExtensions";
 import { usePositionCalculation } from "@/hooks/usePositionCalculation";
-import { useChatbotState } from "@/hooks/useChatbotState";
 import { useSuggestionState } from "@/hooks/useSuggestionState";
-import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useEditorUtils } from "@/hooks/useEditorUtils";
 
 export const TiptapEditor = () => {
   const [showSaveModal, setShowSaveModal] = useState(false);
+  const [hasPendingSuggestion, setHasPendingSuggestion] = useState(false);
 
   const editorContainerRef = useRef<HTMLDivElement>(null);
-  const chatbotRef = useRef<HTMLDivElement>(null);
+  const chatbotRef = useRef<InlineChatbotRef>(null);
 
   // Custom hooks
   const extensions = useTipTapExtensions();
   const { calculatePosition } = usePositionCalculation(editorContainerRef);
-  const {
-    chatbotVisible,
-    chatbotPosition,
-    resetChatbotState,
-    showChatbot,
-  } = useChatbotState();
 
   const editor = useEditor({
     extensions,
@@ -48,30 +42,46 @@ export const TiptapEditor = () => {
 
   const {
     suggestionToolbarVisible,
-    suggestionToolbarPosition,
     originalContent,
     suggestionIntent,
+    isSuggestionActive,
     resetSuggestionState,
     handleSuggestion,
     handleAcceptSuggestion,
     handleRejectSuggestion,
-  } = useSuggestionState(editor, calculatePosition);
+  } = useSuggestionState(editor);
+
+  const handleSuggestionWithToolbar = (
+    suggestion: string,
+    intent: SuggestionIntent,
+  ) => {
+    handleSuggestion(suggestion, intent);
+    setHasPendingSuggestion(true);
+  };
+
+  const handleAcceptWithToolbar = () => {
+    handleAcceptSuggestion();
+    setHasPendingSuggestion(false);
+  };
+
+  const handleRejectWithToolbar = () => {
+    handleRejectSuggestion();
+    setHasPendingSuggestion(false);
+  };
 
   const { syncStateWithDocument, getSelectedText } = useEditorUtils({
     editor,
-    chatbotVisible,
     suggestionToolbarVisible,
     originalContent,
     calculatePosition,
     resetSuggestionState,
-    resetChatbotState,
-    setSuggestionToolbarVisible: (visible) => {
+    setSuggestionToolbarVisible: () => {
       // This is handled internally by the suggestion state hook
     },
-    setSuggestionToolbarPosition: (position) => {
+    setSuggestionToolbarPosition: () => {
       // This is handled internally by the suggestion state hook
     },
-    setOriginalContent: (content) => {
+    setOriginalContent: () => {
       // This is handled internally by the suggestion state hook
     },
   });
@@ -79,23 +89,26 @@ export const TiptapEditor = () => {
   // Set up editor update handler
   React.useEffect(() => {
     if (editor) {
-      editor.on('update', ({ editor }) => {
+      editor.on("update", () => {
         syncStateWithDocument();
       });
     }
   }, [editor, syncStateWithDocument]);
 
-  // Keyboard shortcuts
-  useKeyboardShortcuts({
-    editor,
-    suggestionToolbarVisible,
-    chatbotVisible,
-    calculatePosition,
-    editorContainerRef,
-    showChatbot,
-    resetChatbotState,
-    handleRejectSuggestion,
-  });
+  // Keyboard shortcut for Ctrl+K to focus chatbot input
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.key === "k") {
+        e.preventDefault();
+
+        // Focus the chatbot input
+        chatbotRef.current?.focus();
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   const handleSave = async (format: SaveFormat, customFilename: string) => {
     if (!editor) return;
@@ -153,27 +166,29 @@ export const TiptapEditor = () => {
         disabled={!editor}
       />
 
+      {/* Always visible AI assistant row */}
+      <div className={styles.aiAssistantRow}>
+        <div className={styles.inlineChatbotContainer}>
+          <InlineChatbot
+            ref={chatbotRef}
+            selectedText={selectedText}
+            onSuggest={handleSuggestionWithToolbar}
+          />
+        </div>
+
+        <div className={styles.suggestionToolbarContainer}>
+          <SuggestionToolbar
+            onAccept={handleAcceptWithToolbar}
+            onReject={handleRejectWithToolbar}
+            intent={suggestionIntent}
+            hasActiveSuggestion={isSuggestionActive || hasPendingSuggestion}
+          />
+        </div>
+      </div>
+
       <div className={styles.tiptapEditor} ref={editorContainerRef}>
         <ShortcutsInfoBox />
         <EditorContent editor={editor} />
-
-        <InlineChatbot
-          ref={chatbotRef}
-          isVisible={chatbotVisible}
-          position={chatbotPosition}
-          selectedText={selectedText}
-          onClose={resetChatbotState}
-          onSuggest={handleSuggestion}
-        />
-
-        {suggestionToolbarVisible && (
-          <SuggestionToolbar
-            onAccept={handleAcceptSuggestion}
-            onReject={handleRejectSuggestion}
-            position={suggestionToolbarPosition}
-            intent={suggestionIntent}
-          />
-        )}
       </div>
 
       <SaveModal

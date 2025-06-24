@@ -1,7 +1,9 @@
 import { useCallback, RefObject } from "react";
 import { Position } from "@/types/editor";
 
-export const usePositionCalculation = (editorContainerRef: RefObject<HTMLDivElement | null>) => {
+export const usePositionCalculation = (
+  editorContainerRef: RefObject<HTMLDivElement | null>,
+) => {
   const calculatePosition = useCallback(
     (rect: DOMRect): Position => {
       const editorRect = editorContainerRef.current?.getBoundingClientRect();
@@ -16,4 +18,4 @@ export const usePositionCalculation = (editorContainerRef: RefObject<HTMLDivElem
   );
 
   return { calculatePosition };
-}; 
+};

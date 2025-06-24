@@ -1,20 +1,22 @@
 .toolbar {
-  position: absolute;
+  position: static;
+  width: auto;
   z-index: 1000;
   display: flex;
   gap: 0.5rem;
-  background-color: #2c2c2c;
-  padding: 0.375rem;
+  background-color: transparent;
+  padding: 0;
   border-radius: 6px;
-  border: 1px solid #444;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  transform: translateX(-50%);
-  animation: fadeIn 0.15s ease-out;
+  border: none;
+  box-shadow: none;
+  pointer-events: auto;
+  min-width: 120px;
+  margin-bottom: 0;
 }
 
 .button {
   padding: 0.375rem 0.75rem;
-  border: none;
+  border: 1px solid #444;
   border-radius: 4px;
   font-size: 0.8125rem;
   font-weight: 500;
@@ -23,10 +25,27 @@
     background-color 0.2s,
     transform 0.1s;
   color: white;
+  flex: 1;
+  min-width: 50px;
 }
 
 .button:hover {
   transform: translateY(-1px);
+}
+
+.button:active {
+  transform: translateY(0);
+}
+
+.button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.button:disabled:hover {
+  transform: none;
+  background-color: inherit; /* Don't change background on hover when disabled */
 }
 
 .accept {
@@ -38,6 +57,10 @@
   background-color: #3a8f50;
 }
 
+.accept:disabled:hover {
+  background-color: #2a723e;
+}
+
 .reject {
   background-color: #8c2a2a;
   border: 1px solid #a83b3b;
@@ -45,6 +68,10 @@
 
 .reject:hover {
   background-color: #a83b3b;
+}
+
+.reject:disabled:hover {
+  background-color: #8c2a2a;
 }
 
 @keyframes fadeIn {

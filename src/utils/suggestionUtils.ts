@@ -73,21 +73,67 @@ export const applyMarkdownFormatting = (
     console.log("🔧 Using plain text directly:", content);
   }
 
-  // Apply the content based on intent
+  // Helper to insert suggestion with SuggestionMark
+  const insertSuggestion = (pos: number) => {
+    if (content.trim().startsWith("<") || content.includes("<p>")) {
+      // Insert as HTML and then mark it
+      editor
+        .chain()
+        .focus()
+        .setTextSelection({ from: pos, to: pos })
+        .insertContent(content)
+        .run();
+
+      // Try to mark the newly inserted content with SuggestionMark
+      setTimeout(() => {
+        const { suggestionRange } = findSuggestionRanges(editor);
+        if (suggestionRange.from === -1) {
+          // If no suggestion mark found, try to mark the content that was just inserted
+          const currentDocSize = editor.state.doc.content.size;
+          const estimatedStart = Math.max(
+            0,
+            currentDocSize - content.length - 1,
+          );
+          editor
+            .chain()
+            .focus()
+            .setTextSelection({
+              from: estimatedStart,
+              to: estimatedStart + content.length,
+            })
+            .setMark(SuggestionMark.name)
+            .run();
+        }
+      }, 10);
+    } else {
+      editor
+        .chain()
+        .focus()
+        .setTextSelection({ from: pos, to: pos })
+        .insertContent({
+          type: "text",
+          text: content,
+          marks: [{ type: SuggestionMark.name }],
+        })
+        .run();
+    }
+  };
+
   if (intent === "replace") {
+    // Mark the original text if not already
     editor
       .chain()
       .focus()
-      .deleteRange({ from: originalFrom, to: originalTo })
-      .insertContent(content)
+      .setTextSelection({ from: originalFrom, to: originalTo })
+      .setMark(OriginalTextMark.name)
       .run();
-  } else {
-    const insertPos = intent === "add_before" ? originalFrom : originalTo;
-    editor
-      .chain()
-      .focus()
-      .setTextSelection({ from: insertPos, to: insertPos })
-      .insertContent(content)
-      .run();
+    // Insert suggestion after the original
+    insertSuggestion(originalTo);
+  } else if (intent === "add_after") {
+    // Insert suggestion after the original
+    insertSuggestion(originalTo);
+  } else if (intent === "add_before") {
+    // Insert suggestion before the original
+    insertSuggestion(originalFrom);
   }
-}; 
+};

@@ -199,7 +199,7 @@
   border-bottom-left-radius: 8px;
   border-bottom-right-radius: 8px;
   border: 1px solid #dadce0;
-  border-top: none;
+  border-top: none; /* Connect with AI assistant row above */
   box-shadow:
     0 1px 3px rgba(0, 0, 0, 0.1),
     0 1px 2px rgba(0, 0, 0, 0.2);
@@ -218,7 +218,11 @@
 
 .tiptap span[data-suggestion] {
   color: #000;
-  background-color: transparent;
+  background-color: rgba(0, 0, 0, 0.02);
+  border: none;
+  border-radius: 3px;
+  padding: 0 2px;
+  margin-bottom: 2.5rem;
 }
 
 /* Editor focus styles */
@@ -275,5 +279,33 @@
   width: 100%;
   max-width: 12in; /* Allow toolbar to be wider */
   align-items: center; /* Center the content */
-  gap: 16px; /* Add spacing between toolbar and editor */
+  gap: 0; /* Remove gap since we have connected elements */
+}
+
+/* AI Assistant Row - Always visible below FormattingToolbar */
+.aiAssistantRow {
+  display: flex;
+  width: 100%;
+  max-width: 8.5in;
+  background: #2c2c2c;
+  border: 1px solid #444;
+  border-top: none; /* Connect with FormattingToolbar */
+  gap: 1rem;
+  padding: 0.5rem;
+  align-items: center;
+  justify-content: space-between;
+  z-index: 99;
+}
+
+.inlineChatbotContainer {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  min-width: 0; /* Allow flex shrinking */
+}
+
+.suggestionToolbarContainer {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
 }

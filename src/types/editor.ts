@@ -12,4 +12,4 @@ export type SuggestionIntent = "replace" | "add_after" | "add_before";
 export type Position = {
   x: number;
   y: number;
-} | null; 
+} | null;

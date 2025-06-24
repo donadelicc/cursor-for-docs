@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Written",
+  title: "Cursor for docs",
   description: "Become a better researcher with written",
 };
 

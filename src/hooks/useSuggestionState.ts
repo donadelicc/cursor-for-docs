@@ -1,122 +1,104 @@
 import { useState, useCallback } from "react";
 import { useEditor } from "@tiptap/react";
 import { OriginalContent, SuggestionIntent, Position } from "@/types/editor";
-import { findSuggestionRanges, applyMarkdownFormatting } from "@/utils/suggestionUtils";
+import {
+  findSuggestionRanges,
+  applyMarkdownFormatting,
+} from "@/utils/suggestionUtils";
 import { SuggestionMark, OriginalTextMark } from "@/utils/suggestion-mark";
 
-export const useSuggestionState = (
-  editor: ReturnType<typeof useEditor>,
-  calculatePosition: (rect: DOMRect) => Position,
-) => {
-  const [suggestionToolbarVisible, setSuggestionToolbarVisible] = useState(false);
-  const [suggestionToolbarPosition, setSuggestionToolbarPosition] = useState<Position>(null);
-  const [originalContent, setOriginalContent] = useState<OriginalContent | null>(null);
-  const [suggestionIntent, setSuggestionIntent] = useState<SuggestionIntent>("replace");
+export const useSuggestionState = (editor: ReturnType<typeof useEditor>) => {
+  const [suggestionToolbarVisible, setSuggestionToolbarVisible] =
+    useState(false);
+  const [isSuggestionActive, setIsSuggestionActive] = useState(false);
+  const [suggestionToolbarPosition, setSuggestionToolbarPosition] =
+    useState<Position>(null);
+  const [originalContent, setOriginalContent] =
+    useState<OriginalContent | null>(null);
+  const [suggestionIntent, setSuggestionIntent] =
+    useState<SuggestionIntent>("replace");
 
   const resetSuggestionState = useCallback(() => {
     setSuggestionToolbarVisible(false);
     setSuggestionToolbarPosition(null);
     setOriginalContent(null);
     setSuggestionIntent("replace");
+    setIsSuggestionActive(false);
   }, []);
 
-  const handleSuggestion = useCallback((suggestion: string, intent: SuggestionIntent) => {
-    if (!editor) return;
+  const handleSuggestion = useCallback(
+    (suggestion: string, intent: SuggestionIntent) => {
+      if (!editor) return;
 
-    const { from, to, empty } = editor.state.selection;
+      const { from, to, empty } = editor.state.selection;
 
-    let actualFrom: number;
-    let actualTo: number;
-    let originalText: string;
+      let actualFrom: number;
+      let actualTo: number;
+      let originalText: string;
 
-    if (empty) {
-      // No selection - use entire document
-      actualFrom = 0;
-      actualTo = editor.state.doc.content.size - 1;
-      originalText = editor.state.doc.textContent;
-    } else {
-      // Has selection - use selected range
-      actualFrom = from;
-      actualTo = to;
-      originalText = editor.state.doc.textBetween(from, to);
-    }
-
-    // Save the original content and intent
-    setOriginalContent({ text: originalText, from: actualFrom, to: actualTo });
-    setSuggestionIntent(intent);
-
-    // Mark the original text as "to be replaced" (gray styling)
-    editor
-      .chain()
-      .focus()
-      .setTextSelection({ from: actualFrom, to: actualTo })
-      .setMark(OriginalTextMark.name)
-      .run();
-
-    // Debug logging
-    console.log("🔧 Markdown Conversion Debug:", {
-      originalSuggestion: suggestion,
-      trimmedSuggestion: suggestion.trim(),
-      intent: intent,
-    });
-
-    // Parse markdown and apply formatting directly using TipTap commands
-    applyMarkdownFormatting(
-      editor,
-      suggestion.trim(),
-      actualFrom,
-      actualTo,
-      intent,
-    );
-
-    // Find and mark the suggestion text by searching for it in the document
-    setTimeout(() => {
-      const { suggestionRange } = findSuggestionRanges(editor);
-      if (suggestionRange.from !== -1) {
-        editor
-          .chain()
-          .focus()
-          .setTextSelection({
-            from: suggestionRange.from,
-            to: suggestionRange.to,
-          })
-          .setMark(SuggestionMark.name)
-          .run();
+      if (empty) {
+        // No selection - use entire document
+        actualFrom = 0;
+        actualTo = editor.state.doc.content.size - 1;
+        originalText = editor.state.doc.textContent;
       } else {
-        // Fallback: mark the text that was just inserted
-        const currentDocSize = editor.state.doc.content.size;
-        const suggestionText = suggestion.trim();
-        const estimatedStart = currentDocSize - suggestionText.length - 1;
-        if (estimatedStart >= 0) {
-          editor
-            .chain()
-            .focus()
-            .setTextSelection({
-              from: estimatedStart,
-              to: estimatedStart + suggestionText.length,
-            })
-            .setMark(SuggestionMark.name)
-            .run();
-        }
+        // Has selection - use selected range
+        actualFrom = from;
+        actualTo = to;
+        originalText = editor.state.doc.textBetween(from, to);
       }
-    }, 10);
 
-    // Calculate position for suggestion toolbar
-    setTimeout(() => {
-      const selection = window.getSelection();
-      if (selection && selection.rangeCount > 0) {
-        const range = selection.getRangeAt(0);
-        const rect = range.getBoundingClientRect();
-        const position = calculatePosition(rect);
+      // Save the original content and intent
+      setOriginalContent({
+        text: originalText,
+        from: actualFrom,
+        to: actualTo,
+      });
+      setSuggestionIntent(intent);
+      setIsSuggestionActive(true);
 
-        if (position) {
-          setSuggestionToolbarPosition(position);
-        }
-      }
-    }, 50);
+      // Mark the original text as "to be replaced" (gray styling)
+      editor
+        .chain()
+        .focus()
+        .setTextSelection({ from: actualFrom, to: actualTo })
+        .setMark(OriginalTextMark.name)
+        .run();
 
-    setSuggestionToolbarVisible(true);
-  }, [editor, calculatePosition]);
+      // Debug logging
+      console.log("🔧 Markdown Conversion Debug:", {
+        originalSuggestion: suggestion,
+        trimmedSuggestion: suggestion.trim(),
+        intent: intent,
+      });
+
+      // Parse markdown and apply formatting directly using TipTap commands
+      applyMarkdownFormatting(
+        editor,
+        suggestion.trim(),
+        actualFrom,
+        actualTo,
+        intent,
+      );
+
+      // After applying the suggestion, set the toolbar to visible.
+      // The position is no longer needed as it's statically placed.
+      setTimeout(() => {
+        setSuggestionToolbarVisible(true);
+      }, 100); // A small delay to ensure the editor state has updated
+
+      // Debug logging
+      console.log("🎯 Suggestion applied, showing toolbar:", {
+        suggestion:
+          suggestion.substring(0, 50) + (suggestion.length > 50 ? "..." : ""),
+        intent,
+        toolbarVisible: true,
+        originalFrom: actualFrom,
+        originalTo: actualTo,
+      });
+    },
+    [editor],
+  );
 
   const handleAcceptSuggestion = useCallback(() => {
     if (!editor || !originalContent) return;
@@ -129,21 +111,25 @@ export const useSuggestionState = (
       return;
     }
 
-    // Get the suggestion text (clean, without any markup)
-    const suggestionText = editor.state.doc.textBetween(
-      suggestionRange.from,
-      suggestionRange.to,
-    );
-
     // Handle different intents
     if (suggestionIntent === "replace") {
       // Replace: Remove original text and keep only the suggestion
-      const docEndPos = editor.state.doc.content.size - 1;
+      // First, remove the suggestion mark from the suggestion text
       editor
         .chain()
         .focus()
-        .deleteRange({ from: originalRange.from, to: docEndPos })
-        .insertContent(suggestionText)
+        .setTextSelection({
+          from: suggestionRange.from,
+          to: suggestionRange.to,
+        })
+        .unsetMark(SuggestionMark.name)
+        .run();
+
+      // Then delete the original text (which is marked with OriginalTextMark)
+      editor
+        .chain()
+        .focus()
+        .deleteRange({ from: originalRange.from, to: originalRange.to })
         .run();
     } else if (suggestionIntent === "add_after") {
       // Add after: Keep original text, remove marks, and keep suggestion after it
@@ -206,9 +192,10 @@ export const useSuggestionState = (
     suggestionToolbarPosition,
     originalContent,
     suggestionIntent,
+    isSuggestionActive,
     resetSuggestionState,
     handleSuggestion,
     handleAcceptSuggestion,
     handleRejectSuggestion,
   };
-}; 
+};

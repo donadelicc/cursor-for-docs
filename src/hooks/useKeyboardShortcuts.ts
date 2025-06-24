@@ -47,7 +47,8 @@ export const useKeyboardShortcuts = ({
           }
         } else {
           // No selection - position chatbot in center of editor
-          const editorRect = editorContainerRef.current?.getBoundingClientRect();
+          const editorRect =
+            editorContainerRef.current?.getBoundingClientRect();
           if (editorRect) {
             const position = {
               x: editorRect.width / 2,
@@ -91,4 +92,4 @@ export const useKeyboardShortcuts = ({
     handleRejectSuggestion,
     resetChatbotState,
   ]);
-}; 
+};

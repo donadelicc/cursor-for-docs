@@ -4,37 +4,47 @@ import styles from "./SuggestionToolbar.module.css";
 interface SuggestionToolbarProps {
   onAccept: () => void;
   onReject: () => void;
-  position: { x: number; y: number } | null;
   intent?: "replace" | "add_after" | "add_before";
+  hasActiveSuggestion?: boolean;
 }
 
 const SuggestionToolbar: React.FC<SuggestionToolbarProps> = ({
   onAccept,
   onReject,
-  position,
+  intent,
+  hasActiveSuggestion = false,
 }) => {
-  if (!position) {
-    return null;
-  }
+  const handleAccept = () => {
+    try {
+      onAccept();
+    } catch (error) {
+      console.error("Error accepting suggestion:", error);
+    }
+  };
+
+  const handleReject = () => {
+    try {
+      onReject();
+    } catch (error) {
+      console.error("Error rejecting suggestion:", error);
+    }
+  };
 
   return (
-    <div
-      className={styles.toolbar}
-      style={{
-        left: position.x,
-        top: position.y,
-      }}
-      aria-live="polite"
-    >
+    <div className={styles.toolbar} aria-live="polite">
       <button
-        onClick={onAccept}
+        onClick={handleAccept}
         className={`${styles.button} ${styles.accept}`}
+        title={`Accept suggestion (${intent || "replace"})`}
+        disabled={!hasActiveSuggestion}
       >
         Accept
       </button>
       <button
-        onClick={onReject}
+        onClick={handleReject}
         className={`${styles.button} ${styles.reject}`}
+        title="Reject suggestion"
+        disabled={!hasActiveSuggestion}
       >
         Reject
       </button>

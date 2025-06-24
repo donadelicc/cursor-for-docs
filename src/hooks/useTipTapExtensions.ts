@@ -31,4 +31,4 @@ export const useTipTapExtensions = () => {
   ];
 
   return extensions;
-}; 
+};

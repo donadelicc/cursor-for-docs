@@ -1,30 +1,25 @@
 import { useCallback } from "react";
 import { useEditor } from "@tiptap/react";
-import { htmlToMarkdown } from "@/utils/markdownConverter";
 import { findSuggestionRanges } from "@/utils/suggestionUtils";
-import { OriginalTextMark } from "@/utils/suggestion-mark";
+import { OriginalContent, Position } from "@/types/editor";
 
 interface UseEditorUtilsProps {
   editor: ReturnType<typeof useEditor>;
-  chatbotVisible: boolean;
   suggestionToolbarVisible: boolean;
-  originalContent: any;
-  calculatePosition: (rect: DOMRect) => any;
+  originalContent: OriginalContent | null;
+  calculatePosition: (rect: DOMRect) => Position;
   resetSuggestionState: () => void;
-  resetChatbotState: () => void;
   setSuggestionToolbarVisible: (visible: boolean) => void;
-  setSuggestionToolbarPosition: (position: any) => void;
-  setOriginalContent: (content: any) => void;
+  setSuggestionToolbarPosition: (position: Position) => void;
+  setOriginalContent: (content: OriginalContent | null) => void;
 }
 
 export const useEditorUtils = ({
   editor,
-  chatbotVisible,
   suggestionToolbarVisible,
   originalContent,
   calculatePosition,
   resetSuggestionState,
-  resetChatbotState,
   setSuggestionToolbarVisible,
   setSuggestionToolbarPosition,
   setOriginalContent,
@@ -33,9 +28,6 @@ export const useEditorUtils = ({
   const syncStateWithDocument = useCallback(() => {
     if (!editor) return;
 
-    // Don't sync if chatbot is visible and user might be typing
-    if (chatbotVisible) return;
-
     const { originalRange, suggestionRange } = findSuggestionRanges(editor);
     const hasOriginalMark = originalRange.from !== -1;
     const hasSuggestionMark = suggestionRange.from !== -1;
@@ -43,10 +35,11 @@ export const useEditorUtils = ({
     if (hasOriginalMark && hasSuggestionMark) {
       // Both marks exist - we're in suggestion state
       if (!suggestionToolbarVisible) {
+        console.log("🎯 Showing suggestion toolbar");
         setSuggestionToolbarVisible(true);
 
-        // Calculate toolbar position
-        setTimeout(() => {
+        // Calculate toolbar position with multiple attempts for reliability
+        const calculateToolbarPosition = (attempts = 0) => {
           const selection = window.getSelection();
           if (selection && selection.rangeCount > 0) {
             const range = selection.getRangeAt(0);
@@ -55,9 +48,19 @@ export const useEditorUtils = ({
 
             if (position) {
               setSuggestionToolbarPosition(position);
+              return true;
             }
           }
-        }, 50);
+
+          // Retry if position calculation failed
+          if (attempts < 3) {
+            setTimeout(() => calculateToolbarPosition(attempts + 1), 50);
+          }
+          return false;
+        };
+
+        // Start position calculation
+        setTimeout(() => calculateToolbarPosition(), 10);
 
         // Restore original content info if we don't have it
         if (!originalContent) {
@@ -72,83 +75,41 @@ export const useEditorUtils = ({
           });
         }
       }
-    } else if (hasOriginalMark && !hasSuggestionMark) {
-      // Only original mark exists - this is an intermediate state, remove the mark
-      editor
-        .chain()
-        .focus()
-        .setTextSelection({ from: originalRange.from, to: originalRange.to })
-        .unsetMark(OriginalTextMark.name)
-        .run();
-
-      // Reset component state
-      resetSuggestionState();
-    } else {
-      // No marks or incomplete marks - reset state
+    } else if (!hasOriginalMark && !hasSuggestionMark) {
+      // No marks exist - we're not in suggestion state
       if (suggestionToolbarVisible) {
+        console.log("🎯 Hiding suggestion toolbar");
         resetSuggestionState();
-      }
-
-      // Close chatbot if it's open and we're back to clean state
-      if (chatbotVisible) {
-        resetChatbotState();
       }
     }
   }, [
     editor,
-    chatbotVisible,
     suggestionToolbarVisible,
     originalContent,
     calculatePosition,
-    resetSuggestionState,
-    resetChatbotState,
     setSuggestionToolbarVisible,
     setSuggestionToolbarPosition,
     setOriginalContent,
+    resetSuggestionState,
   ]);
 
-  // Get selected text as markdown for AI processing
+  // Function to get selected text for AI processing
   const getSelectedText = useCallback(() => {
     if (!editor) return "";
 
     const { from, to, empty } = editor.state.selection;
 
     if (empty) {
-      // No selection - use entire document content
-      try {
-        const html = editor.getHTML();
-        return htmlToMarkdown(html) || editor.state.doc.textContent;
-      } catch {
-        console.warn("Failed to extract document HTML, using plain text");
-        return editor.state.doc.textContent;
-      }
+      // No selection - return entire document content
+      return editor.state.doc.textContent;
+    } else {
+      // Has selection - return selected text
+      return editor.state.doc.textBetween(from, to);
     }
-
-    // Has selection - use selected content
-    try {
-      const selection = window.getSelection();
-      if (selection && selection.rangeCount > 0) {
-        const range = selection.getRangeAt(0);
-        const contents = range.cloneContents();
-        const div = document.createElement("div");
-        div.appendChild(contents);
-        return (
-          htmlToMarkdown(div.innerHTML) ||
-          editor.state.doc.textBetween(from, to)
-        );
-      }
-    } catch {
-      console.warn(
-        "Failed to extract HTML selection, falling back to plain text",
-      );
-    }
-
-    // Fallback to plain text
-    return editor.state.doc.textBetween(from, to);
   }, [editor]);
 
   return {
     syncStateWithDocument,
     getSelectedText,
   };
-}; 
+};
