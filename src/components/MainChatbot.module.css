@@ -98,34 +98,18 @@
 
 .messageContent {
   display: flex;
-  gap: 0.75rem;
   align-items: flex-start;
 }
 
-.messageAvatar {
-  flex-shrink: 0;
-  width: 2rem;
-  height: 2rem;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-top: 0.125rem;
-}
-
-.userMessage .messageAvatar {
+.userMessage .messageContent {
   background-color: #f3f4f6;
-  color: #6b7280;
+  border-radius: 0.75rem;
+  padding: 0.75rem 1rem;
+  margin: 0 0.5rem;
 }
 
-.assistantMessage .messageAvatar {
-  background-color: #000000;
-  color: #ffffff;
-}
-
-.avatarIcon {
-  width: 1.25rem;
-  height: 1.25rem;
+.assistantMessage .messageContent {
+  padding: 0.25rem 0.5rem;
 }
 
 .messageText {
@@ -139,6 +123,85 @@
   color: #1f2937;
   word-wrap: break-word;
   white-space: pre-wrap;
+}
+
+.userMessage .messageBody {
+  color: #000000;
+  font-weight: 500;
+}
+
+/* Markdown styling for AI responses */
+.messageBody h1,
+.messageBody h2,
+.messageBody h3,
+.messageBody h4,
+.messageBody h5,
+.messageBody h6 {
+  margin: 0.75rem 0 0.5rem 0;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.messageBody h1 {
+  font-size: 1.25rem;
+}
+
+.messageBody h2 {
+  font-size: 1.125rem;
+}
+
+.messageBody h3 {
+  font-size: 1rem;
+}
+
+.messageBody h4,
+.messageBody h5,
+.messageBody h6 {
+  font-size: 0.875rem;
+}
+
+.messageBody p {
+  margin: 0.5rem 0;
+}
+
+.messageBody ul,
+.messageBody ol {
+  margin: 0.5rem 0;
+  padding-left: 1.5rem;
+}
+
+.messageBody li {
+  margin: 0.25rem 0;
+}
+
+.messageBody strong {
+  font-weight: 600;
+  color: #111827;
+}
+
+.messageBody em {
+  font-style: italic;
+}
+
+.messageBody code {
+  background-color: #f3f4f6;
+  padding: 0.125rem 0.25rem;
+  border-radius: 0.25rem;
+  font-family: "Courier New", monospace;
+  font-size: 0.8rem;
+}
+
+.messageBody pre {
+  background-color: #f3f4f6;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  overflow-x: auto;
+  margin: 0.5rem 0;
+}
+
+.messageBody pre code {
+  background-color: transparent;
+  padding: 0;
 }
 
 .messageTime {

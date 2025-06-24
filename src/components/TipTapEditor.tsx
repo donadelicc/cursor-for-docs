@@ -19,7 +19,11 @@ import { usePositionCalculation } from "@/hooks/usePositionCalculation";
 import { useSuggestionState } from "@/hooks/useSuggestionState";
 import { useEditorUtils } from "@/hooks/useEditorUtils";
 
-export const TiptapEditor = () => {
+interface TiptapEditorProps {
+  onContentChange?: (content: string) => void;
+}
+
+export const TiptapEditor = ({ onContentChange }: TiptapEditorProps) => {
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [hasPendingSuggestion, setHasPendingSuggestion] = useState(false);
 
@@ -37,6 +41,13 @@ export const TiptapEditor = () => {
       attributes: {
         class: styles.tiptap,
       },
+    },
+    onCreate: ({ editor }) => {
+      // Initialize document content when editor is created
+      if (onContentChange) {
+        const content = editor.state.doc.textContent;
+        onContentChange(content);
+      }
     },
   });
 
@@ -91,9 +102,15 @@ export const TiptapEditor = () => {
     if (editor) {
       editor.on("update", () => {
         syncStateWithDocument();
+
+        // Update document content for main chatbot
+        if (onContentChange) {
+          const content = editor.state.doc.textContent;
+          onContentChange(content);
+        }
       });
     }
-  }, [editor, syncStateWithDocument]);
+  }, [editor, syncStateWithDocument, onContentChange]);
 
   // Keyboard shortcut for Ctrl+K to focus chatbot input
   useEffect(() => {
@@ -144,6 +161,14 @@ export const TiptapEditor = () => {
     try {
       const result = await importDocxFile(file);
       editor.commands.setContent(result.html);
+
+      // Update document content after upload
+      if (onContentChange) {
+        setTimeout(() => {
+          const content = editor.state.doc.textContent;
+          onContentChange(content);
+        }, 100);
+      }
 
       if (result.messages.length > 0) {
         console.log("Import messages:", result.messages);
@@ -199,6 +224,11 @@ export const TiptapEditor = () => {
       />
     </div>
   );
+};
+
+// Export a component that includes the document content context
+export const TiptapEditorWithChatbot = () => {
+  return <TiptapEditor />;
 };
 
 export default TiptapEditor;

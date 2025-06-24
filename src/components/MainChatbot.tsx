@@ -1,26 +1,25 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useRef, useEffect } from "react";
+import ReactMarkdown from "react-markdown";
 import styles from "./MainChatbot.module.css";
+import { useChatbotState } from "@/hooks/useChatbotState";
 
-interface Message {
-  id: string;
-  content: string;
-  role: "user" | "assistant";
-  timestamp: Date;
+interface MainChatbotProps {
+  documentContent: string;
 }
 
-const MainChatbot = () => {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: "welcome",
-      content: "Hello! I'm your AI assistant. How can I help you today?",
-      role: "assistant",
-      timestamp: new Date(),
-    },
-  ]);
-  const [inputValue, setInputValue] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+const MainChatbot = ({ documentContent }: MainChatbotProps) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  const {
+    messages,
+    inputValue,
+    setInputValue,
+    isLoading,
+    isActive,
+    sendMessage,
+    clearChat,
+  } = useChatbotState({ documentContent });
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -30,33 +29,18 @@ const MainChatbot = () => {
     scrollToBottom();
   }, [messages]);
 
+  // Focus input when chatbot becomes active
+  useEffect(() => {
+    if (isActive && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [isActive]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputValue.trim() || isLoading) return;
 
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      content: inputValue.trim(),
-      role: "user",
-      timestamp: new Date(),
-    };
-
-    setMessages((prev) => [...prev, userMessage]);
-    setInputValue("");
-    setIsLoading(true);
-
-    // Simulate AI response (replace with actual API call)
-    setTimeout(() => {
-      const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        content:
-          "I understand your request. This is a simulated response. In a real implementation, this would connect to an AI service.",
-        role: "assistant",
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, assistantMessage]);
-      setIsLoading(false);
-    }, 1000);
+    await sendMessage(inputValue);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -76,18 +60,13 @@ const MainChatbot = () => {
       <div className={styles.header}>
         <div className={styles.headerContent}>
           <div className={styles.titleSection}>
-            <div className={styles.iconContainer}>
-              <svg
-                className={styles.icon}
-                fill="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
-              </svg>
-            </div>
-            <h2 className={styles.title}>AI Assistant</h2>
+            <h2 className={styles.title}>Document Research Assistant</h2>
           </div>
-          <button className={styles.newChatButton} title="New Chat">
+          <button
+            className={styles.newChatButton}
+            title="New Chat"
+            onClick={clearChat}
+          >
             <svg
               className={styles.buttonIcon}
               fill="none"
@@ -118,27 +97,14 @@ const MainChatbot = () => {
               }`}
             >
               <div className={styles.messageContent}>
-                <div className={styles.messageAvatar}>
-                  {message.role === "user" ? (
-                    <svg
-                      className={styles.avatarIcon}
-                      fill="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
-                    </svg>
-                  ) : (
-                    <svg
-                      className={styles.avatarIcon}
-                      fill="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
-                    </svg>
-                  )}
-                </div>
                 <div className={styles.messageText}>
-                  <div className={styles.messageBody}>{message.content}</div>
+                  <div className={styles.messageBody}>
+                    {message.role === "assistant" ? (
+                      <ReactMarkdown>{message.content}</ReactMarkdown>
+                    ) : (
+                      message.content
+                    )}
+                  </div>
                   <div className={styles.messageTime}>
                     {formatTime(message.timestamp)}
                   </div>
@@ -151,15 +117,6 @@ const MainChatbot = () => {
               className={`${styles.messageWrapper} ${styles.assistantMessage}`}
             >
               <div className={styles.messageContent}>
-                <div className={styles.messageAvatar}>
-                  <svg
-                    className={styles.avatarIcon}
-                    fill="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
-                  </svg>
-                </div>
                 <div className={styles.messageText}>
                   <div className={styles.loadingIndicator}>
                     <div className={styles.loadingDots}>
@@ -185,10 +142,11 @@ const MainChatbot = () => {
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Message AI Assistant..."
+              placeholder="Ask me anything about your document... (Ctrl+L to focus)"
               className={styles.textInput}
               rows={1}
               disabled={isLoading}
+              data-chatbot-input="true"
             />
             <button
               type="submit"
