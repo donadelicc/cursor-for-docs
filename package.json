@@ -29,6 +29,7 @@
     "dotenv": "^16.5.0",
     "draft-js": "^0.11.7",
     "file-saver": "^2.0.5",
+    "firebase": "^12.0.0",
     "juvo-demo-template": "file:",
     "mammoth": "^1.9.1",
     "next": "15.2.4",

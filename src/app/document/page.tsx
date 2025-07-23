@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { TiptapEditor } from "@/components/TipTapEditor";
 import EditorContainer from "@/components/EditorContainer";
+import AuthStatus from "@/components/AuthStatus";
 
 export default function DocumentPage() {
   const [documentContent, setDocumentContent] = useState("");
@@ -28,6 +29,9 @@ export default function DocumentPage() {
           />
         </Link>
       </div>
+
+      {/* Authentication Status Indicator */}
+      <AuthStatus />
 
       <EditorContainer documentContent={documentContent}>
         <TiptapEditor onContentChange={updateDocumentContent} />

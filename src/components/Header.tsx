@@ -1,4 +1,12 @@
+"use client";
+
+import { useAuth } from "@/contexts/AuthContext";
+import UserProfile from "./UserProfile";
+import LoginButton from "./LoginButton";
+
 export default function Header() {
+  const { currentUser } = useAuth();
+
   return (
     <header className="bg-white shadow-sm border-b border-gray-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -6,20 +14,11 @@ export default function Header() {
           <div className="flex items-center">
             <h1 className="text-2xl font-bold text-gray-900">JUVO Docs</h1>
           </div>
-          <nav className="hidden md:flex space-x-8">
-            <a
-              href="#features"
-              className="text-gray-500 hover:text-gray-900 transition-colors"
-            >
-              Features
-            </a>
-            <a
-              href="#about"
-              className="text-gray-500 hover:text-gray-900 transition-colors"
-            >
-              About
-            </a>
-          </nav>
+          <div className="flex items-center space-x-8">
+            <div className="relative z-20">
+              {currentUser ? <UserProfile /> : <LoginButton />}
+            </div>
+          </div>
         </div>
       </div>
     </header>
