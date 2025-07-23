@@ -288,8 +288,9 @@
   width: 100%;
   max-width: 8.5in;
   background: transparent;
-  border: none;
+  border: 1px solid #e5e7eb;
   border-top: none; /* Connect with FormattingToolbar */
+  border-bottom: none; /* Connect with editor content below */
   gap: 1rem;
   padding: 0.5rem;
   align-items: center;
