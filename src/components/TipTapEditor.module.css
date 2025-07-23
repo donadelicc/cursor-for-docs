@@ -282,6 +282,8 @@
   gap: 0; /* Remove gap since we have connected elements */
 }
 
+/* Removed toolbarWithSave styles - no longer needed */
+
 /* AI Assistant Row - Always visible below FormattingToolbar */
 .aiAssistantRow {
   display: flex;

@@ -8,6 +8,7 @@ import {
   onAuthStateChanged,
 } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase";
+import { createUserProfile } from "@/utils/firestore";
 
 interface AuthContextType {
   currentUser: User | null;
@@ -53,7 +54,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        // Create user profile in Firestore if it doesn't exist
+        try {
+          await createUserProfile(user);
+        } catch (error) {
+          console.error("Error creating user profile:", error);
+        }
+      }
       setCurrentUser(user);
       setLoading(false);
     });

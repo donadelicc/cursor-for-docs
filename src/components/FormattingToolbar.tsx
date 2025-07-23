@@ -2,13 +2,20 @@ import React, { ReactNode } from "react";
 import { Editor } from "@tiptap/react";
 import styles from "./FormattingToolbar.module.css";
 import Upload from "./Upload";
+import { FileMenu } from "./FileMenu";
+import { SaveFormat } from "./SaveButton";
 
 interface FormattingToolbarProps {
   editor: Editor | null;
-  onSave: () => void;
-  onUpload: (file: File) => Promise<void>;
+  onSave?: () => void;
+  onUpload?: (file: File) => Promise<void>;
   disabled?: boolean;
   children?: ReactNode;
+  // FileMenu props
+  onExportSave?: (format: SaveFormat, filename: string) => void;
+  documentContent?: string;
+  currentDocumentId?: string;
+  currentDocumentTitle?: string;
 }
 
 const FormattingToolbar: React.FC<FormattingToolbarProps> = ({
@@ -17,12 +24,33 @@ const FormattingToolbar: React.FC<FormattingToolbarProps> = ({
   onUpload,
   disabled = false,
   children,
+  onExportSave,
+  documentContent,
+  currentDocumentId,
+  currentDocumentTitle,
 }) => {
   if (!editor) return null;
 
   return (
     <div className={styles.toolbarContainer}>
       <div className={styles.toolbar}>
+        {/* File Menu - Only show if required props are provided */}
+        {onExportSave && documentContent !== undefined && (
+          <>
+            <div className={styles.toolbarSection}>
+              <FileMenu
+                onSave={onExportSave}
+                onUpload={onUpload || (() => Promise.resolve())}
+                documentContent={documentContent}
+                currentDocumentId={currentDocumentId}
+                currentDocumentTitle={currentDocumentTitle}
+                disabled={disabled}
+              />
+            </div>
+            <div className={styles.separator}></div>
+          </>
+        )}
+
         <div className={styles.toolbarSection}>
           {/* Undo/Redo */}
           <button
@@ -346,29 +374,33 @@ const FormattingToolbar: React.FC<FormattingToolbarProps> = ({
           </select>
         </div>
 
-        {/* Upload and Save Buttons - Right aligned */}
-        <div className={styles.saveSection}>
-          <Upload onUpload={onUpload} disabled={disabled} />
-          <button
-            className={styles.saveButton}
-            onClick={onSave}
-            disabled={disabled}
-            title="Save document"
-          >
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
-              <polyline points="17,21 17,13 7,13 7,21" />
-              <polyline points="7,3 7,8 15,8" />
-            </svg>
-          </button>
-        </div>
+        {/* Upload and Save Buttons - Right aligned - Only show if props provided */}
+        {(onUpload || onSave) && (
+          <div className={styles.saveSection}>
+            {onUpload && <Upload onUpload={onUpload} disabled={disabled} />}
+            {onSave && (
+              <button
+                className={styles.saveButton}
+                onClick={onSave}
+                disabled={disabled}
+                title="Save document"
+              >
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+                  <polyline points="17,21 17,13 7,13 7,21" />
+                  <polyline points="7,3 7,8 15,8" />
+                </svg>
+              </button>
+            )}
+          </div>
+        )}
       </div>
       {children && <div className={styles.toolbarChatbotRow}>{children}</div>}
     </div>

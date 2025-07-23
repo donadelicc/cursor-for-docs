@@ -2,6 +2,7 @@
 
 import React from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
 
 const UserProfile: React.FC = () => {
@@ -36,6 +37,14 @@ const UserProfile: React.FC = () => {
           </p>
         </div>
       </div>
+
+      <Link
+        href="/profile"
+        className="text-sm text-indigo-600 hover:text-indigo-800 px-3 py-2 rounded-md border border-indigo-200 hover:border-indigo-300 transition-colors font-medium"
+      >
+        My Documents
+      </Link>
+
       <button
         onClick={handleLogout}
         className="relative z-10 text-sm text-gray-500 px-4 py-2 rounded-md border-0 transition-colors cursor-pointer font-medium shadow-sm hover:shadow-md"

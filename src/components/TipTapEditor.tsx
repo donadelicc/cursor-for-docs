@@ -6,7 +6,8 @@ import React, { useState, useRef, useEffect } from "react";
 import FormattingToolbar from "./FormattingToolbar";
 import InlineChatbot, { InlineChatbotRef } from "./InlineChatbot";
 import SuggestionToolbar from "./SuggestionToolbar";
-import { SaveFormat, SaveModal } from "./SaveButton";
+import { SaveFormat } from "./SaveButton";
+import DocumentTitle from "./DocumentTitle";
 import { importDocxFile } from "../utils/docxImporter";
 import { downloadAsDocx } from "../utils/docxConverter";
 import { downloadAsPdf } from "../utils/pdfConverter";
@@ -21,11 +22,29 @@ import { useEditorUtils } from "@/hooks/useEditorUtils";
 
 interface TiptapEditorProps {
   onContentChange?: (content: string) => void;
+  onTitleChange?: (title: string) => void;
+  currentDocumentId?: string;
+  currentDocumentTitle?: string;
+  initialContent?: string;
 }
 
-export const TiptapEditor = ({ onContentChange }: TiptapEditorProps) => {
-  const [showSaveModal, setShowSaveModal] = useState(false);
+export const TiptapEditor = ({
+  onContentChange,
+  onTitleChange,
+  currentDocumentId,
+  currentDocumentTitle,
+  initialContent,
+}: TiptapEditorProps) => {
   const [hasPendingSuggestion, setHasPendingSuggestion] = useState(false);
+  const [documentContent, setDocumentContent] = useState("");
+  const [title, setTitle] = useState(currentDocumentTitle || "");
+
+  // Update title when currentDocumentTitle changes (when loading a document)
+  useEffect(() => {
+    if (currentDocumentTitle) {
+      setTitle(currentDocumentTitle);
+    }
+  }, [currentDocumentTitle]);
 
   const editorContainerRef = useRef<HTMLDivElement>(null);
   const chatbotRef = useRef<InlineChatbotRef>(null);
@@ -36,7 +55,7 @@ export const TiptapEditor = ({ onContentChange }: TiptapEditorProps) => {
 
   const editor = useEditor({
     extensions,
-    content: "",
+    content: initialContent || "",
     editorProps: {
       attributes: {
         class: styles.tiptap,
@@ -44,6 +63,17 @@ export const TiptapEditor = ({ onContentChange }: TiptapEditorProps) => {
     },
     onCreate: ({ editor }) => {
       // Initialize document content when editor is created
+      const htmlContent = editor.getHTML();
+      setDocumentContent(htmlContent);
+      if (onContentChange) {
+        const content = editor.state.doc.textContent;
+        onContentChange(content);
+      }
+    },
+    onUpdate: ({ editor }) => {
+      // Update document content when editor content changes
+      const htmlContent = editor.getHTML();
+      setDocumentContent(htmlContent);
       if (onContentChange) {
         const content = editor.state.doc.textContent;
         onContentChange(content);
@@ -151,8 +181,11 @@ export const TiptapEditor = ({ onContentChange }: TiptapEditorProps) => {
     }
   };
 
-  const handleSaveClick = () => {
-    setShowSaveModal(true);
+  const handleTitleChange = (newTitle: string) => {
+    setTitle(newTitle);
+    if (onTitleChange) {
+      onTitleChange(newTitle);
+    }
   };
 
   const handleUpload = async (file: File) => {
@@ -184,11 +217,22 @@ export const TiptapEditor = ({ onContentChange }: TiptapEditorProps) => {
 
   return (
     <div className={styles.editorWrapper}>
+      <DocumentTitle
+        title={title}
+        onTitleChange={handleTitleChange}
+        currentDocumentId={currentDocumentId}
+        documentContent={documentContent}
+        disabled={!editor}
+      />
+
       <FormattingToolbar
         editor={editor}
-        onSave={handleSaveClick}
-        onUpload={handleUpload}
         disabled={!editor}
+        onExportSave={handleSave}
+        onUpload={handleUpload}
+        documentContent={documentContent}
+        currentDocumentId={currentDocumentId}
+        currentDocumentTitle={title}
       />
 
       {/* Always visible AI assistant row */}
@@ -216,12 +260,6 @@ export const TiptapEditor = ({ onContentChange }: TiptapEditorProps) => {
 
         <EditorContent editor={editor} />
       </div>
-
-      <SaveModal
-        isOpen={showSaveModal}
-        onClose={() => setShowSaveModal(false)}
-        onSave={handleSave}
-      />
     </div>
   );
 };
