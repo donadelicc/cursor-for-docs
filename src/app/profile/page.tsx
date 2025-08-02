@@ -5,7 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { getUserDocuments, deleteDocument } from "@/utils/firestore";
 import { Document } from "@/types/editor";
 import Link from "next/link";
-import Image from "next/image";
+import Header from "@/components/Header";
 import ProtectedRoute from "@/components/ProtectedRoute";
 
 export default function ProfilePage() {
@@ -61,46 +61,7 @@ export default function ProfilePage() {
   return (
     <ProtectedRoute>
       <div className="min-h-screen bg-gray-50">
-        {/* Header */}
-        <div className="bg-white shadow-sm border-b">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between h-16">
-              <div className="flex items-center">
-                <Link href="/" className="flex items-center">
-                  <Image
-                    src="/logo2.png"
-                    alt="JUVO Docs Logo"
-                    width={32}
-                    height={32}
-                    className="mr-3"
-                  />
-                  <span className="text-xl font-semibold text-gray-900">
-                    JUVO Docs
-                  </span>
-                </Link>
-              </div>
-
-              <div className="flex items-center space-x-4">
-                <Link
-                  href="/document"
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
-                >
-                  New Document
-                </Link>
-
-                <div className="flex items-center">
-                  <Image
-                    src={currentUser?.photoURL || "/default-avatar.png"}
-                    alt={currentUser?.displayName || "User"}
-                    className="w-8 h-8 rounded-full"
-                    width={32}
-                    height={32}
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <Header />
 
         {/* Main Content */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

@@ -1,9 +1,9 @@
 "use client";
 
 import React from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
+import Avatar from "./Avatar";
 
 const UserProfile: React.FC = () => {
   const { currentUser, logout } = useAuth();
@@ -21,16 +21,13 @@ const UserProfile: React.FC = () => {
   return (
     <div className="flex items-center gap-4">
       <div className="flex items-center gap-3">
-        {currentUser.photoURL && (
-          <Image
-            src={currentUser.photoURL}
-            alt="Profile"
-            width={32}
-            height={32}
-            className="w-8 h-8 rounded-full"
-            unoptimized={true}
-          />
-        )}
+        <Avatar
+          src={currentUser.photoURL}
+          alt={currentUser.displayName || "Profile"}
+          size={32}
+          className="w-8 h-8"
+          fallbackText={currentUser.displayName || currentUser.email || "User"}
+        />
         <div className="text-sm">
           <p className="font-medium text-gray-900">
             {currentUser.displayName || "User"}

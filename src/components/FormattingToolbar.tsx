@@ -1,7 +1,6 @@
 import React, { ReactNode } from "react";
 import { Editor } from "@tiptap/react";
 import styles from "./FormattingToolbar.module.css";
-import Upload from "./Upload";
 import { FileMenu } from "./FileMenu";
 import { SaveFormat } from "./SaveButton";
 
@@ -374,31 +373,28 @@ const FormattingToolbar: React.FC<FormattingToolbarProps> = ({
           </select>
         </div>
 
-        {/* Upload and Save Buttons - Right aligned - Only show if props provided */}
-        {(onUpload || onSave) && (
+        {/* Save Button - Right aligned - Only show if prop provided */}
+        {onSave && (
           <div className={styles.saveSection}>
-            {onUpload && <Upload onUpload={onUpload} disabled={disabled} />}
-            {onSave && (
-              <button
-                className={styles.saveButton}
-                onClick={onSave}
-                disabled={disabled}
-                title="Save document"
+            <button
+              className={styles.saveButton}
+              onClick={onSave}
+              disabled={disabled}
+              title="Save document"
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
               >
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
-                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
-                  <polyline points="17,21 17,13 7,13 7,21" />
-                  <polyline points="7,3 7,8 15,8" />
-                </svg>
-              </button>
-            )}
+                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+                <polyline points="17,21 17,13 7,13 7,21" />
+                <polyline points="7,3 7,8 15,8" />
+              </svg>
+            </button>
           </div>
         )}
       </div>

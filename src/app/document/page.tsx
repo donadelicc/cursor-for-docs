@@ -7,8 +7,10 @@ import Image from "next/image";
 import { TiptapEditor } from "@/components/TipTapEditor";
 import EditorContainer from "@/components/EditorContainer";
 import AuthStatus from "@/components/AuthStatus";
+import AutoSaveIndicator from "@/components/AutoSaveIndicator";
 import { getDocument } from "@/utils/firestore";
 import { useAuth } from "@/contexts/AuthContext";
+import { useAutoSave } from "@/hooks/useAutoSave";
 
 export default function DocumentPage() {
   const [documentContent, setDocumentContent] = useState("");
@@ -31,6 +33,27 @@ export default function DocumentPage() {
   const updateDocumentTitle = (newTitle: string) => {
     setCurrentDocumentTitle(newTitle);
   };
+
+  // Auto-save functionality
+  const { autoSaveStatus, saveNow } = useAutoSave({
+    content: documentContent,
+    title: currentDocumentTitle,
+    documentId: currentDocumentId,
+    options: {
+      delay: 3000, // Auto-save 3 seconds after stopping typing
+      enabled: !!currentUser, // Only enable when user is logged in
+      onAutoSave: (savedDocumentId) => {
+        // Update current document ID if it's a new document
+        if (!currentDocumentId && savedDocumentId) {
+          setCurrentDocumentId(savedDocumentId);
+          // Update URL to include the document ID
+          const url = new URL(window.location.href);
+          url.searchParams.set("id", savedDocumentId);
+          window.history.replaceState({}, "", url.toString());
+        }
+      },
+    },
+  });
 
   const loadDocument = useCallback(
     async (documentId: string) => {
@@ -62,16 +85,29 @@ export default function DocumentPage() {
     }
   }, [searchParams, currentUser, loadDocument]);
 
+  // Keyboard shortcut for manual save (Ctrl+S)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.key === "s") {
+        e.preventDefault();
+        saveNow();
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [saveNow]);
+
   return (
     <div className="min-h-screen relative">
       {/* Logo positioned at very top left of page */}
       <div className="absolute top-4 left-4 z-50">
         <Link href="/" className="hover:opacity-80 transition-opacity">
           <Image
-            src="/logo2.png"
-            alt="JUVO Docs Logo"
-            width={40}
-            height={40}
+            src="/useful_sm.png"
+            alt="Useful logo"
+            width={100}
+            height={100}
             className="cursor-pointer"
           />
         </Link>
@@ -79,6 +115,11 @@ export default function DocumentPage() {
 
       {/* Authentication Status Indicator */}
       <AuthStatus />
+
+      {/* Auto-Save Status Indicator */}
+      <div className="absolute top-4 right-4 z-40">
+        <AutoSaveIndicator autoSaveStatus={autoSaveStatus} />
+      </div>
 
       {isLoading ? (
         <div className="flex items-center justify-center min-h-screen">
