@@ -42,7 +42,7 @@ export const useAutoSave = ({
   const contentRef = useRef(content);
   const titleRef = useRef(title);
   const documentIdRef = useRef(documentId);
-  const timeoutRef = useRef<NodeJS.Timeout>();
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Update refs when values change
   useEffect(() => {

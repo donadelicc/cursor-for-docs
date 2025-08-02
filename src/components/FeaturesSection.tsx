@@ -1,17 +1,8 @@
 "use client";
 
-import { useAuth } from "@/contexts/AuthContext";
+import Link from "next/link";
 
 export default function FeaturesSection() {
-  const { signInWithGoogle } = useAuth();
-
-  const handleLogin = async () => {
-    try {
-      await signInWithGoogle();
-    } catch (error) {
-      console.error("Login failed:", error);
-    }
-  };
   const features = [
     {
       title: "Inline AI Editing",
@@ -179,12 +170,12 @@ export default function FeaturesSection() {
               Stop wasting time navigating between different tools. Write
               seamlessly with your sources.{" "}
             </p>
-            <button
-              onClick={handleLogin}
+            <Link
+              href="/login"
               className="inline-flex items-center justify-center px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 text-lg"
             >
               Get Started
-            </button>
+            </Link>
           </div>
         </div>
       </div>
