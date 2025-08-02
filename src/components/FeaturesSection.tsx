@@ -143,10 +143,10 @@ export default function FeaturesSection() {
           <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
             Modern Paper Writing Editor
           </h2>
-                     <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-             &ldquo;Everything you need to write files, research, and interact with
-             your sources in one place with the power of AI&rdquo;.
-           </p>
+          <p className="text-lg text-gray-600 max-w-3xl mx-auto">
+            &ldquo;Everything you need to write files, research, and interact
+            with your sources in one place with the power of AI&rdquo;.
+          </p>
         </div>
 
         {/* Features Grid */}

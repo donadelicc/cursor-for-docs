@@ -13,8 +13,8 @@ export default function HeroSection() {
               Store and share files on the web
             </h1>
             <p className="mt-6 text-lg sm:text-xl text-gray-600 leading-relaxed max-w-2xl mx-auto lg:mx-0">
-              &ldquo;AI-powered text editor for faster paper writing integrated with
-              your sources&rdquo;.
+              &ldquo;AI-powered text editor for faster paper writing integrated
+              with your sources&rdquo;.
             </p>
             <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
               <Link
