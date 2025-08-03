@@ -33,7 +33,7 @@ export const TiptapEditor = ({
     onCreate: ({ editor }) => {
       // Initialize content change handler
       if (onContentChange) {
-        const content = editor.state.doc.textContent;
+        const content = editor.getHTML();
         onContentChange(content);
       }
 
@@ -53,7 +53,7 @@ export const TiptapEditor = ({
     onUpdate: ({ editor }) => {
       // Update content when editor content changes
       if (onContentChange) {
-        const content = editor.state.doc.textContent;
+        const content = editor.getHTML();
         onContentChange(content);
       }
     },

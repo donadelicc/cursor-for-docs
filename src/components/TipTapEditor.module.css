@@ -101,7 +101,7 @@
   height: 100%;
   overflow-y: visible;
   overflow-x: hidden;
-  padding: 1rem; /* Minimal padding for readability */
+  padding: 4rem 4rem; /* Google Docs-like generous margins */
   background: #fff;
   color: #000;
   min-height: 100%;
@@ -243,6 +243,10 @@
     max-width: 100%; /* Use full width on tablets */
     gap: 12px; /* Slightly less spacing on tablets */
   }
+
+  .tiptap {
+    padding: 2rem 2.5rem; /* Moderate margins on tablets */
+  }
 }
 
 @media (max-width: 768px) {
@@ -254,6 +258,10 @@
 
   .tiptapEditor {
     max-width: 100%;
+  }
+
+  .tiptap {
+    padding: 1.5rem 1rem; /* Smaller but still generous margins on mobile */
   }
 
   .buttonGroup {

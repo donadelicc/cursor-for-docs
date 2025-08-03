@@ -100,7 +100,7 @@ export default function DocumentPage() {
 
       // Update document content after upload
       setTimeout(() => {
-        const content = editor.state.doc.textContent;
+        const content = editor.getHTML();
         updateDocumentContent(content);
       }, 100);
 
