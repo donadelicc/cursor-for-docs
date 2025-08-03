@@ -16,7 +16,7 @@ const ResizableContainer: React.FC<ResizableContainerProps> = ({
 }) => {
   // State to track the width of each panel (as percentages)
   const [panelWidths, setPanelWidths] = useState<[number, number, number]>([
-    33.33, 33.33, 33.34,
+    25, 50, 25,
   ]);
   const [draggingDivider, setDraggingDivider] = useState<number | null>(null);
 
@@ -28,7 +28,7 @@ const ResizableContainer: React.FC<ResizableContainerProps> = ({
   }>({
     isDragging: null,
     startX: 0,
-    startWidths: [33.33, 33.33, 33.34],
+    startWidths: [25, 50, 25],
   });
 
   const handleMouseMove = useCallback(

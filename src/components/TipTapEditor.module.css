@@ -302,13 +302,6 @@
   z-index: 99;
 }
 
-.inlineChatbotContainer {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  min-width: 0; /* Allow flex shrinking */
-}
-
 .suggestionToolbarContainer {
   flex-shrink: 0;
   display: flex;

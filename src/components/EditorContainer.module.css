@@ -3,6 +3,7 @@
   height: 100%;
   background: #fff;
   position: relative;
+  border-top: 1px solid #e5e7eb;
 }
 
 .sourcesSection {
