@@ -2,9 +2,10 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
-import { TiptapEditor } from "@/components/TipTapEditor";
+import { Editor } from "@tiptap/react";
 import EditorContainer from "@/components/EditorContainer";
 import HeaderDocument from "@/components/HeaderDocument";
+import { SaveFormat } from "@/components/SaveButton";
 
 import { getDocument } from "@/utils/firestore";
 import { useAuth } from "@/contexts/AuthContext";
@@ -25,6 +26,7 @@ export default function DocumentPage() {
   const [initialDocumentContent, setInitialDocumentContent] =
     useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
+  const [editor, setEditor] = useState<Editor | null>(null);
   const searchParams = useSearchParams();
   const { currentUser } = useAuth();
 
@@ -40,6 +42,75 @@ export default function DocumentPage() {
   // Function to update document title from TipTapEditor
   const updateDocumentTitle = (newTitle: string) => {
     setCurrentDocumentTitle(newTitle);
+  };
+
+  // Function to handle file uploads from Sources component
+  const handleFileUpload = (files: File[]) => {
+    console.log("Files uploaded:", files);
+    // TODO: Implement file processing for PDF/DOCX sources
+    // This could include:
+    // - Extracting text content from PDFs/DOCX
+    // - Storing file references in Firestore
+    // - Making content available to the chatbot for RAG
+  };
+
+  // Function to handle editor instance ready
+  const handleEditorReady = (editorInstance: Editor) => {
+    setEditor(editorInstance);
+  };
+
+  // Functions for FormattingToolbar (moved from TipTapEditor)
+  const handleSave = async (format: SaveFormat, customFilename: string) => {
+    if (!editor) return;
+
+    const html = editor.getHTML();
+
+    try {
+      const { downloadAsDocx } = await import("@/utils/docxConverter");
+      const { downloadAsPdf } = await import("@/utils/pdfConverter");
+      const { htmlToMarkdown, downloadMarkdown } = await import(
+        "@/utils/markdownConverter"
+      );
+
+      if (format === "docx") {
+        const filename = `${customFilename}.docx`;
+        await downloadAsDocx(html, filename);
+      } else if (format === "pdf") {
+        const filename = `${customFilename}.pdf`;
+        await downloadAsPdf(html, filename);
+      } else {
+        // Default to markdown
+        const markdown = htmlToMarkdown(html);
+        const filename = `${customFilename}.md`;
+        downloadMarkdown(markdown, filename);
+      }
+    } catch (error) {
+      console.error("Error saving document:", error);
+      alert("Error saving document: " + (error as Error).message);
+    }
+  };
+
+  const handleUpload = async (file: File) => {
+    if (!editor) return;
+
+    try {
+      const { importDocxFile } = await import("@/utils/docxImporter");
+      const result = await importDocxFile(file);
+      editor.commands.setContent(result.html);
+
+      // Update document content after upload
+      setTimeout(() => {
+        const content = editor.state.doc.textContent;
+        updateDocumentContent(content);
+      }, 100);
+
+      if (result.messages.length > 0) {
+        console.log("Import messages:", result.messages);
+      }
+    } catch (error) {
+      console.error("Error importing DOCX:", error);
+      throw error;
+    }
   };
 
   // Auto-save functionality with near-instant saving
@@ -138,6 +209,9 @@ export default function DocumentPage() {
         documentContent={documentContent}
         autoSaveStatus={autoSaveStatus}
         disabled={!currentUser}
+        editor={editor}
+        onExportSave={handleSave}
+        onUpload={handleUpload}
       />
 
       {/* Main Content */}
@@ -147,14 +221,13 @@ export default function DocumentPage() {
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
           </div>
         ) : (
-          <EditorContainer documentContent={documentContent}>
-            <TiptapEditor
-              onContentChange={updateDocumentContent}
-              currentDocumentId={currentDocumentId}
-              currentDocumentTitle={currentDocumentTitle}
-              initialContent={initialDocumentContent}
-            />
-          </EditorContainer>
+          <EditorContainer
+            documentContent={documentContent}
+            onContentChange={updateDocumentContent}
+            initialContent={initialDocumentContent}
+            onFileUpload={handleFileUpload}
+            onEditorReady={handleEditorReady}
+          />
         )}
       </div>
     </div>

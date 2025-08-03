@@ -1,17 +1,11 @@
 import styles from "./TipTapEditor.module.css";
 
-import { useEditor, EditorContent } from "@tiptap/react";
+import { useEditor, EditorContent, type Editor } from "@tiptap/react";
 import React, { useState, useRef, useEffect } from "react";
 
-import FormattingToolbar from "./FormattingToolbar";
 import InlineChatbot, { InlineChatbotRef } from "./InlineChatbot";
 import SuggestionToolbar from "./SuggestionToolbar";
-import { SaveFormat } from "./SaveButton";
 
-import { importDocxFile } from "../utils/docxImporter";
-import { downloadAsDocx } from "../utils/docxConverter";
-import { downloadAsPdf } from "../utils/pdfConverter";
-import { htmlToMarkdown, downloadMarkdown } from "../utils/markdownConverter";
 import { SuggestionIntent } from "@/types/editor";
 
 // Custom hooks
@@ -23,19 +17,16 @@ import { isModifierPressed } from "@/utils/platformDetection";
 
 interface TiptapEditorProps {
   onContentChange?: (content: string) => void;
-  currentDocumentId?: string;
-  currentDocumentTitle?: string;
   initialContent?: string;
+  onEditorReady?: (editor: Editor) => void;
 }
 
 export const TiptapEditor = ({
   onContentChange,
-  currentDocumentId,
-  currentDocumentTitle,
   initialContent,
+  onEditorReady,
 }: TiptapEditorProps) => {
   const [hasPendingSuggestion, setHasPendingSuggestion] = useState(false);
-  const [documentContent, setDocumentContent] = useState("");
 
   const editorContainerRef = useRef<HTMLDivElement>(null);
   const chatbotRef = useRef<InlineChatbotRef>(null);
@@ -53,13 +44,14 @@ export const TiptapEditor = ({
       },
     },
     onCreate: ({ editor }) => {
-      // Initialize document content when editor is created
-      const htmlContent = editor.getHTML();
-      setDocumentContent(htmlContent);
+      // Initialize content change handler
       if (onContentChange) {
         const content = editor.state.doc.textContent;
         onContentChange(content);
       }
+
+      // Notify parent component that editor is ready
+      onEditorReady?.(editor);
 
       // Scroll to top of editor when created
       setTimeout(() => {
@@ -70,9 +62,7 @@ export const TiptapEditor = ({
       }, 100);
     },
     onUpdate: ({ editor }) => {
-      // Update document content when editor content changes
-      const htmlContent = editor.getHTML();
-      setDocumentContent(htmlContent);
+      // Update content when editor content changes
       if (onContentChange) {
         const content = editor.state.doc.textContent;
         onContentChange(content);
@@ -173,69 +163,11 @@ export const TiptapEditor = ({
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  const handleSave = async (format: SaveFormat, customFilename: string) => {
-    if (!editor) return;
-
-    const html = editor.getHTML();
-
-    try {
-      if (format === "docx") {
-        const filename = `${customFilename}.docx`;
-        await downloadAsDocx(html, filename);
-      } else if (format === "pdf") {
-        const filename = `${customFilename}.pdf`;
-        await downloadAsPdf(html, filename);
-      } else {
-        // Default to markdown
-        const markdown = htmlToMarkdown(html);
-        const filename = `${customFilename}.md`;
-        downloadMarkdown(markdown, filename);
-      }
-    } catch (error) {
-      console.error("Error saving document:", error);
-      alert("Error saving document: " + (error as Error).message);
-    }
-  };
-
-  const handleUpload = async (file: File) => {
-    if (!editor) return;
-
-    try {
-      const result = await importDocxFile(file);
-      editor.commands.setContent(result.html);
-
-      // Update document content after upload
-      if (onContentChange) {
-        setTimeout(() => {
-          const content = editor.state.doc.textContent;
-          onContentChange(content);
-        }, 100);
-      }
-
-      if (result.messages.length > 0) {
-        console.log("Import messages:", result.messages);
-      }
-    } catch (error) {
-      console.error("Error importing DOCX:", error);
-      throw error;
-    }
-  };
-
   // Get selected text for AI processing
   const selectedText = getSelectedText();
 
   return (
     <div className={styles.editorWrapper}>
-      <FormattingToolbar
-        editor={editor}
-        disabled={!editor}
-        onExportSave={handleSave}
-        onUpload={handleUpload}
-        documentContent={documentContent}
-        currentDocumentId={currentDocumentId}
-        currentDocumentTitle={currentDocumentTitle}
-      />
-
       {/* Always visible AI assistant row */}
       <div className={styles.aiAssistantRow}>
         <div className={styles.inlineChatbotContainer}>

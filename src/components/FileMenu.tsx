@@ -135,7 +135,7 @@ const SaveModal: React.FC<SaveModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[1200]">
       <div
         className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4"
         ref={modalRef}
@@ -363,7 +363,7 @@ export const FileMenu: React.FC<FileMenuProps> = ({
         </button>
 
         {isOpen && (
-          <div className="absolute top-full left-0 mt-1 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-50">
+          <div className="absolute top-full left-0 mt-1 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-[1100]">
             {/* Save Section */}
             <div className="py-1">
               <button

@@ -1,0 +1,236 @@
+.sourcesContainer {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  background-color: #f8f9fa;
+  border-right: 1px solid #e9ecef;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", sans-serif;
+}
+
+/* Header */
+.header {
+  padding: 1rem;
+  border-bottom: 1px solid #e5e5e5;
+  background-color: #ffffff;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.title {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.count {
+  background-color: #e5e7eb;
+  color: #374151;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.375rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+/* Upload Area */
+.uploadArea {
+  margin: 0.75rem;
+  padding: 1rem 0.75rem;
+  border: 2px dashed #d1d5db;
+  border-radius: 0.5rem;
+  background-color: #ffffff;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.uploadArea:hover {
+  border-color: #9ca3af;
+  background-color: #f9fafb;
+}
+
+.uploadArea.dragOver {
+  border-color: #3b82f6;
+  background-color: #eff6ff;
+}
+
+.uploadContent {
+  text-align: center;
+}
+
+.uploadIcon {
+  width: 2rem;
+  height: 2rem;
+  color: #9ca3af;
+  margin: 0 auto 0.5rem;
+}
+
+.uploadText {
+  margin: 0 0 0.25rem 0;
+  font-size: 0.8125rem;
+  color: #6b7280;
+}
+
+.uploadButton {
+  color: #3b82f6;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-decoration: underline;
+  font-size: inherit;
+  padding: 0;
+}
+
+.uploadButton:hover {
+  color: #2563eb;
+}
+
+.uploadSubtext {
+  margin: 0;
+  font-size: 0.75rem;
+  color: #9ca3af;
+}
+
+.hiddenInput {
+  display: none;
+}
+
+/* Sources List */
+.sourcesList {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 1rem 1rem;
+}
+
+.emptyState {
+  text-align: center;
+  padding: 2rem 1rem;
+}
+
+.emptyText {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #9ca3af;
+}
+
+.sourceItem {
+  display: flex;
+  align-items: center;
+  padding: 0.75rem;
+  background-color: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  margin-bottom: 0.5rem;
+  transition: all 0.2s ease;
+}
+
+.sourceItem:hover {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.sourceIcon {
+  flex-shrink: 0;
+  width: 2rem;
+  height: 2rem;
+  margin-right: 0.75rem;
+}
+
+.pdfIcon {
+  width: 100%;
+  height: 100%;
+  color: #dc2626;
+}
+
+.docxIcon {
+  width: 100%;
+  height: 100%;
+  color: #2563eb;
+}
+
+.sourceInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.sourceName {
+  margin: 0 0 0.25rem 0;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #1f2937;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sourceDetails {
+  margin: 0;
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.removeButton {
+  flex-shrink: 0;
+  width: 1.5rem;
+  height: 1.5rem;
+  border: none;
+  background: none;
+  color: #9ca3af;
+  cursor: pointer;
+  border-radius: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.removeButton:hover {
+  color: #dc2626;
+  background-color: #fef2f2;
+}
+
+.removeButton svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+/* Scrollbar styling */
+.sourcesList::-webkit-scrollbar {
+  width: 0.375rem;
+}
+
+.sourcesList::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sourcesList::-webkit-scrollbar-thumb {
+  background-color: #d1d5db;
+  border-radius: 0.25rem;
+}
+
+.sourcesList::-webkit-scrollbar-thumb:hover {
+  background-color: #9ca3af;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .uploadArea {
+    margin: 0.5rem;
+    padding: 0.75rem 0.5rem;
+  }
+
+  .header {
+    padding: 0.75rem;
+  }
+
+  .sourcesList {
+    padding: 0 0.75rem 0.75rem;
+  }
+
+  .sourceItem {
+    padding: 0.5rem;
+  }
+}

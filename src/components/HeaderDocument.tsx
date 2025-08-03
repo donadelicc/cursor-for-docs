@@ -3,10 +3,13 @@
 import React, { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { Editor } from "@tiptap/react";
 import { useAuth } from "@/contexts/AuthContext";
 import { updateDocument } from "@/utils/firestore";
 import { AutoSaveStatus } from "@/hooks/useAutoSave";
+import { SaveFormat } from "./SaveButton";
 import Avatar from "./Avatar";
+import FormattingToolbar from "./FormattingToolbar";
 
 interface HeaderDocumentProps {
   title: string;
@@ -15,6 +18,10 @@ interface HeaderDocumentProps {
   documentContent: string;
   autoSaveStatus?: AutoSaveStatus;
   disabled?: boolean;
+  // Formatting toolbar props
+  editor?: Editor | null;
+  onExportSave?: (format: SaveFormat, filename: string) => void;
+  onUpload?: (file: File) => Promise<void>;
 }
 
 const HeaderDocument: React.FC<HeaderDocumentProps> = ({
@@ -24,6 +31,9 @@ const HeaderDocument: React.FC<HeaderDocumentProps> = ({
   documentContent,
   autoSaveStatus,
   disabled = false,
+  editor,
+  onExportSave,
+  onUpload,
 }) => {
   const { currentUser, logout } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
@@ -175,7 +185,8 @@ const HeaderDocument: React.FC<HeaderDocumentProps> = ({
 
   return (
     <>
-      <header className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-50">
+      <header className="bg-white shadow-sm sticky top-0 z-[1050]">
+        {/* Top Row: Logo, Title, Status, User Profile */}
         <div className="flex items-center justify-between px-6 py-3 h-16">
           {/* Left: Logo, Document Title, and Save Status */}
           <div className="flex items-center space-x-4 flex-1 min-w-0">
@@ -249,7 +260,7 @@ const HeaderDocument: React.FC<HeaderDocumentProps> = ({
 
               {/* User Dropdown Menu */}
               {showUserMenu && (
-                <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+                <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-[1100]">
                   <div className="px-4 py-3 border-b border-gray-100">
                     <p className="text-sm font-medium text-gray-900 truncate">
                       {currentUser?.displayName || "User"}
@@ -313,6 +324,23 @@ const HeaderDocument: React.FC<HeaderDocumentProps> = ({
             </div>
           </div>
         </div>
+
+        {/* Bottom Row: Formatting Toolbar - Centered */}
+        {editor && (
+          <div className="bg-white flex justify-center py-2">
+            <div className="bg-gray-50 rounded-xl border border-gray-200 shadow-sm">
+              <FormattingToolbar
+                editor={editor}
+                disabled={disabled}
+                onExportSave={onExportSave}
+                onUpload={onUpload}
+                documentContent={documentContent}
+                currentDocumentId={currentDocumentId}
+                currentDocumentTitle={title}
+              />
+            </div>
+          </div>
+        )}
       </header>
 
       {/* Click outside to close menu */}

@@ -65,9 +65,6 @@ const MainChatbot = ({ documentContent }: MainChatbotProps) => {
       {/* Header */}
       <div className={styles.header}>
         <div className={styles.headerContent}>
-          <div className={styles.titleSection}>
-            <h2 className={styles.title}>Document Research Assistant</h2>
-          </div>
           <button
             className={styles.newChatButton}
             title="New Chat"

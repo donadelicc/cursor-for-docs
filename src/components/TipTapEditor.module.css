@@ -101,7 +101,7 @@
   height: 100%;
   overflow-y: visible;
   overflow-x: hidden;
-  padding: 96px;
+  padding: 1rem; /* Minimal padding for readability */
   background: #fff;
   color: #000;
   min-height: 100%;
@@ -192,11 +192,8 @@
   display: flex;
   flex-direction: column;
   width: 100%;
-  max-width: 8.5in;
-  height: calc(
-    100vh - 215px
-  ); /* Adjust height to fit within viewport, accounting for header, toolbars, padding, and other elements */
-  max-height: calc(100vh - 215px);
+  max-width: 100%; /* Use full width of the container */
+  height: 100%; /* Fill the parent container height */
   background: #fff;
   border-bottom-left-radius: 8px;
   border-bottom-right-radius: 8px;
@@ -243,7 +240,7 @@
 /* IMPROVED: Responsive design with better zoom handling */
 @media (max-width: 1024px) {
   .editorWrapper {
-    max-width: 10in; /* Slightly smaller on tablets */
+    max-width: 100%; /* Use full width on tablets */
     gap: 12px; /* Slightly less spacing on tablets */
   }
 }
@@ -280,11 +277,11 @@
   display: flex;
   flex-direction: column;
   width: 100%;
-  max-width: 8.5in; /* Match editor and toolbar width */
-  align-items: center; /* Center the content */
+  max-width: 100%; /* Use full container width */
+  align-items: stretch; /* Use full width instead of centering */
   gap: 0; /* Remove gap since we have connected elements */
   margin-top: 0;
-  height: auto;
+  height: 100%; /* Use full height of container */
 }
 
 /* Removed toolbarWithSave styles - no longer needed */
@@ -293,7 +290,7 @@
 .aiAssistantRow {
   display: flex;
   width: 100%;
-  max-width: 8.5in;
+  max-width: 100%;
   background: transparent;
   border: 1px solid #e5e7eb;
   border-top: none; /* Connect with FormattingToolbar */

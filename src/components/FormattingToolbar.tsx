@@ -104,9 +104,9 @@ const FormattingToolbar: React.FC<FormattingToolbarProps> = ({
         <div className={styles.separator}></div>
 
         <div className={styles.toolbarSection}>
-          {/* Text Styles Dropdown - Shorter Labels */}
+          {/* Text Styles Dropdown */}
           <select
-            className={styles.styleSelect}
+            className={styles.styleSelectWide}
             value={
               editor.isActive("heading", { level: 1 })
                 ? "h1"
@@ -129,19 +129,19 @@ const FormattingToolbar: React.FC<FormattingToolbarProps> = ({
               }
             }}
           >
-            <option value="paragraph">Normal</option>
-            <option value="h1">H1</option>
-            <option value="h2">H2</option>
-            <option value="h3">H3</option>
+            <option value="paragraph">Normal text</option>
+            <option value="h1">Heading 1</option>
+            <option value="h2">Heading 2</option>
+            <option value="h3">Heading 3</option>
           </select>
         </div>
 
         <div className={styles.separator}></div>
 
         <div className={styles.toolbarSection}>
-          {/* Font Family Dropdown - Shorter Labels */}
+          {/* Font Family Dropdown */}
           <select
-            className={styles.formatSelect}
+            className={styles.fontSelect}
             value={(() => {
               const currentFont = editor.getAttributes("textStyle").fontFamily;
               if (!currentFont) return "Arial";
@@ -177,9 +177,9 @@ const FormattingToolbar: React.FC<FormattingToolbarProps> = ({
           >
             <option value="Arial">Arial</option>
             <option value="Helvetica">Helvetica</option>
-            <option value="Times New Roman, serif">Times</option>
+            <option value="Times New Roman, serif">Times New Roman</option>
             <option value="Georgia, serif">Georgia</option>
-            <option value="Courier New, monospace">Courier</option>
+            <option value="Courier New, monospace">Courier New</option>
             <option value="Verdana, sans-serif">Verdana</option>
           </select>
         </div>
@@ -187,108 +187,78 @@ const FormattingToolbar: React.FC<FormattingToolbarProps> = ({
         <div className={styles.separator}></div>
 
         <div className={styles.toolbarSection}>
-          {/* Text Formatting Dropdown */}
-          <select
-            className={styles.formatSelect}
-            value={
-              editor.isActive("bold") &&
-              editor.isActive("italic") &&
-              editor.isActive("underline") &&
-              editor.isActive("strike")
-                ? "all"
-                : editor.isActive("bold") &&
-                    editor.isActive("italic") &&
-                    editor.isActive("underline")
-                  ? "biu"
-                  : editor.isActive("bold") && editor.isActive("italic")
-                    ? "bi"
-                    : editor.isActive("bold") && editor.isActive("underline")
-                      ? "bu"
-                      : editor.isActive("bold") && editor.isActive("strike")
-                        ? "bs"
-                        : editor.isActive("italic") &&
-                            editor.isActive("underline")
-                          ? "iu"
-                          : editor.isActive("italic") &&
-                              editor.isActive("strike")
-                            ? "is"
-                            : editor.isActive("underline") &&
-                                editor.isActive("strike")
-                              ? "us"
-                              : editor.isActive("bold")
-                                ? "bold"
-                                : editor.isActive("italic")
-                                  ? "italic"
-                                  : editor.isActive("underline")
-                                    ? "underline"
-                                    : editor.isActive("strike")
-                                      ? "strike"
-                                      : "none"
-            }
-            onChange={(e) => {
-              const value = e.target.value;
-              // First clear all formatting
-              editor
-                .chain()
-                .focus()
-                .unsetBold()
-                .unsetItalic()
-                .unsetUnderline()
-                .unsetStrike()
-                .run();
-
-              // Then apply the selected format(s)
-              if (value.includes("bold") || value.includes("b")) {
-                editor.chain().focus().toggleBold().run();
-              }
-              if (value.includes("italic") || value.includes("i")) {
-                editor.chain().focus().toggleItalic().run();
-              }
-              if (value.includes("underline") || value.includes("u")) {
-                editor.chain().focus().toggleUnderline().run();
-              }
-              if (value.includes("strike") || value.includes("s")) {
-                editor.chain().focus().toggleStrike().run();
-              }
-            }}
-            title="Text Formatting"
+          {/* Text Formatting Buttons */}
+          <button
+            className={`${styles.toolbarButton} ${editor.isActive("bold") ? styles.active : ""}`}
+            onClick={() => editor.chain().focus().toggleBold().run()}
+            title="Bold (Ctrl+B)"
           >
-            <option value="none">Format</option>
-            <option value="bold">Bold</option>
-            <option value="italic">Italic</option>
-            <option value="underline">Underline</option>
-            <option value="strike">Strike</option>
-          </select>
-        </div>
-
-        <div className={styles.separator}></div>
-
-        <div className={styles.toolbarSection}>
-          {/* Code Dropdown */}
-          <select
-            className={styles.formatSelect}
-            value={
-              editor.isActive("codeBlock")
-                ? "codeBlock"
-                : editor.isActive("code")
-                  ? "code"
-                  : "none"
-            }
-            onChange={(e) => {
-              const value = e.target.value;
-              if (value === "code") {
-                editor.chain().focus().toggleCode().run();
-              } else if (value === "codeBlock") {
-                editor.chain().focus().toggleCodeBlock().run();
-              }
-            }}
-            title="Code Options"
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <path d="M6 4h8a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z" />
+              <path d="M6 12h9a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z" />
+            </svg>
+          </button>
+          <button
+            className={`${styles.toolbarButton} ${editor.isActive("italic") ? styles.active : ""}`}
+            onClick={() => editor.chain().focus().toggleItalic().run()}
+            title="Italic (Ctrl+I)"
           >
-            <option value="none">Code</option>
-            <option value="code">Inline</option>
-            <option value="codeBlock">Block</option>
-          </select>
-          {/* Keep Highlight Button */}
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <line x1="19" y1="4" x2="10" y2="4" />
+              <line x1="14" y1="20" x2="5" y2="20" />
+              <line x1="15" y1="4" x2="9" y2="20" />
+            </svg>
+          </button>
+          <button
+            className={`${styles.toolbarButton} ${editor.isActive("underline") ? styles.active : ""}`}
+            onClick={() => editor.chain().focus().toggleUnderline().run()}
+            title="Underline (Ctrl+U)"
+          >
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <path d="M6 3v7a6 6 0 0 0 6 6 6 6 0 0 0 6-6V3" />
+              <line x1="4" y1="21" x2="20" y2="21" />
+            </svg>
+          </button>
+          <button
+            className={`${styles.toolbarButton} ${editor.isActive("strike") ? styles.active : ""}`}
+            onClick={() => editor.chain().focus().toggleStrike().run()}
+            title="Strikethrough"
+          >
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <path d="M6 16h12" />
+              <path d="M8 12h8" />
+              <path d="M8.5 8.5C8.5 7.12 9.62 6 11 6h2c1.38 0 2.5 1.12 2.5 2.5" />
+              <path d="M8.5 15.5C8.5 16.88 9.62 18 11 18h2c1.38 0 2.5-1.12 2.5-2.5" />
+            </svg>
+          </button>
           <button
             className={`${styles.toolbarButton} ${editor.isActive("highlight") ? styles.active : ""}`}
             onClick={() => editor.chain().focus().toggleHighlight().run()}
@@ -304,6 +274,88 @@ const FormattingToolbar: React.FC<FormattingToolbarProps> = ({
             >
               <path d="M9 11H1v3h8v3l3-3-3-3v3z" />
               <path d="M22 6L12 16l-3-3 10-10z" />
+            </svg>
+          </button>
+        </div>
+
+        <div className={styles.separator}></div>
+
+        <div className={styles.toolbarSection}>
+          {/* Text Alignment Buttons */}
+          <button
+            className={`${styles.toolbarButton} ${editor.isActive({ textAlign: "left" }) || (!editor.isActive({ textAlign: "center" }) && !editor.isActive({ textAlign: "right" }) && !editor.isActive({ textAlign: "justify" })) ? styles.active : ""}`}
+            onClick={() => editor.chain().focus().setTextAlign("left").run()}
+            title="Align Left"
+          >
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <line x1="21" y1="10" x2="3" y2="10" />
+              <line x1="21" y1="6" x2="3" y2="6" />
+              <line x1="11" y1="14" x2="3" y2="14" />
+              <line x1="17" y1="18" x2="3" y2="18" />
+            </svg>
+          </button>
+          <button
+            className={`${styles.toolbarButton} ${editor.isActive({ textAlign: "center" }) ? styles.active : ""}`}
+            onClick={() => editor.chain().focus().setTextAlign("center").run()}
+            title="Align Center"
+          >
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <line x1="18" y1="10" x2="6" y2="10" />
+              <line x1="21" y1="6" x2="3" y2="6" />
+              <line x1="16" y1="14" x2="8" y2="14" />
+              <line x1="19" y1="18" x2="5" y2="18" />
+            </svg>
+          </button>
+          <button
+            className={`${styles.toolbarButton} ${editor.isActive({ textAlign: "right" }) ? styles.active : ""}`}
+            onClick={() => editor.chain().focus().setTextAlign("right").run()}
+            title="Align Right"
+          >
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <line x1="21" y1="10" x2="3" y2="10" />
+              <line x1="21" y1="6" x2="3" y2="6" />
+              <line x1="21" y1="14" x2="11" y2="14" />
+              <line x1="21" y1="18" x2="7" y2="18" />
+            </svg>
+          </button>
+          <button
+            className={`${styles.toolbarButton} ${editor.isActive({ textAlign: "justify" }) ? styles.active : ""}`}
+            onClick={() => editor.chain().focus().setTextAlign("justify").run()}
+            title="Justify"
+          >
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <line x1="21" y1="10" x2="3" y2="10" />
+              <line x1="21" y1="6" x2="3" y2="6" />
+              <line x1="21" y1="14" x2="3" y2="14" />
+              <line x1="21" y1="18" x2="3" y2="18" />
             </svg>
           </button>
         </div>
@@ -359,29 +411,42 @@ const FormattingToolbar: React.FC<FormattingToolbarProps> = ({
         <div className={styles.separator}></div>
 
         <div className={styles.toolbarSection}>
-          {/* Text Alignment Dropdown */}
-          <select
-            className={styles.formatSelect}
-            value={
-              editor.isActive({ textAlign: "center" })
-                ? "center"
-                : editor.isActive({ textAlign: "right" })
-                  ? "right"
-                  : editor.isActive({ textAlign: "justify" })
-                    ? "justify"
-                    : "left"
-            }
-            onChange={(e) => {
-              const value = e.target.value;
-              editor.chain().focus().setTextAlign(value).run();
-            }}
-            title="Text Alignment"
+          {/* Code Buttons */}
+          <button
+            className={`${styles.toolbarButton} ${editor.isActive("code") ? styles.active : ""}`}
+            onClick={() => editor.chain().focus().toggleCode().run()}
+            title="Inline Code"
           >
-            <option value="left">Left</option>
-            <option value="center">Center</option>
-            <option value="right">Right</option>
-            <option value="justify">Justify</option>
-          </select>
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <polyline points="16,18 22,12 16,6" />
+              <polyline points="8,6 2,12 8,18" />
+            </svg>
+          </button>
+          <button
+            className={`${styles.toolbarButton} ${editor.isActive("codeBlock") ? styles.active : ""}`}
+            onClick={() => editor.chain().focus().toggleCodeBlock().run()}
+            title="Code Block"
+          >
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+              <line x1="8" y1="21" x2="16" y2="21" />
+              <line x1="12" y1="17" x2="12" y2="21" />
+            </svg>
+          </button>
         </div>
 
         {/* Save Button - Right aligned - Only show if prop provided */}

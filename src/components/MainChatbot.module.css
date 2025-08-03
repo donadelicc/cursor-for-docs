@@ -1,15 +1,11 @@
 .chatbotContainer {
   display: flex;
   flex-direction: column;
-  height: calc(
-    100vh - 190px
-  ); /* Match the dynamic viewport-based height like the editor */
-  max-height: calc(100vh - 190px);
+  width: 100%; /* Fill the container width */
+  height: 100%; /* Fill the container height */
   background-color: #ffffff;
-  border-left: 1px solid #e5e5e5;
   font-family:
     -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", sans-serif;
-  margin-top: 60px; /* Offset for DocumentTitle height to align with formatting toolbar */
 }
 
 /* Header */
