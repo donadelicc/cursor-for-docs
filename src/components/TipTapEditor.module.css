@@ -194,9 +194,9 @@
   width: 100%;
   max-width: 8.5in;
   height: calc(
-    100vh - 250px
-  ); /* Adjust height to fit within viewport, accounting for toolbars, padding, and other elements */
-  max-height: calc(100vh - 250px);
+    100vh - 215px
+  ); /* Adjust height to fit within viewport, accounting for header, toolbars, padding, and other elements */
+  max-height: calc(100vh - 215px);
   background: #fff;
   border-bottom-left-radius: 8px;
   border-bottom-right-radius: 8px;

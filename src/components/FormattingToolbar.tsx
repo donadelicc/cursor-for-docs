@@ -28,7 +28,18 @@ const FormattingToolbar: React.FC<FormattingToolbarProps> = ({
   currentDocumentId,
   currentDocumentTitle,
 }) => {
-  if (!editor) return null;
+  // Show simplified toolbar when editor is not ready
+  if (!editor) {
+    return (
+      <div className={styles.toolbarContainer}>
+        <div className={styles.toolbar}>
+          <div className={styles.toolbarSection}>
+            <span className="text-gray-400 text-sm">Loading editor...</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.toolbarContainer}>
@@ -55,7 +66,7 @@ const FormattingToolbar: React.FC<FormattingToolbarProps> = ({
           <button
             className={styles.toolbarButton}
             onClick={() => editor.chain().focus().undo().run()}
-            disabled={!editor.can().undo()}
+            disabled={!editor.can().chain().focus().undo().run()}
             title="Undo (Ctrl+Z)"
           >
             <svg
@@ -73,7 +84,7 @@ const FormattingToolbar: React.FC<FormattingToolbarProps> = ({
           <button
             className={styles.toolbarButton}
             onClick={() => editor.chain().focus().redo().run()}
-            disabled={!editor.can().redo()}
+            disabled={!editor.can().chain().focus().redo().run()}
             title="Redo (Ctrl+Y)"
           >
             <svg

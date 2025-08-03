@@ -2,18 +2,17 @@ import styles from "./TipTapEditor.module.css";
 
 import { useEditor, EditorContent } from "@tiptap/react";
 import React, { useState, useRef, useEffect } from "react";
-// import ShortcutsInfoBox from "./ShortcutsInfoBox";
+
 import FormattingToolbar from "./FormattingToolbar";
 import InlineChatbot, { InlineChatbotRef } from "./InlineChatbot";
 import SuggestionToolbar from "./SuggestionToolbar";
 import { SaveFormat } from "./SaveButton";
-import DocumentTitle from "./DocumentTitle";
+
 import { importDocxFile } from "../utils/docxImporter";
 import { downloadAsDocx } from "../utils/docxConverter";
 import { downloadAsPdf } from "../utils/pdfConverter";
 import { htmlToMarkdown, downloadMarkdown } from "../utils/markdownConverter";
 import { SuggestionIntent } from "@/types/editor";
-import { AutoSaveStatus } from "@/hooks/useAutoSave";
 
 // Custom hooks
 import { useTipTapExtensions } from "@/hooks/useTipTapExtensions";
@@ -24,31 +23,19 @@ import { isModifierPressed } from "@/utils/platformDetection";
 
 interface TiptapEditorProps {
   onContentChange?: (content: string) => void;
-  onTitleChange?: (title: string) => void;
   currentDocumentId?: string;
   currentDocumentTitle?: string;
   initialContent?: string;
-  autoSaveStatus?: AutoSaveStatus;
 }
 
 export const TiptapEditor = ({
   onContentChange,
-  onTitleChange,
   currentDocumentId,
   currentDocumentTitle,
   initialContent,
-  autoSaveStatus,
 }: TiptapEditorProps) => {
   const [hasPendingSuggestion, setHasPendingSuggestion] = useState(false);
   const [documentContent, setDocumentContent] = useState("");
-  const [title, setTitle] = useState(currentDocumentTitle || "");
-
-  // Update title when currentDocumentTitle changes (when loading a document)
-  useEffect(() => {
-    if (currentDocumentTitle) {
-      setTitle(currentDocumentTitle);
-    }
-  }, [currentDocumentTitle]);
 
   const editorContainerRef = useRef<HTMLDivElement>(null);
   const chatbotRef = useRef<InlineChatbotRef>(null);
@@ -210,13 +197,6 @@ export const TiptapEditor = ({
     }
   };
 
-  const handleTitleChange = (newTitle: string) => {
-    setTitle(newTitle);
-    if (onTitleChange) {
-      onTitleChange(newTitle);
-    }
-  };
-
   const handleUpload = async (file: File) => {
     if (!editor) return;
 
@@ -246,15 +226,6 @@ export const TiptapEditor = ({
 
   return (
     <div className={styles.editorWrapper}>
-      <DocumentTitle
-        title={title}
-        onTitleChange={handleTitleChange}
-        currentDocumentId={currentDocumentId}
-        documentContent={documentContent}
-        disabled={!editor}
-        autoSaveStatus={autoSaveStatus}
-      />
-
       <FormattingToolbar
         editor={editor}
         disabled={!editor}
@@ -262,7 +233,7 @@ export const TiptapEditor = ({
         onUpload={handleUpload}
         documentContent={documentContent}
         currentDocumentId={currentDocumentId}
-        currentDocumentTitle={title}
+        currentDocumentTitle={currentDocumentTitle}
       />
 
       {/* Always visible AI assistant row */}
@@ -286,8 +257,6 @@ export const TiptapEditor = ({
       </div>
 
       <div className={styles.tiptapEditor} ref={editorContainerRef}>
-        {/* <ShortcutsInfoBox />*/}
-
         <EditorContent editor={editor} />
       </div>
     </div>

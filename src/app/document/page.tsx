@@ -2,11 +2,9 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
-import Link from "next/link";
-import Image from "next/image";
 import { TiptapEditor } from "@/components/TipTapEditor";
 import EditorContainer from "@/components/EditorContainer";
-import AuthStatus from "@/components/AuthStatus";
+import HeaderDocument from "@/components/HeaderDocument";
 
 import { getDocument } from "@/utils/firestore";
 import { useAuth } from "@/contexts/AuthContext";
@@ -131,39 +129,34 @@ export default function DocumentPage() {
   }, [saveNow]);
 
   return (
-    <div className="h-screen relative overflow-hidden">
-      {/* Logo positioned at very top left of page */}
-      <div className="absolute top-4 left-4 z-50">
-        <Link href="/" className="hover:opacity-80 transition-opacity">
-          <Image
-            src="/useful_sm.png"
-            alt="Useful logo"
-            width={100}
-            height={100}
-            className="cursor-pointer"
-          />
-        </Link>
+    <div className="h-screen flex flex-col overflow-hidden">
+      {/* Document Header */}
+      <HeaderDocument
+        title={currentDocumentTitle}
+        onTitleChange={updateDocumentTitle}
+        currentDocumentId={currentDocumentId}
+        documentContent={documentContent}
+        autoSaveStatus={autoSaveStatus}
+        disabled={!currentUser}
+      />
+
+      {/* Main Content */}
+      <div className="flex-1 relative overflow-hidden">
+        {isLoading ? (
+          <div className="flex items-center justify-center h-full">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+          </div>
+        ) : (
+          <EditorContainer documentContent={documentContent}>
+            <TiptapEditor
+              onContentChange={updateDocumentContent}
+              currentDocumentId={currentDocumentId}
+              currentDocumentTitle={currentDocumentTitle}
+              initialContent={initialDocumentContent}
+            />
+          </EditorContainer>
+        )}
       </div>
-
-      {/* Authentication Status Indicator */}
-      <AuthStatus />
-
-      {isLoading ? (
-        <div className="flex items-center justify-center h-full">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
-        </div>
-      ) : (
-        <EditorContainer documentContent={documentContent}>
-          <TiptapEditor
-            onContentChange={updateDocumentContent}
-            onTitleChange={updateDocumentTitle}
-            currentDocumentId={currentDocumentId}
-            currentDocumentTitle={currentDocumentTitle}
-            initialContent={initialDocumentContent}
-            autoSaveStatus={autoSaveStatus}
-          />
-        </EditorContainer>
-      )}
     </div>
   );
 }
