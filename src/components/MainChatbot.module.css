@@ -1,8 +1,10 @@
 .chatbotContainer {
   display: flex;
   flex-direction: column;
-  height: calc(11in + 120px); /* Match editor height + toolbar + AI row */
-  max-height: calc(11in + 120px);
+  height: calc(
+    100vh - 190px
+  ); /* Match the dynamic viewport-based height like the editor */
+  max-height: calc(100vh - 190px);
   background-color: #ffffff;
   border-left: 1px solid #e5e5e5;
   font-family:

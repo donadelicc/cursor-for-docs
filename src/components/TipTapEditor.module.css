@@ -98,8 +98,8 @@
   position: relative;
 
   /* Editor content area styles */
-  height: 11in;
-  overflow-y: auto;
+  height: 100%;
+  overflow-y: visible;
   overflow-x: hidden;
   padding: 96px;
   background: #fff;
@@ -193,8 +193,10 @@
   flex-direction: column;
   width: 100%;
   max-width: 8.5in;
-  height: 11in;
-  max-height: 11in;
+  height: calc(
+    100vh - 250px
+  ); /* Adjust height to fit within viewport, accounting for toolbars, padding, and other elements */
+  max-height: calc(100vh - 250px);
   background: #fff;
   border-bottom-left-radius: 8px;
   border-bottom-right-radius: 8px;
@@ -204,8 +206,9 @@
     0 1px 3px rgba(0, 0, 0, 0.1),
     0 1px 2px rgba(0, 0, 0, 0.2);
   overflow-x: hidden;
-  overflow-y: hidden;
+  overflow-y: auto;
   position: relative;
+  margin-top: 0;
 }
 
 .tiptap span[data-original-text] {
@@ -280,6 +283,8 @@
   max-width: 8.5in; /* Match editor and toolbar width */
   align-items: center; /* Center the content */
   gap: 0; /* Remove gap since we have connected elements */
+  margin-top: 0;
+  height: auto;
 }
 
 /* Removed toolbarWithSave styles - no longer needed */

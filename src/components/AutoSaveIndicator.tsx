@@ -11,24 +11,7 @@ export const AutoSaveIndicator: React.FC<AutoSaveIndicatorProps> = ({
   autoSaveStatus,
   className = "",
 }) => {
-  const { status, lastSaved, error } = autoSaveStatus;
-
-  const formatLastSaved = (date: Date) => {
-    const now = new Date();
-    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-
-    if (diffInSeconds < 60) {
-      return "just now";
-    } else if (diffInSeconds < 3600) {
-      const minutes = Math.floor(diffInSeconds / 60);
-      return `${minutes} minute${minutes > 1 ? "s" : ""} ago`;
-    } else {
-      return date.toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      });
-    }
-  };
+  const { status } = autoSaveStatus;
 
   const getStatusIcon = () => {
     switch (status) {
@@ -36,8 +19,8 @@ export const AutoSaveIndicator: React.FC<AutoSaveIndicatorProps> = ({
         return (
           <svg
             className={styles.spinningIcon}
-            width="14"
-            height="14"
+            width="16"
+            height="16"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
@@ -51,8 +34,8 @@ export const AutoSaveIndicator: React.FC<AutoSaveIndicatorProps> = ({
       case "saved":
         return (
           <svg
-            width="14"
-            height="14"
+            width="16"
+            height="16"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
@@ -66,8 +49,8 @@ export const AutoSaveIndicator: React.FC<AutoSaveIndicatorProps> = ({
       case "error":
         return (
           <svg
-            width="14"
-            height="14"
+            width="16"
+            height="16"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
@@ -90,9 +73,9 @@ export const AutoSaveIndicator: React.FC<AutoSaveIndicatorProps> = ({
       case "saving":
         return "Saving...";
       case "saved":
-        return lastSaved ? `Saved ${formatLastSaved(lastSaved)}` : "Saved";
+        return "Saved";
       case "error":
-        return error || "Save failed";
+        return "Save failed";
       default:
         return "";
     }

@@ -67,16 +67,30 @@ export const getUserProfile = async (
 
 // Document operations
 export const createDocument = async (
-  documentData: CreateDocumentData,
+  documentData: CreateDocumentData & { id?: string },
 ): Promise<string> => {
-  const docRef = await addDoc(collection(db, DOCUMENTS_COLLECTION), {
-    ...documentData,
-    createdAt: serverTimestamp(),
-    updatedAt: serverTimestamp(),
-    lastModified: serverTimestamp(),
-  });
-
-  return docRef.id;
+  if (documentData.id) {
+    // Create document with specific ID
+    const docRef = doc(db, DOCUMENTS_COLLECTION, documentData.id);
+    const dataWithoutId = { ...documentData };
+    delete dataWithoutId.id;
+    await setDoc(docRef, {
+      ...dataWithoutId,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+      lastModified: serverTimestamp(),
+    });
+    return documentData.id;
+  } else {
+    // Create document with auto-generated ID
+    const docRef = await addDoc(collection(db, DOCUMENTS_COLLECTION), {
+      ...documentData,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+      lastModified: serverTimestamp(),
+    });
+    return docRef.id;
+  }
 };
 
 export const getDocument = async (

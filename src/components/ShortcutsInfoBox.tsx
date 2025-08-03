@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import styles from "./ShortcutsInfoBox.module.css";
+import { isMacOS } from "@/utils/platformDetection";
 
 interface ShortcutItem {
   action: string;
@@ -7,40 +8,70 @@ interface ShortcutItem {
   description: string;
 }
 
-const shortcuts: ShortcutItem[] = [
-  { action: "Bold", shortcut: "Ctrl + B", description: "Make text bold" },
-  { action: "Italic", shortcut: "Ctrl + I", description: "Make text italic" },
-  {
-    action: "Heading 1",
-    shortcut: "Ctrl + Shift + 1",
-    description: "Apply heading level 1",
-  },
-  {
-    action: "Heading 2",
-    shortcut: "Ctrl + Shift + 2",
-    description: "Apply heading level 2",
-  },
-  {
-    action: "Heading 3",
-    shortcut: "Ctrl + Shift + 3",
-    description: "Apply heading level 3",
-  },
-  { action: "Undo", shortcut: "Ctrl + Z", description: "Undo last action" },
-  { action: "Redo", shortcut: "Ctrl + Y", description: "Redo last action" },
-  {
-    action: "AI Assistant",
-    shortcut: "Ctrl + K",
-    description: "Open AI assistant for selected text",
-  },
-  {
-    action: "Page Break",
-    shortcut: "Ctrl + Shift + P",
-    description: "Insert a page break",
-  },
-];
+const getShortcuts = (isMac: boolean): ShortcutItem[] => {
+  const modifier = isMac ? "Cmd" : "Ctrl";
+
+  return [
+    {
+      action: "Bold",
+      shortcut: `${modifier} + B`,
+      description: "Make text bold",
+    },
+    {
+      action: "Italic",
+      shortcut: `${modifier} + I`,
+      description: "Make text italic",
+    },
+    {
+      action: "Heading 1",
+      shortcut: `${modifier} + Shift + 1`,
+      description: "Apply heading level 1",
+    },
+    {
+      action: "Heading 2",
+      shortcut: `${modifier} + Shift + 2`,
+      description: "Apply heading level 2",
+    },
+    {
+      action: "Heading 3",
+      shortcut: `${modifier} + Shift + 3`,
+      description: "Apply heading level 3",
+    },
+    {
+      action: "Undo",
+      shortcut: `${modifier} + Z`,
+      description: "Undo last action",
+    },
+    {
+      action: "Redo",
+      shortcut: `${modifier} + Y`,
+      description: "Redo last action",
+    },
+    {
+      action: "AI Assistant (Inline)",
+      shortcut: `${modifier} + K`,
+      description: "Open AI assistant for selected text",
+    },
+    {
+      action: "AI Assistant (Main)",
+      shortcut: `${modifier} + L`,
+      description: "Open main AI research assistant",
+    },
+    {
+      action: "Page Break",
+      shortcut: `${modifier} + Shift + P`,
+      description: "Insert a page break",
+    },
+  ];
+};
 
 export const ShortcutsInfoBox: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
+
+  // Detect platform and get appropriate shortcuts
+  const shortcuts = useMemo(() => {
+    return getShortcuts(isMacOS());
+  }, []);
 
   const toggleInfoBox = () => {
     setIsOpen(!isOpen);

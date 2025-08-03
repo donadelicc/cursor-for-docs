@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { updateDocument, generateDocumentTitle } from "@/utils/firestore";
+import { updateDocument } from "@/utils/firestore";
+import { AutoSaveStatus } from "@/hooks/useAutoSave";
 
 interface DocumentTitleProps {
   title: string;
@@ -8,6 +9,7 @@ interface DocumentTitleProps {
   currentDocumentId?: string;
   documentContent: string;
   disabled?: boolean;
+  autoSaveStatus?: AutoSaveStatus;
 }
 
 export const DocumentTitle: React.FC<DocumentTitleProps> = ({
@@ -16,6 +18,7 @@ export const DocumentTitle: React.FC<DocumentTitleProps> = ({
   currentDocumentId,
   documentContent,
   disabled = false,
+  autoSaveStatus,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editingTitle, setEditingTitle] = useState(title);
@@ -103,7 +106,7 @@ export const DocumentTitle: React.FC<DocumentTitleProps> = ({
     }, 100);
   };
 
-  const displayTitle = title || generateDocumentTitle(documentContent);
+  const displayTitle = title || "Untitled Document";
 
   return (
     <div className="w-full max-w-[8.5in] mx-auto px-4 py-3 bg-white">
@@ -155,7 +158,19 @@ export const DocumentTitle: React.FC<DocumentTitleProps> = ({
 
         {/* Document status indicator */}
         <div className="flex items-center text-xs text-gray-500">
-          {currentDocumentId ? (
+          {autoSaveStatus?.status === "saving" ? (
+            <div className="flex items-center">
+              <svg
+                className="w-3 h-3 mr-1 text-blue-500 animate-spin"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+              </svg>
+              Saving...
+            </div>
+          ) : autoSaveStatus?.status === "saved" || currentDocumentId ? (
             <div className="flex items-center">
               <svg
                 className="w-3 h-3 mr-1 text-green-500"

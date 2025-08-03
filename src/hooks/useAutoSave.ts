@@ -2,6 +2,11 @@ import { useEffect, useRef, useCallback, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { createDocument, updateDocument } from "@/utils/firestore";
 
+// Generate a unique client-side ID for new documents
+const generateClientId = () => {
+  return Math.random().toString(36).substring(2) + Date.now().toString(36);
+};
+
 export interface AutoSaveStatus {
   status: "idle" | "saving" | "saved" | "error";
   lastSaved?: Date;
@@ -18,6 +23,7 @@ interface UseAutoSaveParams {
   content: string;
   title: string;
   documentId?: string;
+  initialContent?: string; // To distinguish new vs existing documents
   options?: UseAutoSaveOptions;
 }
 
@@ -25,10 +31,11 @@ export const useAutoSave = ({
   content,
   title,
   documentId,
+  initialContent = "",
   options = {},
 }: UseAutoSaveParams) => {
   const {
-    delay = 3000, // Default 3 seconds
+    delay = 300, // Default 300ms for near-instant saving
     enabled = true,
     onAutoSave,
   } = options;
@@ -44,6 +51,12 @@ export const useAutoSave = ({
   const documentIdRef = useRef(documentId);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Track last saved content to avoid unnecessary saves
+  const lastSavedContentRef = useRef<string>("");
+
+  // Track whether document exists in database (vs just having a client-generated ID)
+  const documentExistsInDbRef = useRef<boolean>(false);
+
   // Update refs when values change
   useEffect(() => {
     contentRef.current = content;
@@ -55,7 +68,16 @@ export const useAutoSave = ({
 
   useEffect(() => {
     documentIdRef.current = documentId;
-  }, [documentId]);
+
+    // Document exists in DB if we have both documentId and initialContent
+    // (meaning it was loaded from database)
+    documentExistsInDbRef.current = !!(documentId && initialContent);
+
+    // Set initial "already saved" content for existing documents
+    if (documentExistsInDbRef.current) {
+      lastSavedContentRef.current = initialContent;
+    }
+  }, [documentId, initialContent]);
 
   const performAutoSave = useCallback(async () => {
     if (!currentUser || !enabled) return;
@@ -67,29 +89,41 @@ export const useAutoSave = ({
     // Don't save if content is empty
     if (!currentContent.trim()) return;
 
+    // Don't save if content hasn't changed since last save
+    if (currentContent === lastSavedContentRef.current) {
+      return;
+    }
+
     setAutoSaveStatus({ status: "saving" });
 
     try {
       let savedDocumentId = currentDocumentId;
 
-      if (currentDocumentId) {
-        // Update existing document
+      if (currentDocumentId && documentExistsInDbRef.current) {
+        // Update existing document that exists in database
         await updateDocument(currentDocumentId, {
           title: currentTitle,
           content: currentContent,
           lastModified: new Date(),
         });
       } else {
-        // Create new document
-        savedDocumentId = await createDocument({
+        // Create new document (either no ID or client-generated ID that doesn't exist in DB)
+        savedDocumentId = currentDocumentId || generateClientId();
+
+        await createDocument({
+          id: savedDocumentId,
           userId: currentUser.uid,
           title: currentTitle,
           content: currentContent,
         });
 
-        // Update the ref so subsequent saves update instead of create
+        // Update refs so subsequent saves update instead of create
         documentIdRef.current = savedDocumentId;
+        documentExistsInDbRef.current = true;
       }
+
+      // Update last saved content to prevent unnecessary future saves
+      lastSavedContentRef.current = currentContent;
 
       setAutoSaveStatus({
         status: "saved",
@@ -141,7 +175,7 @@ export const useAutoSave = ({
         clearTimeout(timeoutRef.current);
       }
     };
-  }, [content, title, enabled, currentUser, delay, performAutoSave]);
+  }, [content, enabled, currentUser, delay, performAutoSave]);
 
   // Manual save function that can be called immediately
   const saveNow = useCallback(() => {

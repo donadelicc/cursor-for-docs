@@ -7,10 +7,16 @@ import Image from "next/image";
 import { TiptapEditor } from "@/components/TipTapEditor";
 import EditorContainer from "@/components/EditorContainer";
 import AuthStatus from "@/components/AuthStatus";
-import AutoSaveIndicator from "@/components/AutoSaveIndicator";
+
 import { getDocument } from "@/utils/firestore";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAutoSave } from "@/hooks/useAutoSave";
+import { useRef } from "react";
+
+// Generate a unique client-side ID for new documents
+const generateClientId = () => {
+  return Math.random().toString(36).substring(2) + Date.now().toString(36);
+};
 
 export default function DocumentPage() {
   const [documentContent, setDocumentContent] = useState("");
@@ -24,6 +30,10 @@ export default function DocumentPage() {
   const searchParams = useSearchParams();
   const { currentUser } = useAuth();
 
+  // Track the initial URL ID to distinguish existing vs new documents
+  const initialUrlId = useRef<string | null>(null);
+  const hasInitialized = useRef(false);
+
   // Function to be passed to TiptapEditor to update document content
   const updateDocumentContent = (content: string) => {
     setDocumentContent(content);
@@ -34,23 +44,18 @@ export default function DocumentPage() {
     setCurrentDocumentTitle(newTitle);
   };
 
-  // Auto-save functionality
+  // Auto-save functionality with near-instant saving
   const { autoSaveStatus, saveNow } = useAutoSave({
     content: documentContent,
     title: currentDocumentTitle,
     documentId: currentDocumentId,
+    initialContent: initialDocumentContent, // Helps distinguish new vs existing documents
     options: {
-      delay: 3000, // Auto-save 3 seconds after stopping typing
+      delay: 300, // Auto-save 300ms after stopping typing (near-instant)
       enabled: !!currentUser, // Only enable when user is logged in
       onAutoSave: (savedDocumentId) => {
-        // Update current document ID if it's a new document
-        if (!currentDocumentId && savedDocumentId) {
-          setCurrentDocumentId(savedDocumentId);
-          // Update URL to include the document ID
-          const url = new URL(window.location.href);
-          url.searchParams.set("id", savedDocumentId);
-          window.history.replaceState({}, "", url.toString());
-        }
+        // ID is now generated immediately when typing starts, so no URL update needed here
+        console.log("Document auto-saved with ID:", savedDocumentId);
       },
     },
   });
@@ -77,13 +82,40 @@ export default function DocumentPage() {
     [currentUser],
   );
 
-  // Load document if ID is provided in URL
+  // Load document if ID is provided in URL, or generate new ID for new documents
   useEffect(() => {
     const documentId = searchParams.get("id");
-    if (documentId && currentUser) {
-      loadDocument(documentId);
+
+    // On first run, capture the initial URL ID
+    if (!hasInitialized.current) {
+      initialUrlId.current = documentId;
+      hasInitialized.current = true;
     }
-  }, [searchParams, currentUser, loadDocument]);
+
+    if (currentUser) {
+      if (documentId && documentId === initialUrlId.current) {
+        // This ID was in the URL initially - it's an existing document, load it
+        loadDocument(documentId);
+      } else if (!documentId && !currentDocumentId) {
+        // No ID in URL and we haven't generated one - create new document
+        const newId = generateClientId();
+        setCurrentDocumentId(newId);
+
+        // Update URL immediately to prevent later URL changes
+        try {
+          const url = new URL(window.location.href);
+          url.searchParams.set("id", newId);
+          window.history.replaceState({}, "", url.toString());
+        } catch (error) {
+          console.warn("Could not update URL:", error);
+        }
+      }
+      // If documentId exists but is NOT the initial URL ID, it's our generated ID - don't load it
+    }
+  }, [searchParams, currentUser, loadDocument, currentDocumentId]);
+
+  // Ensure page starts at top when loaded (this won't work with overflow:hidden)
+  // Instead, we'll handle this in the editor component
 
   // Keyboard shortcut for manual save (Ctrl+S)
   useEffect(() => {
@@ -99,7 +131,7 @@ export default function DocumentPage() {
   }, [saveNow]);
 
   return (
-    <div className="min-h-screen relative">
+    <div className="h-screen relative overflow-hidden">
       {/* Logo positioned at very top left of page */}
       <div className="absolute top-4 left-4 z-50">
         <Link href="/" className="hover:opacity-80 transition-opacity">
@@ -116,13 +148,8 @@ export default function DocumentPage() {
       {/* Authentication Status Indicator */}
       <AuthStatus />
 
-      {/* Auto-Save Status Indicator */}
-      <div className="absolute top-4 right-4 z-40">
-        <AutoSaveIndicator autoSaveStatus={autoSaveStatus} />
-      </div>
-
       {isLoading ? (
-        <div className="flex items-center justify-center min-h-screen">
+        <div className="flex items-center justify-center h-full">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
         </div>
       ) : (
@@ -133,6 +160,7 @@ export default function DocumentPage() {
             currentDocumentId={currentDocumentId}
             currentDocumentTitle={currentDocumentTitle}
             initialContent={initialDocumentContent}
+            autoSaveStatus={autoSaveStatus}
           />
         </EditorContainer>
       )}

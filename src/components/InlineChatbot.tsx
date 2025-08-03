@@ -88,7 +88,9 @@ const InlineChatbot = React.forwardRef<InlineChatbotRef, InlineChatbotProps>(
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder={
-              selectedText ? "Ask AI to edit..." : "Ask AI to create content..."
+              selectedText
+                ? "Ask AI to edit document inline..."
+                : "Ask AI to create content..."
             }
             className={styles.input}
             disabled={isLoading}

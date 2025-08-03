@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { isModifierPressed } from "@/utils/platformDetection";
 
 interface Message {
   id: string;
@@ -25,10 +26,10 @@ export const useChatbotState = ({ documentContent }: UseChatbotStateProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isActive, setIsActive] = useState(false);
 
-  // Keyboard shortcut for Ctrl+L to activate/focus chatbot
+  // Keyboard shortcut for Ctrl+L (Windows) / Cmd+L (Mac) to activate/focus chatbot
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.ctrlKey && e.key === "l") {
+      if (isModifierPressed(e) && e.key === "l") {
         e.preventDefault();
         setIsActive(true);
 

@@ -2,12 +2,14 @@
   display: flex;
   justify-content: center;
   align-items: flex-start;
-  padding: 2rem;
-  min-height: 100vh;
+  padding: 2rem 2rem 0 2rem;
+  height: 100vh;
   background: #fff;
   box-sizing: border-box;
   gap: 0;
   max-width: 100%;
+  overflow: hidden;
+  position: relative;
 }
 
 .editorSection {

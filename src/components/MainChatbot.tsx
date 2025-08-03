@@ -1,7 +1,8 @@
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useMemo } from "react";
 import ReactMarkdown from "react-markdown";
 import styles from "./MainChatbot.module.css";
 import { useChatbotState } from "@/hooks/useChatbotState";
+import { isMacOS } from "@/utils/platformDetection";
 
 interface MainChatbotProps {
   documentContent: string;
@@ -10,6 +11,11 @@ interface MainChatbotProps {
 const MainChatbot = ({ documentContent }: MainChatbotProps) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  // Detect platform for correct shortcut display
+  const shortcutKey = useMemo(() => {
+    return isMacOS() ? "Cmd+L" : "Ctrl+L";
+  }, []);
 
   const {
     messages,
@@ -142,7 +148,7 @@ const MainChatbot = ({ documentContent }: MainChatbotProps) => {
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Ask me anything about your document... (Ctrl+L to focus)"
+              placeholder={`Ask me anything about your document... (${shortcutKey} to focus)`}
               className={styles.textInput}
               rows={1}
               disabled={isLoading}

@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useEditor } from "@tiptap/react";
 import { Position } from "@/types/editor";
+import { isModifierPressed } from "@/utils/platformDetection";
 
 interface UseKeyboardShortcutsProps {
   editor: ReturnType<typeof useEditor>;
@@ -26,7 +27,7 @@ export const useKeyboardShortcuts = ({
   // Open chatbot on keydown
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.ctrlKey && e.key === "k") {
+      if (isModifierPressed(e) && e.key === "k") {
         e.preventDefault();
 
         if (!editor || suggestionToolbarVisible) return;

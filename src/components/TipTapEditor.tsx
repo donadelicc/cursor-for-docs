@@ -13,12 +13,14 @@ import { downloadAsDocx } from "../utils/docxConverter";
 import { downloadAsPdf } from "../utils/pdfConverter";
 import { htmlToMarkdown, downloadMarkdown } from "../utils/markdownConverter";
 import { SuggestionIntent } from "@/types/editor";
+import { AutoSaveStatus } from "@/hooks/useAutoSave";
 
 // Custom hooks
 import { useTipTapExtensions } from "@/hooks/useTipTapExtensions";
 import { usePositionCalculation } from "@/hooks/usePositionCalculation";
 import { useSuggestionState } from "@/hooks/useSuggestionState";
 import { useEditorUtils } from "@/hooks/useEditorUtils";
+import { isModifierPressed } from "@/utils/platformDetection";
 
 interface TiptapEditorProps {
   onContentChange?: (content: string) => void;
@@ -26,6 +28,7 @@ interface TiptapEditorProps {
   currentDocumentId?: string;
   currentDocumentTitle?: string;
   initialContent?: string;
+  autoSaveStatus?: AutoSaveStatus;
 }
 
 export const TiptapEditor = ({
@@ -34,6 +37,7 @@ export const TiptapEditor = ({
   currentDocumentId,
   currentDocumentTitle,
   initialContent,
+  autoSaveStatus,
 }: TiptapEditorProps) => {
   const [hasPendingSuggestion, setHasPendingSuggestion] = useState(false);
   const [documentContent, setDocumentContent] = useState("");
@@ -69,6 +73,14 @@ export const TiptapEditor = ({
         const content = editor.state.doc.textContent;
         onContentChange(content);
       }
+
+      // Scroll to top of editor when created
+      setTimeout(() => {
+        const editorElement = editor.view.dom;
+        if (editorElement) {
+          editorElement.scrollTop = 0;
+        }
+      }, 100);
     },
     onUpdate: ({ editor }) => {
       // Update document content when editor content changes
@@ -142,10 +154,27 @@ export const TiptapEditor = ({
     }
   }, [editor, syncStateWithDocument, onContentChange]);
 
-  // Keyboard shortcut for Ctrl+K to focus chatbot input
+  // Scroll to top when initial content changes (when loading a document)
+  React.useEffect(() => {
+    if (editor && initialContent) {
+      setTimeout(() => {
+        const editorElement = editor.view.dom;
+        const editorContainer = editorContainerRef.current;
+
+        if (editorElement) {
+          editorElement.scrollTop = 0;
+        }
+        if (editorContainer) {
+          editorContainer.scrollTop = 0;
+        }
+      }, 150);
+    }
+  }, [editor, initialContent]);
+
+  // Keyboard shortcut for Ctrl+K (Windows) / Cmd+K (Mac) to focus chatbot input
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.ctrlKey && e.key === "k") {
+      if (isModifierPressed(e) && e.key === "k") {
         e.preventDefault();
 
         // Focus the chatbot input
@@ -223,6 +252,7 @@ export const TiptapEditor = ({
         currentDocumentId={currentDocumentId}
         documentContent={documentContent}
         disabled={!editor}
+        autoSaveStatus={autoSaveStatus}
       />
 
       <FormattingToolbar
