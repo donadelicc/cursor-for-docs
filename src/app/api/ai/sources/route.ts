@@ -15,15 +15,30 @@ const model = new AzureChatOpenAI({
 // Helper function to extract text from PDF file using Langchain WebPDFLoader
 async function extractTextFromPDF(file: File): Promise<string> {
   try {
+    console.log(
+      `Extracting text from PDF: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)}MB)`,
+    );
     const loader = new WebPDFLoader(file);
     const docs = await loader.load();
 
     // Combine all pages into a single text string
     const fullText = docs.map((doc) => doc.pageContent).join("\n\n");
+
+    if (!fullText.trim()) {
+      throw new Error(
+        "PDF appears to be empty or contains only images/scanned content",
+      );
+    }
+
+    console.log(
+      `Successfully extracted ${fullText.length} characters from ${docs.length} pages`,
+    );
     return fullText;
   } catch (error) {
     console.error("Error extracting PDF text:", error);
-    throw new Error("Failed to extract text from PDF file");
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error";
+    throw new Error(`Failed to extract text from PDF file: ${errorMessage}`);
   }
 }
 
@@ -52,13 +67,44 @@ export async function POST(req: Request) {
         };
 
         try {
-          // Fetch the file from Blob Storage
-          const fileResponse = await fetch(blobUrl);
-          if (!fileResponse.ok) {
+          // Fetch the file from Blob Storage with retry logic for timing issues
+          let fileResponse: Response | undefined;
+          let retryCount = 0;
+          const maxRetries = 3;
+          const retryDelay = 1000; // 1 second
+
+          while (retryCount <= maxRetries) {
+            fileResponse = await fetch(blobUrl);
+
+            if (fileResponse.ok) {
+              break; // Success, exit retry loop
+            }
+
+            if (fileResponse.status === 404 && retryCount < maxRetries) {
+              // File might not be immediately available, wait and retry
+              console.log(
+                `File not ready, retrying in ${retryDelay}ms... (attempt ${retryCount + 1}/${maxRetries + 1})`,
+              );
+              await new Promise((resolve) => setTimeout(resolve, retryDelay));
+              retryCount++;
+              continue;
+            }
+
+            // If not a 404 or we've exhausted retries, throw error
             throw new Error(
-              `Failed to fetch file from Blob Storage: ${fileResponse.status}`,
+              `Failed to fetch file from Blob Storage: ${fileResponse.status} after ${retryCount} retries`,
             );
           }
+
+          if (!fileResponse || !fileResponse.ok) {
+            throw new Error(
+              "Failed to fetch file from Blob Storage after all retries",
+            );
+          }
+
+          console.log(
+            `Successfully fetched file from Blob Storage: ${metadata.originalName}`,
+          );
 
           // Create File object from blob
           const arrayBuffer = await fileResponse.arrayBuffer();

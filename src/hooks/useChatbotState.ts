@@ -124,6 +124,12 @@ export const useChatbotState = ({
             }
           }
 
+          // Give blob storage a moment to make files available
+          if (blobUrls.length > 0) {
+            console.log("Waiting for blob storage to propagate...");
+            await new Promise((resolve) => setTimeout(resolve, 1500)); // 1.5 second delay
+          }
+
           // Now send the blob URLs to the sources API
           try {
             response = await fetch("/api/ai/sources", {
