@@ -29,12 +29,6 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  // Configure API routes for larger file uploads
-  experimental: {
-    // Increase body size limit for API routes
-    serverComponentsExternalPackages: [],
-  },
-  // This will be handled by our custom API route configuration
 };
 
 export default nextConfig; 

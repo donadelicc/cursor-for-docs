@@ -67,6 +67,28 @@ export const useChatbotState = ({
         };
       }
 
+      // Validate file size for Sources mode (Vercel 4.5MB limit)
+      if (mode === "sources") {
+        const maxPayloadSize = 4.5 * 1024 * 1024; // 4.5MB in bytes
+        let totalSize = 0;
+        
+        // Calculate total size of all files
+        uploadedFiles.forEach((file) => {
+          totalSize += file.size;
+        });
+        
+        // Add approximate size of query and FormData overhead (usually small)
+        totalSize += query.trim().length * 2; // UTF-8 can be up to 2 bytes per char
+        totalSize += 1024; // Add 1KB for FormData overhead
+        
+        if (totalSize > maxPayloadSize) {
+          const totalSizeMB = (totalSize / (1024 * 1024)).toFixed(1);
+          return {
+            validationError: `Files are too big. Max 4.5MB combined (current: ${totalSizeMB}MB)`,
+          };
+        }
+      }
+
       const userMessage: Message = {
         id: Date.now().toString(),
         content: query.trim(),
@@ -83,84 +105,18 @@ export const useChatbotState = ({
 
         // Choose API endpoint based on mode
         if (mode === "sources") {
-          // First, upload files to Blob Storage to handle large files
-          const blobUrls: string[] = [];
-          const fileMetadata: Array<{
-            url: string;
-            originalName: string;
-            size: number;
-          }> = [];
+          const formData = new FormData();
+          formData.append("query", query.trim());
 
-          // Import the upload function dynamically to avoid SSR issues
-          const { upload } = await import("@vercel/blob/client");
+          // Append all uploaded files
+          uploadedFiles.forEach((file) => {
+            formData.append("files", file);
+          });
 
-          for (const file of uploadedFiles) {
-            try {
-              // Validate file size before upload (50MB limit for better UX)
-              const maxSize = 50 * 1024 * 1024; // 50MB
-              if (file.size > maxSize) {
-                throw new Error(
-                  `File ${file.name} exceeds 50MB limit. Size: ${(file.size / 1024 / 1024).toFixed(2)}MB`,
-                );
-              }
-
-              // Direct upload to Blob Storage (bypasses API route limits)
-              const blob = await upload(file.name, file, {
-                access: "public",
-                handleUploadUrl: "/api/upload/url", // We'll create this endpoint
-              });
-
-              blobUrls.push(blob.url);
-              fileMetadata.push({
-                url: blob.url,
-                originalName: file.name,
-                size: file.size,
-              });
-            } catch (error) {
-              console.error(`Failed to upload file ${file.name}:`, error);
-              throw new Error(
-                `Failed to upload ${file.name}: ${error instanceof Error ? error.message : "Unknown error"}`,
-              );
-            }
-          }
-
-          // Give blob storage a moment to make files available
-          if (blobUrls.length > 0) {
-            console.log("Waiting for blob storage to propagate...");
-            await new Promise((resolve) => setTimeout(resolve, 1500)); // 1.5 second delay
-          }
-
-          // Now send the blob URLs to the sources API
-          try {
-            response = await fetch("/api/ai/sources", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                query: query.trim(),
-                blobUrls: blobUrls,
-                fileMetadata: fileMetadata,
-              }),
-            });
-          } catch (sourcesError) {
-            // Cleanup blob files if sources API fails
-            if (blobUrls.length > 0) {
-              try {
-                await fetch("/api/cleanup", {
-                  method: "POST",
-                  headers: {
-                    "Content-Type": "application/json",
-                  },
-                  body: JSON.stringify({ blobUrls }),
-                });
-                console.log("Cleaned up blob files after sources API failure");
-              } catch (cleanupError) {
-                console.error("Failed to cleanup blob files:", cleanupError);
-              }
-            }
-            throw sourcesError;
-          }
+          response = await fetch("/api/ai/sources", {
+            method: "POST",
+            body: formData,
+          });
         } else if (mode === "focused") {
           // Focused mode - uses document content
           response = await fetch("/api/ai/focus", {

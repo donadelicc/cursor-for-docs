@@ -194,9 +194,9 @@ const MainChatbot = ({
     }
   };
 
-  // File size validation (max 50MB per file)
+  // File size validation (max 10MB per file)
   const validateFileSize = (file: File): boolean => {
-    const maxSize = 50 * 1024 * 1024; // 50MB - matches server-side limit
+    const maxSize = 10 * 1024 * 1024; // 10MB
     return file.size <= maxSize;
   };
 
@@ -226,7 +226,7 @@ const MainChatbot = ({
     pdfFiles.forEach((file) => {
       // Check file size
       if (!validateFileSize(file)) {
-        errors.push(`${file.name}: File too large (max 50MB)`);
+        errors.push(`${file.name}: File too large (max 10MB)`);
         return;
       }
 

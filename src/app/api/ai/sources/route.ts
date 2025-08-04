@@ -2,7 +2,6 @@ import { AzureChatOpenAI } from "@langchain/openai";
 import { SystemMessage, HumanMessage } from "@langchain/core/messages";
 import { NextResponse } from "next/server";
 import { WebPDFLoader } from "@langchain/community/document_loaders/web/pdf";
-import { del } from "@vercel/blob";
 
 const model = new AzureChatOpenAI({
   azureOpenAIEndpoint: process.env.AZURE_OPENAI_ENDPOINT,
@@ -15,120 +14,26 @@ const model = new AzureChatOpenAI({
 // Helper function to extract text from PDF file using Langchain WebPDFLoader
 async function extractTextFromPDF(file: File): Promise<string> {
   try {
-    console.log(
-      `Extracting text from PDF: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)}MB)`,
-    );
     const loader = new WebPDFLoader(file);
     const docs = await loader.load();
 
     // Combine all pages into a single text string
     const fullText = docs.map((doc) => doc.pageContent).join("\n\n");
-
-    if (!fullText.trim()) {
-      throw new Error(
-        "PDF appears to be empty or contains only images/scanned content",
-      );
-    }
-
-    console.log(
-      `Successfully extracted ${fullText.length} characters from ${docs.length} pages`,
-    );
     return fullText;
   } catch (error) {
     console.error("Error extracting PDF text:", error);
-    const errorMessage =
-      error instanceof Error ? error.message : "Unknown error";
-    throw new Error(`Failed to extract text from PDF file: ${errorMessage}`);
+    throw new Error("Failed to extract text from PDF file");
   }
 }
 
 export async function POST(req: Request) {
-  const contentType = req.headers.get("content-type") || "";
-  let query: string;
-  let blobUrls: string[] = [];
-  let fileMetadata: Array<{ url: string; originalName: string; size: number }> =
-    [];
-  const uploadedSources: string[] = [];
-
   try {
-    if (contentType.includes("application/json")) {
-      // Handle new JSON format with Blob URLs
-      const body = await req.json();
-      query = body.query;
-      blobUrls = body.blobUrls || [];
-      fileMetadata = body.fileMetadata || [];
+    const contentType = req.headers.get("content-type") || "";
+    let query: string;
+    const uploadedSources: string[] = [];
 
-      // Process files from Blob Storage URLs
-      for (let i = 0; i < blobUrls.length; i++) {
-        const blobUrl = blobUrls[i];
-        const metadata = fileMetadata[i] || {
-          originalName: `file-${i + 1}.pdf`,
-          size: 0,
-        };
-
-        try {
-          // Fetch the file from Blob Storage with retry logic for timing issues
-          let fileResponse: Response | undefined;
-          let retryCount = 0;
-          const maxRetries = 3;
-          const retryDelay = 1000; // 1 second
-
-          while (retryCount <= maxRetries) {
-            fileResponse = await fetch(blobUrl);
-
-            if (fileResponse.ok) {
-              break; // Success, exit retry loop
-            }
-
-            if (fileResponse.status === 404 && retryCount < maxRetries) {
-              // File might not be immediately available, wait and retry
-              console.log(
-                `File not ready, retrying in ${retryDelay}ms... (attempt ${retryCount + 1}/${maxRetries + 1})`,
-              );
-              await new Promise((resolve) => setTimeout(resolve, retryDelay));
-              retryCount++;
-              continue;
-            }
-
-            // If not a 404 or we've exhausted retries, throw error
-            throw new Error(
-              `Failed to fetch file from Blob Storage: ${fileResponse.status} after ${retryCount} retries`,
-            );
-          }
-
-          if (!fileResponse || !fileResponse.ok) {
-            throw new Error(
-              "Failed to fetch file from Blob Storage after all retries",
-            );
-          }
-
-          console.log(
-            `Successfully fetched file from Blob Storage: ${metadata.originalName}`,
-          );
-
-          // Create File object from blob
-          const arrayBuffer = await fileResponse.arrayBuffer();
-          const file = new File([arrayBuffer], metadata.originalName, {
-            type: "application/pdf",
-          });
-
-          const extractedText = await extractTextFromPDF(file);
-          uploadedSources.push(
-            `=== Source: ${metadata.originalName} ===\n${extractedText}\n`,
-          );
-        } catch (error) {
-          console.error(
-            `Error processing file ${metadata.originalName}:`,
-            error,
-          );
-          // Continue processing other files even if one fails
-          uploadedSources.push(
-            `=== Source: ${metadata.originalName} ===\n[Error: Could not extract text from this PDF file]\n`,
-          );
-        }
-      }
-    } else if (contentType.includes("multipart/form-data")) {
-      // Handle legacy FormData format (for backward compatibility)
+    if (contentType.includes("multipart/form-data")) {
+      // Handle file uploads with FormData
       const formData = await req.formData();
 
       query = formData.get("query") as string;
@@ -153,11 +58,11 @@ export async function POST(req: Request) {
         }
       }
     } else {
-      // This endpoint accepts either JSON with Blob URLs or multipart/form-data with files
+      // This endpoint only accepts multipart/form-data with uploaded files
       return NextResponse.json(
         {
           error:
-            "This endpoint requires uploaded PDF files via Blob URLs (JSON) or direct file upload (multipart/form-data).",
+            "This endpoint requires uploaded PDF files. Please use multipart/form-data with files.",
         },
         { status: 400 },
       );
@@ -233,37 +138,6 @@ Please provide a comprehensive response based exclusively on the uploaded source
       throw new Error("AI response was not in the expected string format.");
     }
 
-    // Cleanup blob files after successful processing
-    if (blobUrls.length > 0) {
-      try {
-        const cleanupPromises = blobUrls.map(async (url) => {
-          try {
-            await del(url);
-            console.log(`Successfully deleted blob: ${url}`);
-            return { url, status: "deleted" };
-          } catch (error) {
-            console.error(`Failed to delete blob ${url}:`, error);
-            return {
-              url,
-              status: "error",
-              error: error instanceof Error ? error.message : "Unknown error",
-            };
-          }
-        });
-
-        const results = await Promise.all(cleanupPromises);
-        const deletedCount = results.filter(
-          (r) => r.status === "deleted",
-        ).length;
-        console.log(
-          `Cleaned up ${deletedCount}/${blobUrls.length} blob files after processing`,
-        );
-      } catch (cleanupError) {
-        console.error("Failed to cleanup blob files:", cleanupError);
-        // Don't fail the main response if cleanup fails
-      }
-    }
-
     return NextResponse.json({
       answer,
       sourcesProcessed: uploadedSources.length,
@@ -271,40 +145,6 @@ Please provide a comprehensive response based exclusively on the uploaded source
     });
   } catch (error) {
     console.error("Error in AI sources API:", error);
-
-    // Cleanup blob files in case of error
-    if (blobUrls.length > 0) {
-      try {
-        const cleanupPromises = blobUrls.map(async (url) => {
-          try {
-            await del(url);
-            console.log(`Successfully deleted blob after error: ${url}`);
-            return { url, status: "deleted" };
-          } catch (error) {
-            console.error(`Failed to delete blob ${url}:`, error);
-            return {
-              url,
-              status: "error",
-              error: error instanceof Error ? error.message : "Unknown error",
-            };
-          }
-        });
-
-        const results = await Promise.all(cleanupPromises);
-        const deletedCount = results.filter(
-          (r) => r.status === "deleted",
-        ).length;
-        console.log(
-          `Cleaned up ${deletedCount}/${blobUrls.length} blob files after error`,
-        );
-      } catch (cleanupError) {
-        console.error(
-          "Failed to cleanup blob files after error:",
-          cleanupError,
-        );
-      }
-    }
-
     const errorMessage =
       error instanceof Error ? error.message : "An unknown error occurred.";
     return NextResponse.json(
