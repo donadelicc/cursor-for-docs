@@ -10,9 +10,13 @@ interface Message {
 
 interface UseChatbotStateProps {
   documentContent: string;
+  uploadedFiles?: File[];
 }
 
-export const useChatbotState = ({ documentContent }: UseChatbotStateProps) => {
+export const useChatbotState = ({
+  documentContent,
+  uploadedFiles = [],
+}: UseChatbotStateProps) => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "welcome",
@@ -65,16 +69,35 @@ export const useChatbotState = ({ documentContent }: UseChatbotStateProps) => {
       setIsLoading(true);
 
       try {
-        const response = await fetch("/api/ai/main", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            query: query.trim(),
-            documentContent: documentContent,
-          }),
-        });
+        let response: Response;
+
+        // If there are uploaded files, use the sources API with FormData
+        if (uploadedFiles.length > 0) {
+          const formData = new FormData();
+          formData.append("query", query.trim());
+
+          // Append all uploaded files
+          uploadedFiles.forEach((file) => {
+            formData.append("files", file);
+          });
+
+          response = await fetch("/api/ai/sources", {
+            method: "POST",
+            body: formData,
+          });
+        } else {
+          // No files uploaded, use the regular ask API
+          response = await fetch("/api/ai/ask", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              query: query.trim(),
+              documentContent: documentContent,
+            }),
+          });
+        }
 
         if (!response.ok) {
           const errorData = await response.json();
@@ -85,9 +108,12 @@ export const useChatbotState = ({ documentContent }: UseChatbotStateProps) => {
 
         const data = await response.json();
 
+        // Use the AI response directly without footer text
+        const messageContent = data.answer;
+
         const assistantMessage: Message = {
           id: (Date.now() + 1).toString(),
-          content: data.answer,
+          content: messageContent,
           role: "assistant",
           timestamp: new Date(),
         };
@@ -109,7 +135,7 @@ export const useChatbotState = ({ documentContent }: UseChatbotStateProps) => {
         setIsLoading(false);
       }
     },
-    [documentContent, isLoading],
+    [documentContent, uploadedFiles, isLoading],
   );
 
   const clearChat = useCallback(() => {

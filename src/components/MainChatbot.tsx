@@ -10,9 +10,13 @@ interface MainChatbotProps {
 const MainChatbot = ({ documentContent }: MainChatbotProps) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const chatbotContainerRef = useRef<HTMLDivElement>(null);
   const [mode, setMode] = useState<"ask" | "edit">("ask");
   const [showModeDropdown, setShowModeDropdown] = useState(false);
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+  const [isUploadingFiles, setIsUploadingFiles] = useState(false);
+  const [uploadingFiles, setUploadingFiles] = useState<Set<string>>(new Set());
 
   const {
     messages,
@@ -22,7 +26,7 @@ const MainChatbot = ({ documentContent }: MainChatbotProps) => {
     isActive,
     sendMessage,
     clearChat,
-  } = useChatbotState({ documentContent });
+  } = useChatbotState({ documentContent, uploadedFiles });
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -95,6 +99,95 @@ const MainChatbot = ({ documentContent }: MainChatbotProps) => {
     setShowModeDropdown(false);
   };
 
+  const handleFileUpload = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      setIsUploadingFiles(true);
+      processFiles(files);
+      setTimeout(() => setIsUploadingFiles(false), 2000);
+    }
+
+    // Clear the input so the same file can be selected again
+    if (e.target) {
+      e.target.value = "";
+    }
+  };
+
+  const removeUploadedFile = (index: number) => {
+    setUploadedFiles((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  // File size validation (max 10MB per file)
+  const validateFileSize = (file: File): boolean => {
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    return file.size <= maxSize;
+  };
+
+  // Process files with validation
+  const processFiles = (files: FileList | File[]) => {
+    const fileArray = Array.from(files);
+    const pdfFiles = fileArray.filter(
+      (file) => file.type === "application/pdf",
+    );
+    const validFiles: File[] = [];
+    const errors: string[] = [];
+
+    pdfFiles.forEach((file) => {
+      if (!validateFileSize(file)) {
+        errors.push(`${file.name}: File too large (max 10MB)`);
+      } else {
+        validFiles.push(file);
+      }
+    });
+
+    if (fileArray.length !== pdfFiles.length) {
+      errors.push("Only PDF files are supported");
+    }
+
+    if (errors.length > 0) {
+      console.warn("File upload errors:", errors);
+      // TODO: Show user notification with errors
+    }
+
+    if (validFiles.length > 0) {
+      // Add files to uploading state
+      const fileNames = validFiles.map((f) => f.name);
+      setUploadingFiles((prev) => new Set([...prev, ...fileNames]));
+
+      // Add files to the list
+      setUploadedFiles((prev) => [...prev, ...validFiles]);
+
+      // Simulate upload completion after 2 seconds
+      setTimeout(() => {
+        setUploadingFiles((prev) => {
+          const newSet = new Set(prev);
+          fileNames.forEach((name) => newSet.delete(name));
+          return newSet;
+        });
+      }, 2000);
+    }
+  };
+
+  // Drag & Drop handlers - minimal, no visual feedback
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      processFiles(files);
+    }
+  };
+
   // Auto-resize textarea based on content
   const autoResizeTextarea = () => {
     const textarea = inputRef.current;
@@ -120,12 +213,13 @@ const MainChatbot = ({ documentContent }: MainChatbotProps) => {
     textarea.style.overflowY = contentHeight > maxHeight ? "auto" : "hidden";
   };
 
-  const formatTime = (date: Date) => {
-    return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-  };
-
   return (
-    <div ref={chatbotContainerRef} className={styles.chatbotContainer}>
+    <div
+      ref={chatbotContainerRef}
+      className={styles.chatbotContainer}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
+    >
       {/* Header */}
       <div className={styles.header}>
         <div className={styles.headerContent}>
@@ -165,16 +259,13 @@ const MainChatbot = ({ documentContent }: MainChatbotProps) => {
             >
               <div className={styles.messageContent}>
                 <div className={styles.messageText}>
-                  <div className={styles.messageBody}>
-                    {message.role === "assistant" ? (
+                  {message.role === "assistant" ? (
+                    <div className="prose prose-sm max-w-none prose-gray prose-headings:font-semibold prose-headings:text-gray-900 prose-p:text-gray-700 prose-li:text-gray-700 prose-strong:text-gray-900">
                       <ReactMarkdown>{message.content}</ReactMarkdown>
-                    ) : (
-                      message.content
-                    )}
-                  </div>
-                  <div className={styles.messageTime}>
-                    {formatTime(message.timestamp)}
-                  </div>
+                    </div>
+                  ) : (
+                    <div className={styles.messageBody}>{message.content}</div>
+                  )}
                 </div>
               </div>
             </div>
@@ -202,6 +293,81 @@ const MainChatbot = ({ documentContent }: MainChatbotProps) => {
 
       {/* Input */}
       <div className={styles.inputContainer}>
+        {/* Individual Source Files - Above Input */}
+        {uploadedFiles.length > 0 && (
+          <div className={styles.sourceFilesContainer}>
+            {uploadedFiles.map((file, index) => {
+              const isUploading = uploadingFiles.has(file.name);
+              return (
+                <div key={index} className={styles.sourceFileItem}>
+                  <div className={styles.sourceFileInfo}>
+                    <div className={styles.sourceFileIcon}>
+                      {isUploading ? (
+                        <div className={styles.loadingSpinner}>
+                          <svg
+                            className={styles.spinnerIcon}
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <circle
+                              className={styles.spinnerCircle}
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                              fill="none"
+                              strokeDasharray="32"
+                              strokeDashoffset="32"
+                            />
+                          </svg>
+                        </div>
+                      ) : (
+                        <div
+                          onClick={() => removeUploadedFile(index)}
+                          title="Remove source"
+                          style={{ cursor: "pointer" }}
+                        >
+                          <svg
+                            className={styles.pdfIcon}
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                            />
+                          </svg>
+                          <svg
+                            className={styles.removeIcon}
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M6 18L18 6M6 6l12 12"
+                            />
+                          </svg>
+                        </div>
+                      )}
+                    </div>
+                    <div className={styles.sourceFileDetails}>
+                      <span className={styles.sourceFileName}>{file.name}</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className={styles.inputForm}>
           {/* Text Input with Embedded Buttons */}
           <div className={styles.textInputWrapper}>
@@ -277,29 +443,65 @@ const MainChatbot = ({ documentContent }: MainChatbotProps) => {
                 )}
               </div>
 
-              {/* Send Button - Bottom Right */}
-              <button
-                type="submit"
-                disabled={!inputValue.trim() || isLoading}
-                className={styles.sendButton}
-              >
-                <svg
-                  className={styles.sendIcon}
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
+              {/* Right Side Buttons */}
+              <div className={styles.rightButtons}>
+                {/* Upload Button */}
+                <button
+                  type="button"
+                  onClick={handleFileUpload}
+                  disabled={isLoading || isUploadingFiles}
+                  className={styles.uploadButton}
+                  title="Upload PDF files"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
-                  />
-                </svg>
-              </button>
+                  <svg
+                    className={styles.uploadIcon}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"
+                    />
+                  </svg>
+                </button>
+
+                {/* Send Button */}
+                <button
+                  type="submit"
+                  disabled={!inputValue.trim() || isLoading}
+                  className={styles.sendButton}
+                >
+                  <svg
+                    className={styles.sendIcon}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+                    />
+                  </svg>
+                </button>
+              </div>
             </div>
           </div>
         </form>
+
+        {/* Hidden file input */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".pdf"
+          multiple
+          onChange={handleFileChange}
+          style={{ display: "none" }}
+        />
       </div>
     </div>
   );
