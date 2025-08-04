@@ -34,6 +34,24 @@ const EditorContainer = ({
     setSelectedSources(files);
   }, []);
 
+  // Handle removing files from selectedSources
+  const handleFileRemove = useCallback((fileToRemove: File) => {
+    setSelectedSources((prev) =>
+      prev.filter(
+        (f) => !(f.name === fileToRemove.name && f.size === fileToRemove.size),
+      ),
+    );
+  }, []);
+
+  // Handle removing files from chatbotUploadedFiles (files uploaded directly to chat)
+  const handleChatbotFileRemove = useCallback((fileToRemove: File) => {
+    setChatbotUploadedFiles((prev) =>
+      prev.filter(
+        (f) => !(f.name === fileToRemove.name && f.size === fileToRemove.size),
+      ),
+    );
+  }, []);
+
   // Handle files uploaded from chatbot - add them to KnowledgeBase
   const handleChatbotFileUpload = useCallback(
     (files: File[]) => {
@@ -68,6 +86,7 @@ const EditorContainer = ({
             onFileUpload={onFileUpload}
             onSelectedSourcesChange={handleSelectedSourcesChange}
             externalFiles={chatbotUploadedFiles}
+            onExternalFileRemove={handleChatbotFileRemove}
           />
         </div>
 
@@ -86,6 +105,8 @@ const EditorContainer = ({
             documentContent={documentContent}
             selectedSources={selectedSources}
             onFileUpload={handleChatbotFileUpload}
+            onFileRemove={handleFileRemove}
+            onChatbotFileRemove={handleChatbotFileRemove}
           />
         </div>
       </ResizableContainer>

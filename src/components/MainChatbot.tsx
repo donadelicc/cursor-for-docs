@@ -7,18 +7,24 @@ interface MainChatbotProps {
   documentContent: string;
   selectedSources?: File[];
   onFileUpload?: (files: File[]) => void;
+  onFileRemove?: (file: File) => void;
+  onChatbotFileRemove?: (file: File) => void;
 }
 
 const MainChatbot = ({
   documentContent,
   selectedSources = [],
   onFileUpload,
+  onFileRemove,
+  onChatbotFileRemove,
 }: MainChatbotProps) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const chatbotContainerRef = useRef<HTMLDivElement>(null);
-  const [mode, setMode] = useState<"ask" | "edit">("ask");
+  const [mode, setMode] = useState<"general" | "sources" | "focused">(
+    "general",
+  );
   const [showModeDropdown, setShowModeDropdown] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [isUploadingFiles, setIsUploadingFiles] = useState(false);
@@ -33,6 +39,16 @@ const MainChatbot = ({
       self.findIndex((f) => f.name === file.name && f.size === file.size),
   );
 
+  // Auto-switch to Sources mode when files are available
+  useEffect(() => {
+    if (allUploadedFiles.length > 0 && mode !== "sources") {
+      setMode("sources");
+    } else if (allUploadedFiles.length === 0 && mode === "sources") {
+      // Switch back to General mode when no files remain
+      setMode("general");
+    }
+  }, [allUploadedFiles.length, mode]);
+
   const {
     messages,
     inputValue,
@@ -41,7 +57,11 @@ const MainChatbot = ({
     isActive,
     sendMessage,
     clearChat,
-  } = useChatbotState({ documentContent, uploadedFiles: allUploadedFiles });
+  } = useChatbotState({
+    documentContent,
+    uploadedFiles: allUploadedFiles,
+    mode,
+  });
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -98,7 +118,20 @@ const MainChatbot = ({
     e.preventDefault();
     if (!inputValue.trim() || isLoading) return;
 
-    await sendMessage(inputValue);
+    const result = await sendMessage(inputValue);
+
+    // Handle validation errors
+    if (result?.validationError) {
+      setNotification(result.validationError);
+
+      // Auto-hide notification after 5 seconds
+      setTimeout(() => {
+        setNotification(null);
+      }, 5000);
+
+      return;
+    }
+
     // Textarea will be resized automatically via useEffect when inputValue is cleared
   };
 
@@ -109,7 +142,7 @@ const MainChatbot = ({
     }
   };
 
-  const handleModeChange = (newMode: "ask" | "edit") => {
+  const handleModeChange = (newMode: "general" | "sources" | "focused") => {
     setMode(newMode);
     setShowModeDropdown(false);
   };
@@ -135,18 +168,29 @@ const MainChatbot = ({
   const removeUploadedFile = (index: number) => {
     const fileToRemove = allUploadedFiles[index];
 
-    // Only remove from uploadedFiles if it exists there (not from selectedSources)
+    // Check if file is from selectedSources (Knowledge Base)
+    const isFromSelectedSources = selectedSources.some(
+      (f) => f.name === fileToRemove.name && f.size === fileToRemove.size,
+    );
+
+    // Check if file is from directly uploaded files
     const isFromUploadedFiles = uploadedFiles.some(
       (f) => f.name === fileToRemove.name && f.size === fileToRemove.size,
     );
 
-    if (isFromUploadedFiles) {
+    if (isFromSelectedSources) {
+      // Notify parent component to remove from Knowledge Base selection
+      onFileRemove?.(fileToRemove);
+    } else if (isFromUploadedFiles) {
+      // Remove from directly uploaded files
       setUploadedFiles((prev) =>
         prev.filter(
           (f) =>
             !(f.name === fileToRemove.name && f.size === fileToRemove.size),
         ),
       );
+      // Also notify parent to remove from chatbotUploadedFiles
+      onChatbotFileRemove?.(fileToRemove);
     }
   };
 
@@ -399,13 +443,6 @@ const MainChatbot = ({
                           title="Remove source"
                           style={{
                             cursor: "pointer",
-                            // Hide remove functionality for files from selectedSources
-                            pointerEvents: selectedSources.some(
-                              (f) =>
-                                f.name === file.name && f.size === file.size,
-                            )
-                              ? "none"
-                              : "auto",
                           }}
                         >
                           <svg
@@ -421,24 +458,20 @@ const MainChatbot = ({
                               d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                             />
                           </svg>
-                          {/* Only show remove icon for directly uploaded files */}
-                          {!selectedSources.some(
-                            (f) => f.name === file.name && f.size === file.size,
-                          ) && (
-                            <svg
-                              className={styles.removeIcon}
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M6 18L18 6M6 6l12 12"
-                              />
-                            </svg>
-                          )}
+                          {/* Show remove icon for all files */}
+                          <svg
+                            className={styles.removeIcon}
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M6 18L18 6M6 6l12 12"
+                            />
+                          </svg>
                         </div>
                       )}
                     </div>
@@ -464,9 +497,11 @@ const MainChatbot = ({
               }}
               onKeyDown={handleKeyDown}
               placeholder={
-                mode === "ask"
+                mode === "general"
                   ? `Ask me anything...`
-                  : `Ask me to edit your document...`
+                  : mode === "sources"
+                    ? `Ask questions about your uploaded sources...`
+                    : `Ask questions about your document...`
               }
               className={styles.textInput}
               rows={1}
@@ -484,7 +519,11 @@ const MainChatbot = ({
                   onClick={() => setShowModeDropdown(!showModeDropdown)}
                 >
                   <span className={styles.modeButtonText}>
-                    {mode === "ask" ? "Ask" : "Edit"}
+                    {mode === "general"
+                      ? "General"
+                      : mode === "sources"
+                        ? "Sources"
+                        : "Focused"}
                   </span>
                   <svg
                     className={`${styles.chevronIcon} ${
@@ -508,20 +547,29 @@ const MainChatbot = ({
                     <button
                       type="button"
                       className={`${styles.modeOption} ${
-                        mode === "ask" ? styles.modeOptionActive : ""
+                        mode === "general" ? styles.modeOptionActive : ""
                       }`}
-                      onClick={() => handleModeChange("ask")}
+                      onClick={() => handleModeChange("general")}
                     >
-                      Ask
+                      General
                     </button>
                     <button
                       type="button"
                       className={`${styles.modeOption} ${
-                        mode === "edit" ? styles.modeOptionActive : ""
+                        mode === "sources" ? styles.modeOptionActive : ""
                       }`}
-                      onClick={() => handleModeChange("edit")}
+                      onClick={() => handleModeChange("sources")}
                     >
-                      Edit
+                      Sources
+                    </button>
+                    <button
+                      type="button"
+                      className={`${styles.modeOption} ${
+                        mode === "focused" ? styles.modeOptionActive : ""
+                      }`}
+                      onClick={() => handleModeChange("focused")}
+                    >
+                      Focused
                     </button>
                   </div>
                 )}

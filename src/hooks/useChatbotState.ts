@@ -11,17 +11,19 @@ interface Message {
 interface UseChatbotStateProps {
   documentContent: string;
   uploadedFiles?: File[];
+  mode: "general" | "sources" | "focused";
 }
 
 export const useChatbotState = ({
   documentContent,
   uploadedFiles = [],
+  mode,
 }: UseChatbotStateProps) => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "welcome",
       content:
-        "Hello! I'm your AI document research assistant. I can help you understand and analyze your document. Ask me anything about the content!",
+        "Hello! I'm your AI assistant. Switch between modes to ask general questions, analyze your documents, or explore your uploaded sources!",
       role: "assistant",
       timestamp: new Date(),
     },
@@ -55,7 +57,15 @@ export const useChatbotState = ({
 
   const sendMessage = useCallback(
     async (query: string) => {
-      if (!query.trim() || isLoading) return;
+      if (!query.trim() || isLoading) return undefined;
+
+      // Validate Sources mode before proceeding
+      if (mode === "sources" && uploadedFiles.length === 0) {
+        return {
+          validationError:
+            "Sources mode requires uploaded PDF files. Please upload some files first.",
+        };
+      }
 
       const userMessage: Message = {
         id: Date.now().toString(),
@@ -71,8 +81,8 @@ export const useChatbotState = ({
       try {
         let response: Response;
 
-        // If there are uploaded files, use the sources API with FormData
-        if (uploadedFiles.length > 0) {
+        // Choose API endpoint based on mode
+        if (mode === "sources") {
           const formData = new FormData();
           formData.append("query", query.trim());
 
@@ -85,9 +95,9 @@ export const useChatbotState = ({
             method: "POST",
             body: formData,
           });
-        } else {
-          // No files uploaded, use the regular ask API
-          response = await fetch("/api/ai/ask", {
+        } else if (mode === "focused") {
+          // Focused mode - uses document content
+          response = await fetch("/api/ai/focus", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -95,6 +105,17 @@ export const useChatbotState = ({
             body: JSON.stringify({
               query: query.trim(),
               documentContent: documentContent,
+            }),
+          });
+        } else {
+          // General mode - general AI queries
+          response = await fetch("/api/ai/ask", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              query: query.trim(),
             }),
           });
         }
@@ -134,8 +155,11 @@ export const useChatbotState = ({
       } finally {
         setIsLoading(false);
       }
+
+      // Return undefined for successful execution
+      return undefined;
     },
-    [documentContent, uploadedFiles, isLoading],
+    [documentContent, uploadedFiles, mode, isLoading],
   );
 
   const clearChat = useCallback(() => {
@@ -143,7 +167,7 @@ export const useChatbotState = ({
       {
         id: "welcome",
         content:
-          "Hello! I'm your AI document research assistant. I can help you understand and analyze your document. Ask me anything about the content!",
+          "Hello! I'm your AI assistant. Switch between modes to ask general questions, analyze your documents, or explore your uploaded sources!",
         role: "assistant",
         timestamp: new Date(),
       },

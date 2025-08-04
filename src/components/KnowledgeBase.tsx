@@ -16,12 +16,14 @@ interface KnowledgeBaseProps {
   onFileUpload?: (files: File[]) => void;
   onSelectedSourcesChange?: (selectedFiles: File[]) => void;
   externalFiles?: File[];
+  onExternalFileRemove?: (file: File) => void;
 }
 
 const KnowledgeBase = ({
   onFileUpload,
   onSelectedSourcesChange,
   externalFiles = [],
+  onExternalFileRemove,
 }: KnowledgeBaseProps) => {
   const [sources, setSources] = useState<UploadedSource[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
@@ -134,36 +136,49 @@ const KnowledgeBase = ({
     handleFileUpload(e.target.files);
   };
 
-  // Use useEffect to add external files (from chatbot) to sources
+  // Use useEffect to sync external files (from chatbot) with sources
   useEffect(() => {
-    if (externalFiles.length > 0) {
-      const newSources: UploadedSource[] = [];
+    // Add new external files
+    const newSources: UploadedSource[] = [];
 
-      externalFiles.forEach((file) => {
-        // Check if file already exists in sources
-        const fileExists = sources.some(
-          (source) => source.name === file.name && source.size === file.size,
-        );
+    externalFiles.forEach((file) => {
+      // Check if file already exists in sources
+      const fileExists = sources.some(
+        (source) => source.name === file.name && source.size === file.size,
+      );
 
-        if (!fileExists && file.type === "application/pdf") {
-          const newSource: UploadedSource = {
-            id:
-              Math.random().toString(36).substring(2) + Date.now().toString(36),
-            name: file.name,
-            type: "pdf",
-            size: file.size,
-            uploadDate: new Date(),
-            isSelected: false, // Don't auto-select external files
-            file: file,
-            isExternal: true, // Mark as external (from chatbot)
-          };
-          newSources.push(newSource);
-        }
-      });
-
-      if (newSources.length > 0) {
-        setSources((prev) => [...prev, ...newSources]);
+      if (!fileExists && file.type === "application/pdf") {
+        const newSource: UploadedSource = {
+          id: Math.random().toString(36).substring(2) + Date.now().toString(36),
+          name: file.name,
+          type: "pdf",
+          size: file.size,
+          uploadDate: new Date(),
+          isSelected: true, // Auto-select files uploaded directly to chat
+          file: file,
+          isExternal: true, // Mark as external (from chatbot)
+        };
+        newSources.push(newSource);
       }
+    });
+
+    // Remove external files that are no longer in externalFiles
+    const externalFilesToKeep = sources.filter((source) => {
+      if (!source.isExternal) return true; // Keep non-external files
+
+      // Keep external files that still exist in externalFiles
+      return externalFiles.some(
+        (extFile) =>
+          extFile.name === source.name && extFile.size === source.size,
+      );
+    });
+
+    // Update sources if there are changes
+    const hasNewFiles = newSources.length > 0;
+    const hasRemovedFiles = externalFilesToKeep.length !== sources.length;
+
+    if (hasNewFiles || hasRemovedFiles) {
+      setSources([...externalFilesToKeep, ...newSources]);
     }
   }, [externalFiles, sources]);
 
@@ -176,17 +191,33 @@ const KnowledgeBase = ({
   }, [sources, onSelectedSourcesChange]);
 
   const removeSource = (id: string) => {
+    // Find the source being removed to check if it's external
+    const sourceToRemove = sources.find((source) => source.id === id);
+
+    if (sourceToRemove?.isExternal) {
+      // Notify parent to remove from chatbotUploadedFiles if it's an external file
+      onExternalFileRemove?.(sourceToRemove.file);
+    }
+
     setSources((prev) => prev.filter((source) => source.id !== id));
   };
 
   const toggleSourceSelection = (id: string) => {
-    setSources((prev) =>
-      prev.map((source) =>
-        source.id === id
-          ? { ...source, isSelected: !source.isSelected }
-          : source,
-      ),
-    );
+    const sourceToToggle = sources.find((source) => source.id === id);
+
+    if (sourceToToggle?.isExternal && sourceToToggle.isSelected) {
+      // If deselecting an external file (uploaded to chat), remove it from chat entirely
+      onExternalFileRemove?.(sourceToToggle.file);
+    } else {
+      // Normal toggle for non-external files or when selecting
+      setSources((prev) =>
+        prev.map((source) =>
+          source.id === id
+            ? { ...source, isSelected: !source.isSelected }
+            : source,
+        ),
+      );
+    }
   };
 
   const truncateFilename = (

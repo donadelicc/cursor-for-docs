@@ -2,18 +2,25 @@ import { AzureChatOpenAI } from "@langchain/openai";
 import { SystemMessage, HumanMessage } from "@langchain/core/messages";
 import { NextResponse } from "next/server";
 
+// Initialize the Azure OpenAI model with credentials from environment variables.
+// This setup is done once and reused for all requests.
 const model = new AzureChatOpenAI({
   azureOpenAIEndpoint: process.env.AZURE_OPENAI_ENDPOINT,
   azureOpenAIApiKey: process.env.AZURE_OPENAI_API_KEY,
   azureOpenAIApiVersion: process.env.AZURE_OPENAI_API_VERSION,
-  azureOpenAIApiInstanceName: process.env.AZURE_OPENAI_INSTANCE_NAME,
   azureOpenAIApiDeploymentName: process.env.AZURE_OPENAI_DEPLOYMENT,
 });
 
+/**
+ * Handles POST requests to the API endpoint.
+ * It expects a JSON body with a "query" property.
+ */
 export async function POST(req: Request) {
   try {
-    const { query, documentContent } = await req.json();
+    // Extract the user's query from the request body.
+    const { query } = await req.json();
 
+    // Validate that the query exists.
     if (!query) {
       return NextResponse.json(
         { error: "Missing query in request body" },
@@ -21,63 +28,38 @@ export async function POST(req: Request) {
       );
     }
 
-    // Handle empty document content
-    const textToAnalyze = documentContent || "[Empty document]";
+    // Define a concise system prompt for the AI assistant.
+    const systemMessage =
+      "You are an AI assistant. Answer the user in a professional, concise manner.";
 
-    // System message for document research assistant
-    const systemMessage = `You are an expert document research assistant. Your role is to help users understand and analyze their documents by answering questions about the content.
-
-Guidelines for your responses:
-1. **Document Analysis**: Provide thorough, insightful analysis of the document content
-2. **Context-Aware**: Base your answers strictly on the provided document content
-3. **Research-Oriented**: Act as a researcher who can identify patterns, themes, key points, and relationships within the text
-4. **Helpful Explanations**: Provide clear, well-structured explanations that help users understand their document better
-5. **Source References**: When relevant, reference specific parts of the document in your responses
-6. **Professional Tone**: Maintain a scholarly, helpful tone appropriate for document analysis
-
-What you can help with:
-- Summarizing sections or the entire document
-- Identifying key themes, concepts, or arguments
-- Explaining complex sections or terminology
-- Finding specific information within the document
-- Analyzing document structure and organization
-- Comparing different sections or ideas within the document
-- Providing insights about the document's purpose, audience, or style
-
-What you should NOT do:
-- Do not suggest edits or changes to the document (that's for the inline editor)
-- Do not make up information not present in the document
-- Do not provide general knowledge that isn't related to the document content
-
-Always base your responses on the actual document content provided to you.`;
-
+    // Construct the message payload for the AI model.
     const messages = [
       new SystemMessage(systemMessage),
-      new HumanMessage(
-        `Here is the document content to analyze:\n\n---\n${textToAnalyze}\n---\n\n` +
-          `Here is the user's question about the document:\n\n---\n${query}\n---\n\n` +
-          `Please provide a helpful, research-focused response based on the document content.`,
-      ),
+      new HumanMessage(query),
     ];
 
+    // Send the request to the AI model and wait for the response.
     const response = await model.invoke(messages);
     const answer = response.content;
 
+    // Ensure the response content is a string before sending it back.
     if (typeof answer !== "string") {
       throw new Error("AI response was not in the expected string format.");
     }
 
-    return NextResponse.json({
-      answer,
-      timestamp: new Date().toISOString(),
-    });
+    // Return the AI's answer in a JSON response.
+    return NextResponse.json({ answer });
   } catch (error) {
-    console.error("Error in AI main chatbot API:", error);
+    // Log the error for debugging purposes.
+    console.error("Error in AI chatbot API:", error);
+
+    // Return a generic error message to the client.
     const errorMessage =
       error instanceof Error ? error.message : "An unknown error occurred.";
+
     return NextResponse.json(
       {
-        error: "Failed to get a response from the AI research assistant.",
+        error: "Failed to get a response from the AI assistant.",
         details: errorMessage,
       },
       { status: 500 },
