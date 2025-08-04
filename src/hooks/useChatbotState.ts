@@ -87,27 +87,28 @@ export const useChatbotState = ({
           const blobUrls: string[] = [];
           const fileMetadata: Array<{ url: string; originalName: string; size: number }> = [];
 
+          // Import the upload function dynamically to avoid SSR issues
+          const { upload } = await import('@vercel/blob/client');
+          
           for (const file of uploadedFiles) {
             try {
-              const uploadFormData = new FormData();
-              uploadFormData.append("file", file);
-
-              const uploadResponse = await fetch("/api/upload", {
-                method: "POST",
-                body: uploadFormData,
-              });
-
-              if (!uploadResponse.ok) {
-                const errorData = await uploadResponse.json();
-                throw new Error(errorData.error || "Failed to upload file");
+              // Validate file size before upload (50MB limit for better UX)
+              const maxSize = 50 * 1024 * 1024; // 50MB
+              if (file.size > maxSize) {
+                throw new Error(`File ${file.name} exceeds 50MB limit. Size: ${(file.size / 1024 / 1024).toFixed(2)}MB`);
               }
 
-              const uploadResult = await uploadResponse.json();
-              blobUrls.push(uploadResult.url);
+              // Direct upload to Blob Storage (bypasses API route limits)
+              const blob = await upload(file.name, file, {
+                access: 'public',
+                handleUploadUrl: '/api/upload/url', // We'll create this endpoint
+              });
+
+              blobUrls.push(blob.url);
               fileMetadata.push({
-                url: uploadResult.url,
-                originalName: uploadResult.originalName,
-                size: uploadResult.size,
+                url: blob.url,
+                originalName: file.name,
+                size: file.size,
               });
             } catch (error) {
               console.error(`Failed to upload file ${file.name}:`, error);
