@@ -210,6 +210,19 @@ const MainChatbot = ({
     const duplicateFiles: string[] = [];
     const errors: string[] = [];
 
+    // Check if adding new files would exceed the 3-file limit
+    const currentAttachedCount = allUploadedFiles.length;
+    const maxAttachedFiles = 3;
+
+    if (currentAttachedCount >= maxAttachedFiles) {
+      setNotification("Maximum documents 3");
+      // Auto-hide notification after 5 seconds
+      setTimeout(() => {
+        setNotification(null);
+      }, 5000);
+      return;
+    }
+
     pdfFiles.forEach((file) => {
       // Check file size
       if (!validateFileSize(file)) {
@@ -228,9 +241,22 @@ const MainChatbot = ({
         return;
       }
 
+      // Check if adding this file would exceed the limit
+      if (currentAttachedCount + validFiles.length >= maxAttachedFiles) {
+        // Stop processing more files - we've reached the limit
+        return;
+      }
+
       // File is valid and not duplicate
       validFiles.push(file);
     });
+
+    // Additional check: if we would exceed the limit with valid files, show warning
+    if (currentAttachedCount + validFiles.length > maxAttachedFiles) {
+      const filesToAdd = maxAttachedFiles - currentAttachedCount;
+      validFiles.splice(filesToAdd); // Keep only files that fit within the limit
+      errors.push("Maximum documents 3");
+    }
 
     // Collect all error messages
     if (fileArray.length !== pdfFiles.length) {

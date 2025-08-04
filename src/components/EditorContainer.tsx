@@ -24,6 +24,16 @@ const EditorContainer = ({
   const [selectedSources, setSelectedSources] = useState<File[]>([]);
   const [chatbotUploadedFiles, setChatbotUploadedFiles] = useState<File[]>([]);
 
+  // Calculate current attached file count (same logic as MainChatbot's allUploadedFiles)
+  const currentAttachedCount = [
+    ...selectedSources,
+    ...chatbotUploadedFiles,
+  ].filter(
+    (file, index, self) =>
+      index ===
+      self.findIndex((f) => f.name === file.name && f.size === file.size),
+  ).length;
+
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleResize = (widths: [number, number, number]) => {
     // Optional: Handle resize events if needed
@@ -87,6 +97,7 @@ const EditorContainer = ({
             onSelectedSourcesChange={handleSelectedSourcesChange}
             externalFiles={chatbotUploadedFiles}
             onExternalFileRemove={handleChatbotFileRemove}
+            currentAttachedCount={currentAttachedCount}
           />
         </div>
 

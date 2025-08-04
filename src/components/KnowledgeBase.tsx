@@ -17,6 +17,7 @@ interface KnowledgeBaseProps {
   onSelectedSourcesChange?: (selectedFiles: File[]) => void;
   externalFiles?: File[];
   onExternalFileRemove?: (file: File) => void;
+  currentAttachedCount?: number; // Current count of files attached to chatbot
 }
 
 const KnowledgeBase = ({
@@ -24,6 +25,7 @@ const KnowledgeBase = ({
   onSelectedSourcesChange,
   externalFiles = [],
   onExternalFileRemove,
+  currentAttachedCount = 0,
 }: KnowledgeBaseProps) => {
   const [sources, setSources] = useState<UploadedSource[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
@@ -204,11 +206,25 @@ const KnowledgeBase = ({
 
   const toggleSourceSelection = (id: string) => {
     const sourceToToggle = sources.find((source) => source.id === id);
+    const maxAttachedFiles = 3;
 
     if (sourceToToggle?.isExternal && sourceToToggle.isSelected) {
       // If deselecting an external file (uploaded to chat), remove it from chat entirely
       onExternalFileRemove?.(sourceToToggle.file);
     } else {
+      // Check if trying to select (not deselect) and if it would exceed the limit
+      if (
+        !sourceToToggle?.isSelected &&
+        currentAttachedCount >= maxAttachedFiles
+      ) {
+        setNotification("Maximum documents 3");
+        // Auto-hide notification after 5 seconds
+        setTimeout(() => {
+          setNotification(null);
+        }, 5000);
+        return;
+      }
+
       // Normal toggle for non-external files or when selecting
       setSources((prev) =>
         prev.map((source) =>
