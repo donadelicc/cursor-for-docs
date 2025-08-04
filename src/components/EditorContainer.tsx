@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useCallback } from "react";
 import { Editor } from "@tiptap/react";
 import styles from "./EditorContainer.module.css";
 import ResizableContainer from "./ResizableContainer";
@@ -21,11 +21,40 @@ const EditorContainer = ({
   onFileUpload,
   onEditorReady,
 }: EditorContainerProps) => {
+  const [selectedSources, setSelectedSources] = useState<File[]>([]);
+  const [chatbotUploadedFiles, setChatbotUploadedFiles] = useState<File[]>([]);
+
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleResize = (widths: [number, number, number]) => {
     // Optional: Handle resize events if needed
     // Could be used for persistence, analytics, etc.
   };
+
+  const handleSelectedSourcesChange = useCallback((files: File[]) => {
+    setSelectedSources(files);
+  }, []);
+
+  // Handle files uploaded from chatbot - add them to KnowledgeBase
+  const handleChatbotFileUpload = useCallback(
+    (files: File[]) => {
+      setChatbotUploadedFiles((prev) => {
+        // Avoid duplicates by filtering out files that already exist
+        const newFiles = files.filter(
+          (newFile) =>
+            !prev.some(
+              (existingFile) =>
+                existingFile.name === newFile.name &&
+                existingFile.size === newFile.size,
+            ),
+        );
+        return [...prev, ...newFiles];
+      });
+
+      // Also call the original callback if needed
+      onFileUpload?.(files);
+    },
+    [onFileUpload],
+  );
 
   return (
     <div className={styles.editorContainer}>
@@ -35,7 +64,11 @@ const EditorContainer = ({
       >
         {/* Knowledge Base Panel */}
         <div className={styles.sourcesSection}>
-          <KnowledgeBase onFileUpload={onFileUpload} />
+          <KnowledgeBase
+            onFileUpload={onFileUpload}
+            onSelectedSourcesChange={handleSelectedSourcesChange}
+            externalFiles={chatbotUploadedFiles}
+          />
         </div>
 
         {/* Editor Panel */}
@@ -49,7 +82,11 @@ const EditorContainer = ({
 
         {/* Chatbot Panel */}
         <div className={styles.chatbotSection}>
-          <MainChatbot documentContent={documentContent} />
+          <MainChatbot
+            documentContent={documentContent}
+            selectedSources={selectedSources}
+            onFileUpload={handleChatbotFileUpload}
+          />
         </div>
       </ResizableContainer>
     </div>

@@ -5,9 +5,15 @@ import { useChatbotState } from "@/hooks/useChatbotState";
 
 interface MainChatbotProps {
   documentContent: string;
+  selectedSources?: File[];
+  onFileUpload?: (files: File[]) => void;
 }
 
-const MainChatbot = ({ documentContent }: MainChatbotProps) => {
+const MainChatbot = ({
+  documentContent,
+  selectedSources = [],
+  onFileUpload,
+}: MainChatbotProps) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -17,6 +23,15 @@ const MainChatbot = ({ documentContent }: MainChatbotProps) => {
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [isUploadingFiles, setIsUploadingFiles] = useState(false);
   const [uploadingFiles, setUploadingFiles] = useState<Set<string>>(new Set());
+  const [notification, setNotification] = useState<string | null>(null);
+
+  // Combine selected sources from KnowledgeBase with directly uploaded files
+  // Remove duplicates based on file name and size to avoid conflicts
+  const allUploadedFiles = [...selectedSources, ...uploadedFiles].filter(
+    (file, index, self) =>
+      index ===
+      self.findIndex((f) => f.name === file.name && f.size === file.size),
+  );
 
   const {
     messages,
@@ -26,7 +41,7 @@ const MainChatbot = ({ documentContent }: MainChatbotProps) => {
     isActive,
     sendMessage,
     clearChat,
-  } = useChatbotState({ documentContent, uploadedFiles });
+  } = useChatbotState({ documentContent, uploadedFiles: allUploadedFiles });
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -118,7 +133,21 @@ const MainChatbot = ({ documentContent }: MainChatbotProps) => {
   };
 
   const removeUploadedFile = (index: number) => {
-    setUploadedFiles((prev) => prev.filter((_, i) => i !== index));
+    const fileToRemove = allUploadedFiles[index];
+
+    // Only remove from uploadedFiles if it exists there (not from selectedSources)
+    const isFromUploadedFiles = uploadedFiles.some(
+      (f) => f.name === fileToRemove.name && f.size === fileToRemove.size,
+    );
+
+    if (isFromUploadedFiles) {
+      setUploadedFiles((prev) =>
+        prev.filter(
+          (f) =>
+            !(f.name === fileToRemove.name && f.size === fileToRemove.size),
+        ),
+      );
+    }
   };
 
   // File size validation (max 10MB per file)
@@ -134,23 +163,48 @@ const MainChatbot = ({ documentContent }: MainChatbotProps) => {
       (file) => file.type === "application/pdf",
     );
     const validFiles: File[] = [];
+    const duplicateFiles: string[] = [];
     const errors: string[] = [];
 
     pdfFiles.forEach((file) => {
+      // Check file size
       if (!validateFileSize(file)) {
         errors.push(`${file.name}: File too large (max 10MB)`);
-      } else {
-        validFiles.push(file);
+        return;
       }
+
+      // Check for duplicates against all uploaded files (including selected sources)
+      const isDuplicate = allUploadedFiles.some(
+        (existingFile) =>
+          existingFile.name === file.name && existingFile.size === file.size,
+      );
+
+      if (isDuplicate) {
+        duplicateFiles.push(file.name);
+        return;
+      }
+
+      // File is valid and not duplicate
+      validFiles.push(file);
     });
 
+    // Collect all error messages
     if (fileArray.length !== pdfFiles.length) {
       errors.push("Only PDF files are supported");
     }
 
+    if (duplicateFiles.length > 0) {
+      errors.push(`Duplicate file`);
+    }
+
     if (errors.length > 0) {
-      console.warn("File upload errors:", errors);
-      // TODO: Show user notification with errors
+      const fullMessage = errors.join(" | ");
+      setNotification(fullMessage);
+
+      // Auto-hide notification after 5 seconds
+      setTimeout(() => {
+        setNotification(null);
+      }, 5000);
     }
 
     if (validFiles.length > 0) {
@@ -160,6 +214,9 @@ const MainChatbot = ({ documentContent }: MainChatbotProps) => {
 
       // Add files to the list
       setUploadedFiles((prev) => [...prev, ...validFiles]);
+
+      // Notify parent (EditorContainer) about new files to sync with KnowledgeBase
+      onFileUpload?.(validFiles);
 
       // Simulate upload completion after 2 seconds
       setTimeout(() => {
@@ -220,6 +277,19 @@ const MainChatbot = ({ documentContent }: MainChatbotProps) => {
       onDragOver={handleDragOver}
       onDrop={handleDrop}
     >
+      {/* Notification */}
+      {notification && (
+        <div className={styles.notification}>
+          <span className={styles.notificationText}>{notification}</span>
+          <button
+            className={styles.notificationClose}
+            onClick={() => setNotification(null)}
+          >
+            ×
+          </button>
+        </div>
+      )}
+
       {/* Header */}
       <div className={styles.header}>
         <div className={styles.headerContent}>
@@ -294,9 +364,9 @@ const MainChatbot = ({ documentContent }: MainChatbotProps) => {
       {/* Input */}
       <div className={styles.inputContainer}>
         {/* Individual Source Files - Above Input */}
-        {uploadedFiles.length > 0 && (
+        {allUploadedFiles.length > 0 && (
           <div className={styles.sourceFilesContainer}>
-            {uploadedFiles.map((file, index) => {
+            {allUploadedFiles.map((file, index) => {
               const isUploading = uploadingFiles.has(file.name);
               return (
                 <div key={index} className={styles.sourceFileItem}>
@@ -327,7 +397,16 @@ const MainChatbot = ({ documentContent }: MainChatbotProps) => {
                         <div
                           onClick={() => removeUploadedFile(index)}
                           title="Remove source"
-                          style={{ cursor: "pointer" }}
+                          style={{
+                            cursor: "pointer",
+                            // Hide remove functionality for files from selectedSources
+                            pointerEvents: selectedSources.some(
+                              (f) =>
+                                f.name === file.name && f.size === file.size,
+                            )
+                              ? "none"
+                              : "auto",
+                          }}
                         >
                           <svg
                             className={styles.pdfIcon}
@@ -342,19 +421,24 @@ const MainChatbot = ({ documentContent }: MainChatbotProps) => {
                               d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                             />
                           </svg>
-                          <svg
-                            className={styles.removeIcon}
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M6 18L18 6M6 6l12 12"
-                            />
-                          </svg>
+                          {/* Only show remove icon for directly uploaded files */}
+                          {!selectedSources.some(
+                            (f) => f.name === file.name && f.size === file.size,
+                          ) && (
+                            <svg
+                              className={styles.removeIcon}
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M6 18L18 6M6 6l12 12"
+                              />
+                            </svg>
+                          )}
                         </div>
                       )}
                     </div>
