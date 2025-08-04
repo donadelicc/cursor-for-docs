@@ -83,18 +83,71 @@ export const useChatbotState = ({
 
         // Choose API endpoint based on mode
         if (mode === "sources") {
-          const formData = new FormData();
-          formData.append("query", query.trim());
+          // First, upload files to Blob Storage to handle large files
+          const blobUrls: string[] = [];
+          const fileMetadata: Array<{ url: string; originalName: string; size: number }> = [];
 
-          // Append all uploaded files
-          uploadedFiles.forEach((file) => {
-            formData.append("files", file);
-          });
+          for (const file of uploadedFiles) {
+            try {
+              const uploadFormData = new FormData();
+              uploadFormData.append("file", file);
 
-          response = await fetch("/api/ai/sources", {
-            method: "POST",
-            body: formData,
-          });
+              const uploadResponse = await fetch("/api/upload", {
+                method: "POST",
+                body: uploadFormData,
+              });
+
+              if (!uploadResponse.ok) {
+                const errorData = await uploadResponse.json();
+                throw new Error(errorData.error || "Failed to upload file");
+              }
+
+              const uploadResult = await uploadResponse.json();
+              blobUrls.push(uploadResult.url);
+              fileMetadata.push({
+                url: uploadResult.url,
+                originalName: uploadResult.originalName,
+                size: uploadResult.size,
+              });
+            } catch (error) {
+              console.error(`Failed to upload file ${file.name}:`, error);
+              throw new Error(
+                `Failed to upload ${file.name}: ${error instanceof Error ? error.message : "Unknown error"}`
+              );
+            }
+          }
+
+          // Now send the blob URLs to the sources API
+          try {
+            response = await fetch("/api/ai/sources", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                query: query.trim(),
+                blobUrls: blobUrls,
+                fileMetadata: fileMetadata,
+              }),
+            });
+          } catch (sourcesError) {
+            // Cleanup blob files if sources API fails
+            if (blobUrls.length > 0) {
+              try {
+                await fetch("/api/cleanup", {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify({ blobUrls }),
+                });
+                console.log("Cleaned up blob files after sources API failure");
+              } catch (cleanupError) {
+                console.error("Failed to cleanup blob files:", cleanupError);
+              }
+            }
+            throw sourcesError;
+          }
         } else if (mode === "focused") {
           // Focused mode - uses document content
           response = await fetch("/api/ai/focus", {
