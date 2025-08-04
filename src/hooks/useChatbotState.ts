@@ -85,23 +85,29 @@ export const useChatbotState = ({
         if (mode === "sources") {
           // First, upload files to Blob Storage to handle large files
           const blobUrls: string[] = [];
-          const fileMetadata: Array<{ url: string; originalName: string; size: number }> = [];
+          const fileMetadata: Array<{
+            url: string;
+            originalName: string;
+            size: number;
+          }> = [];
 
           // Import the upload function dynamically to avoid SSR issues
-          const { upload } = await import('@vercel/blob/client');
-          
+          const { upload } = await import("@vercel/blob/client");
+
           for (const file of uploadedFiles) {
             try {
               // Validate file size before upload (50MB limit for better UX)
               const maxSize = 50 * 1024 * 1024; // 50MB
               if (file.size > maxSize) {
-                throw new Error(`File ${file.name} exceeds 50MB limit. Size: ${(file.size / 1024 / 1024).toFixed(2)}MB`);
+                throw new Error(
+                  `File ${file.name} exceeds 50MB limit. Size: ${(file.size / 1024 / 1024).toFixed(2)}MB`,
+                );
               }
 
               // Direct upload to Blob Storage (bypasses API route limits)
               const blob = await upload(file.name, file, {
-                access: 'public',
-                handleUploadUrl: '/api/upload/url', // We'll create this endpoint
+                access: "public",
+                handleUploadUrl: "/api/upload/url", // We'll create this endpoint
               });
 
               blobUrls.push(blob.url);
@@ -113,7 +119,7 @@ export const useChatbotState = ({
             } catch (error) {
               console.error(`Failed to upload file ${file.name}:`, error);
               throw new Error(
-                `Failed to upload ${file.name}: ${error instanceof Error ? error.message : "Unknown error"}`
+                `Failed to upload ${file.name}: ${error instanceof Error ? error.message : "Unknown error"}`,
               );
             }
           }

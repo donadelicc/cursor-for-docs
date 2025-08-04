@@ -2,7 +2,7 @@ import { AzureChatOpenAI } from "@langchain/openai";
 import { SystemMessage, HumanMessage } from "@langchain/core/messages";
 import { NextResponse } from "next/server";
 import { WebPDFLoader } from "@langchain/community/document_loaders/web/pdf";
-import { del } from '@vercel/blob';
+import { del } from "@vercel/blob";
 
 const model = new AzureChatOpenAI({
   azureOpenAIEndpoint: process.env.AZURE_OPENAI_ENDPOINT,
@@ -31,11 +31,11 @@ export async function POST(req: Request) {
   const contentType = req.headers.get("content-type") || "";
   let query: string;
   let blobUrls: string[] = [];
-  let fileMetadata: Array<{ url: string; originalName: string; size: number }> = [];
+  let fileMetadata: Array<{ url: string; originalName: string; size: number }> =
+    [];
   const uploadedSources: string[] = [];
 
   try {
-
     if (contentType.includes("application/json")) {
       // Handle new JSON format with Blob URLs
       const body = await req.json();
@@ -46,25 +46,35 @@ export async function POST(req: Request) {
       // Process files from Blob Storage URLs
       for (let i = 0; i < blobUrls.length; i++) {
         const blobUrl = blobUrls[i];
-        const metadata = fileMetadata[i] || { originalName: `file-${i + 1}.pdf`, size: 0 };
+        const metadata = fileMetadata[i] || {
+          originalName: `file-${i + 1}.pdf`,
+          size: 0,
+        };
 
         try {
           // Fetch the file from Blob Storage
           const fileResponse = await fetch(blobUrl);
           if (!fileResponse.ok) {
-            throw new Error(`Failed to fetch file from Blob Storage: ${fileResponse.status}`);
+            throw new Error(
+              `Failed to fetch file from Blob Storage: ${fileResponse.status}`,
+            );
           }
 
           // Create File object from blob
           const arrayBuffer = await fileResponse.arrayBuffer();
-          const file = new File([arrayBuffer], metadata.originalName, { type: "application/pdf" });
+          const file = new File([arrayBuffer], metadata.originalName, {
+            type: "application/pdf",
+          });
 
           const extractedText = await extractTextFromPDF(file);
           uploadedSources.push(
             `=== Source: ${metadata.originalName} ===\n${extractedText}\n`,
           );
         } catch (error) {
-          console.error(`Error processing file ${metadata.originalName}:`, error);
+          console.error(
+            `Error processing file ${metadata.originalName}:`,
+            error,
+          );
           // Continue processing other files even if one fails
           uploadedSources.push(
             `=== Source: ${metadata.originalName} ===\n[Error: Could not extract text from this PDF file]\n`,
@@ -184,18 +194,26 @@ Please provide a comprehensive response based exclusively on the uploaded source
           try {
             await del(url);
             console.log(`Successfully deleted blob: ${url}`);
-            return { url, status: 'deleted' };
+            return { url, status: "deleted" };
           } catch (error) {
             console.error(`Failed to delete blob ${url}:`, error);
-            return { url, status: 'error', error: error instanceof Error ? error.message : 'Unknown error' };
+            return {
+              url,
+              status: "error",
+              error: error instanceof Error ? error.message : "Unknown error",
+            };
           }
         });
-        
+
         const results = await Promise.all(cleanupPromises);
-        const deletedCount = results.filter(r => r.status === 'deleted').length;
-        console.log(`Cleaned up ${deletedCount}/${blobUrls.length} blob files after processing`);
+        const deletedCount = results.filter(
+          (r) => r.status === "deleted",
+        ).length;
+        console.log(
+          `Cleaned up ${deletedCount}/${blobUrls.length} blob files after processing`,
+        );
       } catch (cleanupError) {
-        console.error('Failed to cleanup blob files:', cleanupError);
+        console.error("Failed to cleanup blob files:", cleanupError);
         // Don't fail the main response if cleanup fails
       }
     }
@@ -207,7 +225,7 @@ Please provide a comprehensive response based exclusively on the uploaded source
     });
   } catch (error) {
     console.error("Error in AI sources API:", error);
-    
+
     // Cleanup blob files in case of error
     if (blobUrls.length > 0) {
       try {
@@ -215,21 +233,32 @@ Please provide a comprehensive response based exclusively on the uploaded source
           try {
             await del(url);
             console.log(`Successfully deleted blob after error: ${url}`);
-            return { url, status: 'deleted' };
+            return { url, status: "deleted" };
           } catch (error) {
             console.error(`Failed to delete blob ${url}:`, error);
-            return { url, status: 'error', error: error instanceof Error ? error.message : 'Unknown error' };
+            return {
+              url,
+              status: "error",
+              error: error instanceof Error ? error.message : "Unknown error",
+            };
           }
         });
-        
+
         const results = await Promise.all(cleanupPromises);
-        const deletedCount = results.filter(r => r.status === 'deleted').length;
-        console.log(`Cleaned up ${deletedCount}/${blobUrls.length} blob files after error`);
+        const deletedCount = results.filter(
+          (r) => r.status === "deleted",
+        ).length;
+        console.log(
+          `Cleaned up ${deletedCount}/${blobUrls.length} blob files after error`,
+        );
       } catch (cleanupError) {
-        console.error('Failed to cleanup blob files after error:', cleanupError);
+        console.error(
+          "Failed to cleanup blob files after error:",
+          cleanupError,
+        );
       }
     }
-    
+
     const errorMessage =
       error instanceof Error ? error.message : "An unknown error occurred.";
     return NextResponse.json(
