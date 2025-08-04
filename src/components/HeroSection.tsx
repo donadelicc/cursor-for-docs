@@ -13,8 +13,8 @@ export default function HeroSection() {
               Store and share files on the web
             </h1>
             <p className="mt-6 text-lg sm:text-xl text-gray-600 leading-relaxed max-w-2xl mx-auto lg:mx-0">
-              &ldquo;AI-powered text editor for faster paper writing integrated
-              with your sources&rdquo;.
+              AI-powered text editor for faster paper writing integrated with
+              your sources.
             </p>
             <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
               <Link
@@ -22,12 +22,6 @@ export default function HeroSection() {
                 className="inline-flex items-center justify-center px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 text-lg"
               >
                 Start Writing
-              </Link>
-              <Link
-                href="/features"
-                className="inline-flex items-center justify-center px-8 py-4 bg-transparent hover:bg-gray-50 text-blue-600 font-semibold rounded-lg border-2 border-blue-600 transition-all duration-200 text-lg"
-              >
-                Learn More
               </Link>
             </div>
           </div>

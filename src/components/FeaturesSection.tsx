@@ -132,11 +132,10 @@ export default function FeaturesSection() {
         {/* Section Header */}
         <div className="text-center mb-16">
           <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
-            Modern Paper Writing Editor
+            Your Modern Text Editor
           </h2>
           <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-            &ldquo;Everything you need to write files, research, and interact
-            with your sources in one place with the power of AI&rdquo;.
+            Research and interact with your sources while writing your paper.
           </p>
         </div>
 
