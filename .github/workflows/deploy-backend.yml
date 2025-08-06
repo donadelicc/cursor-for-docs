@@ -19,6 +19,10 @@ jobs:
       - name: Check out repo
         uses: actions/checkout@v4
 
+        # --- ADD THIS NEW DEBUGGING STEP ---
+      - name: Debug Secret Keys
+        run: echo '${{ secrets.AZURE_CREDENTIALS }}' | jq 'keys_unsorted'
+
       - name: Log in to Azure
         uses: azure/login@v2
         with:
