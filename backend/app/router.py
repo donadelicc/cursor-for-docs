@@ -36,6 +36,7 @@ class ChatRequest(BaseModel):
 class ChatResponse(BaseModel):
     """Response model for chat endpoint."""
     response: str
+    secret: str
 
 # API Endpoints
 @router.get("/", response_model=Dict[str, str])
@@ -75,8 +76,8 @@ async def chat_endpoint(request: ChatRequest):
         # Ensure the response content is a string before sending it back
         if not isinstance(answer, str):
             raise Exception("AI response was not in the expected string format.")
-        
-        return ChatResponse(response=answer)
+
+        return ChatResponse(response=answer, secret="v2-automated-deployment")
         
     except HTTPException:
         # Re-raise HTTP exceptions as they are
