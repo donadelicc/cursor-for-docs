@@ -113,7 +113,7 @@ export const useChatbotState = ({
             formData.append("files", file);
           });
 
-          response = await fetch("/api/ai/sources", {
+          response = await fetch("/api/ai/sources-vector", {
             method: "POST",
             body: formData,
           });

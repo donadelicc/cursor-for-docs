@@ -1,7 +1,8 @@
 import { AzureChatOpenAI } from "@langchain/openai";
+import { WebPDFLoader } from "@langchain/community/document_loaders/web/pdf";
+
 import { SystemMessage, HumanMessage } from "@langchain/core/messages";
 import { NextResponse } from "next/server";
-import { WebPDFLoader } from "@langchain/community/document_loaders/web/pdf";
 
 const model = new AzureChatOpenAI({
   azureOpenAIEndpoint: process.env.AZURE_OPENAI_ENDPOINT,
