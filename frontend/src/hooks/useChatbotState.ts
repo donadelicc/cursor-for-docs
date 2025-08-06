@@ -130,8 +130,8 @@ export const useChatbotState = ({
             }),
           });
         } else {
-          // General mode - general AI queries
-          response = await fetch("/api/ai/ask", {
+          // General mode - general AI queries using Azure API
+          response = await fetch("https://useful-api.jollycoast-390a557a.eastus.azurecontainerapps.io/chat", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
