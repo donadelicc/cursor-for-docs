@@ -71,16 +71,16 @@ export const useChatbotState = ({
       if (mode === "sources") {
         const maxPayloadSize = 4.5 * 1024 * 1024; // 4.5MB in bytes
         let totalSize = 0;
-        
+
         // Calculate total size of all files
         uploadedFiles.forEach((file) => {
           totalSize += file.size;
         });
-        
+
         // Add approximate size of query and FormData overhead (usually small)
         totalSize += query.trim().length * 2; // UTF-8 can be up to 2 bytes per char
         totalSize += 1024; // Add 1KB for FormData overhead
-        
+
         if (totalSize > maxPayloadSize) {
           const totalSizeMB = (totalSize / (1024 * 1024)).toFixed(1);
           return {
@@ -113,7 +113,7 @@ export const useChatbotState = ({
             formData.append("files", file);
           });
 
-          response = await fetch("/api/ai/sources-vector", {
+          response = await fetch("/api/ai/sources", {
             method: "POST",
             body: formData,
           });

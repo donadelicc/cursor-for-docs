@@ -35,7 +35,11 @@ async function preprocessPDF(file: File): Promise<Document[]> {
     // Add filename metadata to each document (preserving Document type)
     const docsWithMetadata: Document[] = docs.map((doc) => {
       // Defensive: ensure doc.metadata exists
-      const metadata = { ...(doc.metadata || {}), source: file.name, fileType: "pdf" };
+      const metadata = {
+        ...(doc.metadata || {}),
+        source: file.name,
+        fileType: "pdf",
+      };
       return new Document({
         pageContent: doc.pageContent,
         metadata,
@@ -43,7 +47,8 @@ async function preprocessPDF(file: File): Promise<Document[]> {
     });
 
     // Split documents into chunks, preserving Document[] type
-    const allSplits: Document[] = await textSplitter.splitDocuments(docsWithMetadata);
+    const allSplits: Document[] =
+      await textSplitter.splitDocuments(docsWithMetadata);
     return allSplits;
   } catch (error) {
     console.error("Error extracting PDF text:", error);
@@ -56,7 +61,6 @@ export async function POST(req: Request) {
     const contentType = req.headers.get("content-type") || "";
     let query: string;
     const vectorStore = new MemoryVectorStore(embeddings);
-
 
     if (contentType.includes("multipart/form-data")) {
       // Handle file uploads with FormData
@@ -97,18 +101,21 @@ export async function POST(req: Request) {
 
     const results = await vectorStore.similaritySearch(query);
     const resultsText = results.map((result) => result.pageContent).join("\n");
-    console.log(`Vector search returned ${results.length} results for query: "${query}"`);
+    console.log(
+      `Vector search returned ${results.length} results for query: "${query}"`,
+    );
     console.log(resultsText);
-    
+
     // Ensure we have meaningful content
     if (results.length === 0) {
-        return NextResponse.json(
-          {
-            error: "No relevant content found in the uploaded documents. Please ensure the PDFs contain readable text.",
-          },
-          { status: 404 },
-        );
-      }
+      return NextResponse.json(
+        {
+          error:
+            "No relevant content found in the uploaded documents. Please ensure the PDFs contain readable text.",
+        },
+        { status: 404 },
+      );
+    }
 
     // Create system message focused exclusively on uploaded sources
     const systemMessage = `You are an expert document research assistant that analyzes uploaded PDF source materials to help users understand and extract insights from their documents.
