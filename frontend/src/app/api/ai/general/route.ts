@@ -12,7 +12,7 @@ const model = new AzureChatOpenAI({
 });
 
 /**
- * Handles POST requests to the API endpoint.
+ * Handles POST requests to the API endpoint with streaming responses.
  * It expects a JSON body with a "query" property.
  */
 export async function POST(req: Request) {
@@ -38,17 +38,42 @@ export async function POST(req: Request) {
       new HumanMessage(query),
     ];
 
-    // Send the request to the AI model and wait for the response.
-    const response = await model.invoke(messages);
-    const answer = response.content;
+    // Create a ReadableStream for streaming the response
+    const stream = new ReadableStream({
+      async start(controller) {
+        try {
+          // Use the streaming method instead of invoke
+          const streamResponse = await model.stream(messages);
+          const textEncoder = new TextEncoder();
 
-    // Ensure the response content is a string before sending it back.
-    if (typeof answer !== "string") {
-      throw new Error("AI response was not in the expected string format.");
-    }
+          // Iterate through the stream chunks
+          for await (const chunk of streamResponse) {
+            if (chunk.content && typeof chunk.content === 'string') {
+              // Encode the content and push to stream
+              const encoded = textEncoder.encode(chunk.content);
+              controller.enqueue(encoded);
+            }
+          }
 
-    // Return the AI's answer in a JSON response.
-    return NextResponse.json({ answer });
+          // Close the stream when done
+          controller.close();
+        } catch (error) {
+          console.error("Error in streaming AI response:", error);
+          const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
+          const errorText = `Error: ${errorMessage}`;
+          const encoded = new TextEncoder().encode(errorText);
+          controller.enqueue(encoded);
+          controller.close();
+        }
+      }
+    });
+
+    // Return a Response with the stream and appropriate headers
+    return new Response(stream, {
+      headers: {
+        'Content-Type': 'text/plain; charset=utf-8',
+      },
+    });
   } catch (error) {
     // Log the error for debugging purposes.
     console.error("Error in AI chatbot API:", error);

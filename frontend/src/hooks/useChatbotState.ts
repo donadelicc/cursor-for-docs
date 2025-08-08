@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { isModifierPressed } from "@/utils/platformDetection";
 
 interface Message {
@@ -131,7 +131,7 @@ export const useChatbotState = ({
           });
         } else {
           // General mode - general AI queries using Azure API
-          response = await fetch("https://useful-api.jollycoast-390a557a.eastus.azurecontainerapps.io/chat", {
+          response = await fetch("/api/ai/general", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -143,25 +143,89 @@ export const useChatbotState = ({
         }
 
         if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(
-            errorData.error || "Failed to get response from AI assistant",
-          );
+          // Try to parse as JSON for error responses (validation errors still return JSON)
+          try {
+            const errorData = await response.json();
+            throw new Error(
+              errorData.error || "Failed to get response from AI assistant",
+            );
+          } catch (parseError) {
+            // If JSON parsing fails, use a generic error message
+            throw new Error(`HTTP ${response.status}: Failed to get response from AI assistant`);
+          }
         }
 
-        const data = await response.json();
+        // Handle streaming response
+        if (response.body) {
+          const reader = response.body.getReader();
+          const decoder = new TextDecoder();
+          
+          // Create initial assistant message with empty content
+          const assistantMessageId = (Date.now() + 1).toString();
+          const initialAssistantMessage: Message = {
+            id: assistantMessageId,
+            content: "",
+            role: "assistant",
+            timestamp: new Date(),
+          };
 
-        // Use the AI response directly without footer text
-        const messageContent = data.answer;
+          setMessages((prev) => [...prev, initialAssistantMessage]);
 
-        const assistantMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          content: messageContent,
-          role: "assistant",
-          timestamp: new Date(),
-        };
+          let accumulatedContent = "";
+          let pendingContent = "";
+          let updateTimeoutId: NodeJS.Timeout | null = null;
 
-        setMessages((prev) => [...prev, assistantMessage]);
+          // Function to update the message with throttling
+          const updateMessage = (content: string) => {
+            setMessages((prev) =>
+              prev.map((msg) =>
+                msg.id === assistantMessageId
+                  ? { ...msg, content }
+                  : msg
+              )
+            );
+          };
+
+          // Throttled update function
+          const throttledUpdate = () => {
+            if (pendingContent !== accumulatedContent) {
+              accumulatedContent = pendingContent;
+              updateMessage(accumulatedContent);
+            }
+            updateTimeoutId = null;
+          };
+
+          try {
+            while (true) {
+              const { done, value } = await reader.read();
+              
+              if (done) {
+                // Final update with any remaining content
+                if (updateTimeoutId) {
+                  clearTimeout(updateTimeoutId);
+                  throttledUpdate();
+                }
+                break;
+              }
+
+              // Decode the chunk and add to pending content
+              const chunk = decoder.decode(value, { stream: true });
+              pendingContent += chunk;
+
+              // Schedule throttled update if not already scheduled
+              if (!updateTimeoutId) {
+                updateTimeoutId = setTimeout(throttledUpdate, 100); // Update every 100ms
+              }
+            }
+          } finally {
+            if (updateTimeoutId) {
+              clearTimeout(updateTimeoutId);
+            }
+            reader.releaseLock();
+          }
+        } else {
+          throw new Error("No response body received");
+        }
       } catch (error) {
         console.error("AI request failed:", error);
 
