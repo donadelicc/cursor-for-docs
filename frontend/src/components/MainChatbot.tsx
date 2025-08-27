@@ -2,6 +2,7 @@ import React, { useRef, useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import styles from "./MainChatbot.module.css";
 import { useChatbotState } from "@/hooks/useChatbotState";
+import apiClient from "@/utils/apiClient";
 
 interface MainChatbotProps {
   documentContent: string;
@@ -55,7 +56,9 @@ const MainChatbot = ({
     setInputValue,
     isLoading,
     isActive,
-    sendMessage,
+    setIsLoading,
+    addMessage,
+    updateLastMessage,
     clearChat,
   } = useChatbotState({
     documentContent,
@@ -116,23 +119,76 @@ const MainChatbot = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inputValue.trim() || isLoading) return;
+    const query = inputValue.trim();
+    if (!query || isLoading) return;
 
-    const result = await sendMessage(inputValue);
+    // Add the user's message to the state immediately for a responsive UI
+    addMessage({ role: 'user', content: query });
+    setInputValue("");
+    setIsLoading(true);
 
-    // Handle validation errors
-    if (result?.validationError) {
-      setNotification(result.validationError);
+    try {
+      let response: Response;
 
-      // Auto-hide notification after 5 seconds
-      setTimeout(() => {
-        setNotification(null);
-      }, 5000);
+      if (mode === "sources") {
+        const formData = new FormData();
+        formData.append("query", query);
+        console.log(`[chat] → POST /sources`, { query });
+        response = await apiClient.post("/sources", formData);
+      } else if (mode === "general") {
+        console.log(`[chat] → POST /general`, { query });
+        response = await fetch("http://localhost:8000/general", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ query }),
+        });
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+      } else {
+        // focused
+        console.log(`[chat] → POST /api/ai/focus`, { query });
+        response = await fetch("/api/ai/focus", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ query, documentContent }),
+        });
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+      }
+      
+      if (!response.body) throw new Error("Response body is empty.");
+      
+      // Add an empty placeholder message for the assistant
+      addMessage({ role: 'assistant', content: "" });
+      
+      // Handle the streaming response
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      console.log(`[chat] ← streaming response started`);
+      
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const chunk = decoder.decode(value);
+        // Update the last message in the array with the new chunk
+        updateLastMessage(chunk);
+        // Log chunk size to avoid logging full content
+        console.log(`[chat] ← chunk`, { bytes: value?.byteLength ?? 0 });
+      }
+      console.log(`[chat] ← streaming response completed`);
 
-      return;
+    } catch (error) {
+      console.error("Error fetching chat response:", error);
+      addMessage({ role: 'assistant', content: "Sorry, an error occurred. Please try again." });
+    } finally {
+      setIsLoading(false);
     }
-
-    // Textarea will be resized automatically via useEffect when inputValue is cleared
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -151,12 +207,51 @@ const MainChatbot = ({
     fileInputRef.current?.click();
   };
 
+  // NEW: The actual API call for ingestion
+  const handleIngestFiles = async (filesToUpload: File[]) => {
+    if (filesToUpload.length === 0) return;
+
+    // 1. Show a spinner
+    setUploadingFiles(prev => new Set([...prev, ...filesToUpload.map(f => f.name)]));
+
+    try {
+      const formData = new FormData();
+      filesToUpload.forEach(file => {
+        formData.append("files", file);
+      });
+    // 2. Start the REAL backend upload and WAIT for it to finish
+      console.log(`[upload] → POST /documents`, { files: filesToUpload.map(f => ({ name: f.name, size: f.size })) });
+      const response = await apiClient.post("/documents", formData);
+      console.log(`[upload] ← /documents ${response.status}`);
+    
+      // 3. If it succeeds, we're done! The spinner will be hidden in the 'finally' block.
+      //setTimeout(() => setNotification(null), 3000);
+
+    } catch (error) {
+      console.error("Error ingesting files:", error);
+      setNotification(`Error: Could not upload files. Please try again.`);
+      setTimeout(() => setNotification(null), 5000);
+      
+      // If upload fails, remove the files from the UI state
+      setUploadedFiles(prev => prev.filter(f => !filesToUpload.some(fu => fu.name === f.name)));
+
+    } finally {
+      // Remove files from the "uploading" state after completion
+      setUploadingFiles(prev => {
+        const newSet = new Set(prev);
+        filesToUpload.forEach(f => newSet.delete(f.name));
+        return newSet;
+      });
+      // Re-enable upload button
+      setIsUploadingFiles(false);
+    }
+  };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && files.length > 0) {
       setIsUploadingFiles(true);
       processFiles(files);
-      setTimeout(() => setIsUploadingFiles(false), 2000);
     }
 
     // Clear the input so the same file can be selected again
@@ -165,32 +260,44 @@ const MainChatbot = ({
     }
   };
 
-  const removeUploadedFile = (index: number) => {
+  const removeUploadedFile = async (index: number) => {
     const fileToRemove = allUploadedFiles[index];
+    if (!fileToRemove) return;
 
-    // Check if file is from selectedSources (Knowledge Base)
-    const isFromSelectedSources = selectedSources.some(
-      (f) => f.name === fileToRemove.name && f.size === fileToRemove.size,
-    );
-
-    // Check if file is from directly uploaded files
-    const isFromUploadedFiles = uploadedFiles.some(
-      (f) => f.name === fileToRemove.name && f.size === fileToRemove.size,
-    );
-
-    if (isFromSelectedSources) {
-      // Notify parent component to remove from Knowledge Base selection
-      onFileRemove?.(fileToRemove);
-    } else if (isFromUploadedFiles) {
-      // Remove from directly uploaded files
-      setUploadedFiles((prev) =>
-        prev.filter(
-          (f) =>
-            !(f.name === fileToRemove.name && f.size === fileToRemove.size),
-        ),
+    try {
+      const endpoint = `/documents/${encodeURIComponent(fileToRemove.name)}`;
+      console.log(`[upload] → DELETE ${endpoint}`);
+      const resp = await apiClient.delete(endpoint);
+      console.log(`[upload] ← DELETE ${endpoint} ${resp.status}`);
+    
+      // --- If API call is successful, then update the local state ---
+      // Check if file is from selectedSources (Knowledge Base)
+      const isFromSelectedSources = selectedSources.some(
+        (f) => f.name === fileToRemove.name && f.size === fileToRemove.size,
       );
-      // Also notify parent to remove from chatbotUploadedFiles
-      onChatbotFileRemove?.(fileToRemove);
+
+      // Check if file is from directly uploaded files
+      const isFromUploadedFiles = uploadedFiles.some(
+        (f) => f.name === fileToRemove.name && f.size === fileToRemove.size,
+      );
+
+      // Remove from Knowledge Base selection if present
+      if (isFromSelectedSources) {
+        onFileRemove?.(fileToRemove);
+      }
+
+      // Remove from directly uploaded files if present
+      if (isFromUploadedFiles) {
+        setUploadedFiles((prev) =>
+          prev.filter(
+            (f) =>
+              !(f.name === fileToRemove.name && f.size === fileToRemove.size),
+          ),
+        );
+        onChatbotFileRemove?.(fileToRemove);
+      }
+    } catch (error) {
+      console.error("Failed to remove source:", error);
     }
   };
 
@@ -288,14 +395,10 @@ const MainChatbot = ({
       // Notify parent (EditorContainer) about new files to sync with KnowledgeBase
       onFileUpload?.(validFiles);
 
-      // Simulate upload completion after 2 seconds
-      setTimeout(() => {
-        setUploadingFiles((prev) => {
-          const newSet = new Set(prev);
-          fileNames.forEach((name) => newSet.delete(name));
-          return newSet;
-        });
-      }, 2000);
+      handleIngestFiles(validFiles);
+    } else {
+      // No valid files to upload; ensure button is re-enabled
+      setIsUploadingFiles(false);
     }
   };
 

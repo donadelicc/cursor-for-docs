@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { isModifierPressed } from "@/utils/platformDetection";
 
-interface Message {
+export interface Message {
   id: string;
   content: string;
   role: "user" | "assistant";
@@ -55,198 +55,31 @@ export const useChatbotState = ({
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  const sendMessage = useCallback(
-    async (query: string) => {
-      if (!query.trim() || isLoading) return undefined;
+  // Simplified: no API logic, only state utilities
+  type AddMessageInput = { role: "user" | "assistant"; content: string };
 
-      // Validate Sources mode before proceeding
-      if (mode === "sources" && uploadedFiles.length === 0) {
-        return {
-          validationError:
-            "Sources mode requires uploaded PDF files. Please upload some files first.",
-        };
-      }
+  const addMessage = useCallback((message: AddMessageInput) => {
+    const newMessage: Message = {
+      id: Date.now().toString(),
+      content: message.content,
+      role: message.role,
+      timestamp: new Date(),
+    };
+    setMessages((prev) => [...prev, newMessage]);
+  }, []);
 
-      // Validate file size for Sources mode (Vercel 4.5MB limit)
-      if (mode === "sources") {
-        const maxPayloadSize = 4.5 * 1024 * 1024; // 4.5MB in bytes
-        let totalSize = 0;
-
-        // Calculate total size of all files
-        uploadedFiles.forEach((file) => {
-          totalSize += file.size;
-        });
-
-        // Add approximate size of query and FormData overhead (usually small)
-        totalSize += query.trim().length * 2; // UTF-8 can be up to 2 bytes per char
-        totalSize += 1024; // Add 1KB for FormData overhead
-
-        if (totalSize > maxPayloadSize) {
-          const totalSizeMB = (totalSize / (1024 * 1024)).toFixed(1);
-          return {
-            validationError: `Files are too big. Max 4.5MB combined (current: ${totalSizeMB}MB)`,
-          };
-        }
-      }
-
-      const userMessage: Message = {
-        id: Date.now().toString(),
-        content: query.trim(),
-        role: "user",
-        timestamp: new Date(),
+  const updateLastMessage = useCallback((chunk: string) => {
+    setMessages((prev) => {
+      if (prev.length === 0) return prev;
+      const updated = [...prev];
+      const lastIndex = updated.length - 1;
+      updated[lastIndex] = {
+        ...updated[lastIndex],
+        content: `${updated[lastIndex].content}${chunk}`,
       };
-
-      setMessages((prev) => [...prev, userMessage]);
-      setInputValue("");
-      setIsLoading(true);
-
-      try {
-        let response: Response;
-
-        // Choose API endpoint based on mode
-        if (mode === "sources") {
-          const formData = new FormData();
-          formData.append("query", query.trim());
-
-          // Append all uploaded files
-          uploadedFiles.forEach((file) => {
-            formData.append("files", file);
-          });
-
-          response = await fetch("/api/ai/sources", {
-            method: "POST",
-            body: formData,
-          });
-        } else if (mode === "focused") {
-          // Focused mode - uses document content
-          response = await fetch("/api/ai/focus", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              query: query.trim(),
-              documentContent: documentContent,
-            }),
-          });
-        } else {
-          // General mode - general AI queries using Azure API
-          response = await fetch("/api/ai/general", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              query: query.trim(),
-            }),
-          });
-        }
-
-        if (!response.ok) {
-          // Try to parse as JSON for error responses (validation errors still return JSON)
-          try {
-            const errorData = await response.json();
-            throw new Error(
-              errorData.error || "Failed to get response from AI assistant",
-            );
-          } catch (parseError) {
-            // If JSON parsing fails, use a generic error message
-            throw new Error(`HTTP ${response.status}: Failed to get response from AI assistant`);
-          }
-        }
-
-        // Handle streaming response
-        if (response.body) {
-          const reader = response.body.getReader();
-          const decoder = new TextDecoder();
-          
-          // Create initial assistant message with empty content
-          const assistantMessageId = (Date.now() + 1).toString();
-          const initialAssistantMessage: Message = {
-            id: assistantMessageId,
-            content: "",
-            role: "assistant",
-            timestamp: new Date(),
-          };
-
-          setMessages((prev) => [...prev, initialAssistantMessage]);
-
-          let accumulatedContent = "";
-          let pendingContent = "";
-          let updateTimeoutId: NodeJS.Timeout | null = null;
-
-          // Function to update the message with throttling
-          const updateMessage = (content: string) => {
-            setMessages((prev) =>
-              prev.map((msg) =>
-                msg.id === assistantMessageId
-                  ? { ...msg, content }
-                  : msg
-              )
-            );
-          };
-
-          // Throttled update function
-          const throttledUpdate = () => {
-            if (pendingContent !== accumulatedContent) {
-              accumulatedContent = pendingContent;
-              updateMessage(accumulatedContent);
-            }
-            updateTimeoutId = null;
-          };
-
-          try {
-            while (true) {
-              const { done, value } = await reader.read();
-              
-              if (done) {
-                // Final update with any remaining content
-                if (updateTimeoutId) {
-                  clearTimeout(updateTimeoutId);
-                  throttledUpdate();
-                }
-                break;
-              }
-
-              // Decode the chunk and add to pending content
-              const chunk = decoder.decode(value, { stream: true });
-              pendingContent += chunk;
-
-              // Schedule throttled update if not already scheduled
-              if (!updateTimeoutId) {
-                updateTimeoutId = setTimeout(throttledUpdate, 100); // Update every 100ms
-              }
-            }
-          } finally {
-            if (updateTimeoutId) {
-              clearTimeout(updateTimeoutId);
-            }
-            reader.releaseLock();
-          }
-        } else {
-          throw new Error("No response body received");
-        }
-      } catch (error) {
-        console.error("AI request failed:", error);
-
-        const errorMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          content:
-            "I apologize, but I encountered an error while processing your request. Please try again.",
-          role: "assistant",
-          timestamp: new Date(),
-        };
-
-        setMessages((prev) => [...prev, errorMessage]);
-      } finally {
-        setIsLoading(false);
-      }
-
-      // Return undefined for successful execution
-      return undefined;
-    },
-    [documentContent, uploadedFiles, mode, isLoading],
-  );
+      return updated;
+    });
+  }, []);
 
   const clearChat = useCallback(() => {
     setMessages([
@@ -265,9 +98,11 @@ export const useChatbotState = ({
     inputValue,
     setInputValue,
     isLoading,
+    setIsLoading,
     isActive,
     setIsActive,
-    sendMessage,
+    addMessage,
+    updateLastMessage,
     clearChat,
   };
 };
