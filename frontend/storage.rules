@@ -1,0 +1,20 @@
+rules_version = '2';
+
+// Craft rules based on data in your Firestore database
+// allow write: if firestore.get(
+//    /databases/(default)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Users can upload files to their own project folders
+    match /{projectId}/sources/{allPaths=**} {
+      allow read, write: if request.auth != null && 
+        firestore.exists(/databases/(default)/documents/projects/$(projectId)) &&
+        firestore.get(/databases/(default)/documents/projects/$(projectId)).data.userId == request.auth.uid;
+    }
+    
+    // Allow authenticated users to upload files (general case)
+    match /{allPaths=**} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}

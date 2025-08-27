@@ -1,0 +1,317 @@
+.toolbar {
+  display: flex;
+  align-items: center;
+  padding: 6px 16px;
+  background: transparent;
+  border: none;
+  border-radius: 12px;
+  gap: 3px;
+  min-height: 40px;
+  box-shadow: none;
+  position: relative;
+  z-index: 100;
+  pointer-events: auto;
+  width: 100%;
+  max-width: 100%; /* Use full container width */
+  overflow-x: visible; /* Remove horizontal scrolling */
+  flex-wrap: nowrap; /* Prevent wrapping */
+}
+
+.toolbarSection {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0; /* Prevent sections from shrinking */
+}
+
+.separator {
+  width: 1px;
+  height: 24px;
+  background: #dadce0;
+  margin: 0 6px;
+  flex-shrink: 0; /* Prevent separator from shrinking */
+}
+
+.toolbarButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  color: #3c4043;
+  transition: all 0.2s ease;
+  padding: 0;
+  position: relative;
+  z-index: 101;
+  pointer-events: auto;
+  flex-shrink: 0; /* Prevent buttons from shrinking */
+}
+
+.toolbarButton:hover {
+  background: #e8f0fe;
+  color: #1a73e8;
+}
+
+.toolbarButton:active {
+  background: #d2e3fc;
+}
+
+.toolbarButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.toolbarButton:disabled:hover {
+  background: transparent;
+  color: #3c4043;
+}
+
+.toolbarButton.active {
+  background: #e8f0fe;
+  color: #1a73e8;
+}
+
+.styleSelect {
+  padding: 6px 8px;
+  border: 1px solid #dadce0;
+  border-radius: 6px;
+  background: white;
+  font-size: 13px;
+  color: #3c4043;
+  cursor: pointer;
+  min-width: 70px;
+  width: 70px;
+  height: 32px;
+  flex-shrink: 0; /* Prevent shrinking */
+}
+
+.styleSelectWide {
+  padding: 8px 12px;
+  border: 1px solid #dadce0;
+  border-radius: 8px;
+  background: white;
+  font-size: 14px;
+  color: #3c4043;
+  cursor: pointer;
+  min-width: 120px;
+  width: 120px;
+  height: 36px;
+  flex-shrink: 0;
+  font-weight: 500;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+}
+
+.fontSelect {
+  padding: 8px 12px;
+  border: 1px solid #dadce0;
+  border-radius: 8px;
+  background: white;
+  font-size: 14px;
+  color: #3c4043;
+  cursor: pointer;
+  min-width: 110px;
+  width: 110px;
+  height: 36px;
+  flex-shrink: 0;
+  font-weight: 500;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+}
+
+.formatSelect {
+  padding: 6px 8px;
+  border: 1px solid #dadce0;
+  border-radius: 6px;
+  background: white;
+  font-size: 13px;
+  color: #3c4043;
+  cursor: pointer;
+  min-width: 80px;
+  width: 80px;
+  height: 32px;
+  flex-shrink: 0; /* Prevent shrinking */
+}
+
+.styleSelect:hover,
+.styleSelectWide:hover,
+.fontSelect:hover {
+  border-color: #1a73e8;
+  box-shadow: 0 2px 6px rgba(26, 115, 232, 0.15);
+}
+
+.styleSelect:focus,
+.styleSelectWide:focus,
+.fontSelect:focus {
+  outline: none;
+  border-color: #1a73e8;
+  box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.2);
+}
+
+.saveSection {
+  margin-left: 20px; /* Reduced from auto to a fixed smaller margin */
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0; /* Prevent save section from shrinking */
+}
+
+.saveButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: white;
+  color: #333;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  width: 32px;
+  height: 32px;
+}
+
+.saveButton:hover {
+  background: #f8f8f8;
+  border-color: #999;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  transform: translateY(-1px);
+}
+
+.saveButton:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.saveButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.saveButton:disabled:hover {
+  background: white;
+  border-color: #ddd;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transform: none;
+}
+
+/* Responsive design */
+@media (max-width: 1600px) {
+  .toolbar {
+    padding: 6px 14px;
+    gap: 2px;
+    min-height: 44px;
+    max-width: 100%; /* Use full container width */
+  }
+
+  .toolbarButton {
+    width: 32px;
+    height: 32px;
+  }
+
+  .styleSelect {
+    min-width: 65px;
+    width: 65px;
+    height: 32px;
+    font-size: 12px;
+  }
+
+  .styleSelectWide {
+    min-width: 110px;
+    width: 110px;
+    height: 34px;
+    font-size: 13px;
+  }
+
+  .fontSelect {
+    min-width: 100px;
+    width: 100px;
+    height: 34px;
+    font-size: 13px;
+  }
+
+  .formatSelect {
+    min-width: 75px;
+    width: 75px;
+    height: 32px;
+    font-size: 12px;
+  }
+
+  .separator {
+    margin: 0 8px;
+  }
+
+  .saveButton {
+    width: 32px;
+    height: 32px;
+  }
+}
+
+@media (max-width: 1300px) {
+  .toolbar {
+    padding: 6px 10px;
+    gap: 1px;
+    min-height: 40px;
+    max-width: 100%; /* Allow full width on mobile */
+    overflow-x: auto; /* Allow horizontal scrolling if needed */
+  }
+
+  .toolbarButton {
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0; /* Prevent buttons from shrinking */
+  }
+
+  .styleSelect {
+    min-width: 60px;
+    width: 60px;
+    height: 28px;
+    font-size: 12px;
+    flex-shrink: 0;
+  }
+
+  .styleSelectWide {
+    min-width: 90px;
+    width: 90px;
+    height: 30px;
+    font-size: 12px;
+    flex-shrink: 0;
+  }
+
+  .fontSelect {
+    min-width: 85px;
+    width: 85px;
+    height: 30px;
+    font-size: 12px;
+    flex-shrink: 0;
+  }
+
+  .formatSelect {
+    min-width: 65px;
+    width: 65px;
+    height: 28px;
+    font-size: 12px;
+    flex-shrink: 0;
+  }
+
+  .separator {
+    margin: 0 4px;
+    flex-shrink: 0;
+  }
+
+  .saveButton {
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+  }
+
+  .saveSection {
+    flex-shrink: 0;
+  }
+}
