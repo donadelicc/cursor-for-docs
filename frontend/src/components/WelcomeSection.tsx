@@ -20,7 +20,7 @@ export default function WelcomeSection() {
         <div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome to Useful</h1>
           <p className="text-lg text-gray-600">
-            {getGreeting()}, {firstName}! Ready to start writing?
+            {getGreeting()}, {firstName}! Ready to get working?
           </p>
         </div>
       </div>

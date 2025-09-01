@@ -27,10 +27,9 @@ interface KnowledgeBaseProps {
   onExternalFileRemove?: (file: File) => void;
   currentAttachedCount?: number; // Current count of files attached to chatbot
   onOpenSource?: (file: File) => void;
-  documents?: { id: string; title: string; isMain: boolean }[];
+  documents?: { id: string; title: string }[];
   onCreateDocument?: () => void;
   onOpenDocument?: (id: string) => void;
-  onSetMainDocument?: (id: string) => void;
   storedSources?: { id: string; name: string; storagePath: string }[];
   onOpenStoredSource?: (name: string, storagePath: string) => void;
   onDeleteStoredSource?: (id: string, storagePath: string) => void;
@@ -46,7 +45,6 @@ const KnowledgeBase = ({
   documents = [],
   onCreateDocument,
   onOpenDocument,
-  onSetMainDocument,
   storedSources = [],
   onOpenStoredSource,
   onDeleteStoredSource,
@@ -329,7 +327,7 @@ const KnowledgeBase = ({
   };
 
   return (
-    <div className="flex flex-col w-full h-full bg-gray-50 border-r border-gray-300 font-sans relative">
+    <div className="flex flex-col w-full h-full font-sans relative">
       {/* Notification */}
       {notification && (
         <div className="absolute top-2 left-2 right-2 bg-yellow-50 border border-yellow-400 rounded-lg p-3 flex items-center justify-between z-50 shadow-lg">
@@ -340,28 +338,17 @@ const KnowledgeBase = ({
         </div>
       )}
 
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 bg-white border-b border-gray-200 shrink-0">
-        <h3 className="text-lg font-semibold text-gray-800 m-0">Files</h3>
+      {/* Add Files Button - Drag & Drop */}
+      <div className="p-4 border-b border-gray-200 shrink-0">
         <div
-          className={`flex items-center gap-2 py-2 px-3 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50 cursor-pointer transition-all duration-200 hover:border-blue-400 hover:bg-blue-50 ${isDragOver ? 'border-blue-500 bg-blue-50' : ''}`}
+          className={`w-full flex items-center justify-center gap-2 py-3 px-4 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50 cursor-pointer transition-all duration-200 hover:border-blue-400 hover:bg-blue-50 ${isDragOver ? 'border-blue-500 bg-blue-50' : ''}`}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
           onClick={handleButtonClick}
         >
-          <svg
-            className="w-4 h-4 text-gray-600"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-            />
+          <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
           </svg>
           <span className="text-sm font-medium text-gray-700">Add Files</span>
         </div>
@@ -377,160 +364,111 @@ const KnowledgeBase = ({
         className="hidden"
       />
 
-      {/* Documents Section */}
-      {documents.length > 0 && (
-        <div className="px-4 py-3 bg-white border-b border-gray-200 shrink-0">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-semibold text-gray-800 uppercase tracking-wide">Documents</span>
-            <button className="py-1 px-2 bg-blue-600 text-white border-none rounded text-xs font-medium cursor-pointer transition-colors duration-200 hover:bg-blue-700" onClick={onCreateDocument}>
-              + New
-            </button>
-          </div>
-          <div className="space-y-1">
-            {documents.map((doc) => (
-              <div
-                key={doc.id}
-                className="flex items-center justify-between p-2 bg-gray-50 rounded-md cursor-pointer transition-colors duration-200 hover:bg-gray-100"
-                onDoubleClick={() => onOpenDocument?.(doc.id)}
-              >
-                <span className="text-sm text-gray-800 truncate flex-1 mr-2" title={doc.title}>
-                  {doc.title}
-                  {doc.isMain && (
-                    <span className="ml-2 py-0.5 px-1.5 bg-green-100 text-green-800 text-xs font-medium rounded-full" title="Main document">
-                      ★
-                    </span>
-                  )}
-                </span>
-                {!doc.isMain && (
-                  <button
-                    className="py-1 px-2 bg-gray-200 text-gray-700 border-none rounded text-xs cursor-pointer transition-colors duration-200 hover:bg-gray-300"
-                    onClick={() => onSetMainDocument?.(doc.id)}
-                  >
-                    Set main
-                  </button>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Unified Sources List */}
-      <div
-        className={`flex-1 p-4 overflow-y-auto transition-colors duration-200 ${isDragOver ? 'bg-blue-50' : ''}`}
+      {/* Content Area */}
+      <div 
+        className={`flex-1 overflow-y-auto ${isDragOver ? 'bg-blue-50' : ''}`}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
       >
-        {allSources.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-center py-8">
-            <p className="text-gray-500 text-base mb-2">No sources uploaded yet</p>
-            <p className="text-gray-400 text-sm">Drop PDF files here to get started</p>
-          </div>
-        ) : (
-          allSources.map((source) => {
-            const getSourceIcon = () => {
-              if (source.sourceType === 'stored') return '💾';
-              if (source.sourceType === 'external') return '📤';
-              return null; // No badge for local files
-            };
-
-            const getSourceTooltip = () => {
-              if (source.sourceType === 'stored') return 'Saved to project';
-              if (source.sourceType === 'external') return 'Added from chatbot';
-              return '';
-            };
-
-            const handleSourceClick = () => {
-              if (source.sourceType === 'stored' && source.storagePath) {
-                onOpenStoredSource?.(source.name, source.storagePath);
-              } else if (source.file) {
-                onOpenSource?.(source.file);
-              }
-            };
-
-            return (
-              <div
-                key={source.id}
-                className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-200 cursor-pointer transition-all duration-200 hover:shadow-md hover:border-gray-300"
-                onDoubleClick={handleSourceClick}
-              >
-                <div className="flex-shrink-0 w-10 h-10 flex items-center justify-center">
-                  {source.isUploading ? (
-                    <div className="relative">
-                      <svg
-                        className="w-6 h-6 text-blue-600 animate-spin"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                          fill="none"
-                          strokeDasharray="32"
-                          strokeDashoffset="32"
-                        />
-                      </svg>
-                    </div>
-                  ) : (
-                    <svg className="w-6 h-6 text-red-600" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M8.267 14.68c-.184 0-.308.018-.372.036v1.178c.076.018.171.023.302.023.479 0 .774-.242.774-.651 0-.366-.254-.586-.704-.586zm3.487.012c-.2 0-.33.018-.407.036v2.61c.077.018.201.018.313.018.817.006 1.349-.444 1.349-1.396.006-.83-.479-1.268-1.255-1.268z" />
-                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zM9.498 16.19c-.309.29-.765.42-1.296.42a2.23 2.23 0 0 1-.308-.018v1.426H7v-3.936A7.558 7.558 0 0 1 8.219 14c.557 0 .953.106 1.22.319.254.202.426.533.426.923-.001.392-.131.723-.367.948zm3.807 1.355c-.42.349-1.059.515-1.84.515-.468 0-.799-.03-1.024-.06v-3.917A7.947 7.947 0 0 1 11.66 14c.757 0 1.249.136 1.633.426.415.308.675.799.675 1.504 0 .763-.279 1.29-.663 1.615zM17 14.77h-1.532v.911H16.9v.734h-1.432v1.604h-.906V14.03H17v.74zM14 9h-1V4l5 5h-4z" />
+        {/* Documents Section */}
+        {documents.length > 0 && (
+          <div className="border-b border-gray-200">
+            <div className="p-4 pb-2">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-medium text-gray-700 uppercase tracking-wide">Documents</h3>
+                <button 
+                  onClick={onCreateDocument}
+                  className="flex items-center gap-1 px-2 py-1 bg-blue-600 text-white rounded text-xs font-medium hover:bg-blue-700 transition-colors"
+                >
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                  New
+                </button>
+              </div>
+            </div>
+            <div className="pb-4">
+              {documents.map((doc) => (
+                <div
+                  key={doc.id}
+                  className="flex items-center justify-between px-4 py-2 hover:bg-gray-100 cursor-pointer transition-colors duration-200"
+                  onDoubleClick={() => onOpenDocument?.(doc.id)}
+                >
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <svg className="w-5 h-5 text-blue-600 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zM16 18H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
                     </svg>
-                  )}
+                    <span className="text-sm text-gray-800 truncate" title={doc.title}>
+                      {truncateFilename(doc.title + '.md', 30)}
+                    </span>
+                  </div>
+                  <input
+                    type="checkbox"
+                    className="w-4 h-4 border-gray-300 rounded text-blue-600 focus:ring-blue-500"
+                  />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900 truncate" title={source.name}>
-                    {truncateFilename(source.name)}
-                    {getSourceIcon() && (
-                      <span className="ml-2 text-xs" title={getSourceTooltip()}>
-                        {getSourceIcon()}
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Sources Section */}
+        <div>
+          <div className="p-4 pb-2">
+            <h3 className="text-sm font-medium text-gray-700 uppercase tracking-wide">Sources</h3>
+          </div>
+          <div className="pb-4">
+            {allSources.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-8 px-4 text-center">
+                <p className="text-gray-500 text-sm mb-2">No sources uploaded yet</p>
+                <p className="text-gray-400 text-xs">Drop PDF files here to get started</p>
+              </div>
+            ) : (
+              allSources.map((source) => {
+                const handleSourceClick = () => {
+                  if (source.sourceType === 'stored' && source.storagePath) {
+                    onOpenStoredSource?.(source.name, source.storagePath);
+                  } else if (source.file) {
+                    onOpenSource?.(source.file);
+                  }
+                };
+
+                return (
+                  <div
+                    key={source.id}
+                    className="flex items-center justify-between px-4 py-2 hover:bg-gray-100 cursor-pointer transition-colors duration-200"
+                    onDoubleClick={handleSourceClick}
+                  >
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      {source.isUploading ? (
+                        <div className="w-5 h-5 flex-shrink-0">
+                          <svg className="w-5 h-5 text-blue-600 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" strokeDasharray="32" strokeDashoffset="32" />
+                          </svg>
+                        </div>
+                      ) : (
+                        <svg className="w-5 h-5 text-red-600 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zM9.498 16.19c-.309.29-.765.42-1.296.42a2.23 2.23 0 0 1-.308-.018v1.426H7v-3.936A7.558 7.558 0 0 1 8.219 14c.557 0 .953.106 1.22.319.254.202.426.533.426.923-.001.392-.131.723-.367.948zm3.807 1.355c-.42.349-1.059.515-1.84.515-.468 0-.799-.03-1.024-.06v-3.917A7.947 7.947 0 0 1 11.66 14c.757 0 1.249.136 1.633.426.415.308.675.799.675 1.504 0 .763-.279 1.29-.663 1.615zM17 14.77h-1.532v.911H16.9v.734h-1.432v1.604h-.906V14.03H17v.74zM14 9h-1V4l5 5h-4z" />
+                        </svg>
+                      )}
+                      <span className="text-sm text-gray-800 truncate" title={source.name}>
+                        {truncateFilename(source.name, 30)}
                       </span>
-                    )}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <label className="relative inline-flex items-center cursor-pointer">
+                    </div>
                     <input
                       type="checkbox"
                       checked={source.isSelected}
                       onChange={() => toggleSourceSelection(source.id)}
-                      className="sr-only"
                       disabled={source.isUploading}
+                      className="w-4 h-4 border-gray-300 rounded text-blue-600 focus:ring-blue-500"
                     />
-                    <div className={`w-4 h-4 border-2 border-gray-300 rounded transition-colors duration-200 flex items-center justify-center ${source.isSelected ? 'bg-blue-600 border-blue-600' : 'bg-white'} ${source.isUploading ? 'opacity-50' : ''}`}>
-                      {source.isSelected && (
-                        <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                        </svg>
-                      )}
-                    </div>
-                  </label>
-                  <button
-                    className="w-6 h-6 text-gray-400 hover:text-red-600 transition-colors duration-200 disabled:opacity-50"
-                    onClick={() => removeSource(source.id)}
-                    title="Remove source"
-                    disabled={source.isUploading}
-                  >
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M6 18L18 6M6 6l12 12"
-                      />
-                    </svg>
-                  </button>
-                </div>
-              </div>
-            );
-          })
-        )}
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

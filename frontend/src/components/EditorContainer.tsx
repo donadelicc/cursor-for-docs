@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useRef } from 'react';
 import { Editor } from '@tiptap/react';
-import ResizableContainer from './ResizableContainer';
+import CollapsiblePanel from './CollapsiblePanel';
 import KnowledgeBase, { SourceSelection } from './KnowledgeBase';
 import MainChatbot from './MainChatbot';
 import { TiptapEditor } from './TipTapEditor';
@@ -78,11 +78,7 @@ const EditorContainer = ({
       index === self.findIndex((f) => f.name === file.name && f.size === file.size),
   ).length;
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const handleResize = (widths: [number, number, number]) => {
-    // Optional: Handle resize events if needed
-    // Could be used for persistence, analytics, etc.
-  };
+
 
   // Auto-save function for documents (defined early to avoid hoisting issues)
   const saveDocumentContent = useCallback(
@@ -282,7 +278,7 @@ const EditorContainer = ({
 
   // Stable props for KnowledgeBase to avoid unnecessary effects downstream
   const kbDocuments = React.useMemo(
-    () => projectDocs.map((d) => ({ id: d.id, title: d.title, isMain: d.isMain })),
+    () => projectDocs.map((d) => ({ id: d.id, title: d.title })),
     [projectDocs],
   );
   const kbStoredSources = React.useMemo(
@@ -308,19 +304,7 @@ const EditorContainer = ({
     await reloadProjectData();
   }, [projectId, projectDocs, reloadProjectData]);
 
-  const setMainDocument = useCallback(
-    async (id: string) => {
-      if (!projectId) return;
-      // Set selected doc isMain true, others false
-      await Promise.all(
-        projectDocs.map((d) =>
-          updateProjectDocument(projectId, d.id, { isMain: d.id === id }).catch(() => undefined),
-        ),
-      );
-      await reloadProjectData();
-    },
-    [projectId, projectDocs, reloadProjectData],
-  );
+
 
   const openDocument = useCallback(
     async (id: string) => {
@@ -515,74 +499,97 @@ const EditorContainer = ({
 
 
   return (
-    <div className="w-full h-full bg-white relative border-t border-gray-300">
-      <ResizableContainer
-        minWidth={15} // 15% minimum width for each panel
-        onResize={handleResize}
-      >
-        {/* Knowledge Base Panel */}
-        <div className="h-full bg-gray-50 overflow-hidden">
-          <KnowledgeBase
-            onFileUpload={handleKnowledgeBaseFileUpload}
-            onSelectedSourcesChange={handleSelectedSourcesChange}
-            externalFiles={chatbotUploadedFiles}
-            onExternalFileRemove={handleChatbotFileRemove}
-            currentAttachedCount={currentAttachedCount}
-            onOpenSource={openPdf}
-            documents={kbDocuments}
-            onCreateDocument={createNewDocument}
-            onOpenDocument={openDocument}
-            onSetMainDocument={setMainDocument}
-            storedSources={kbStoredSources}
-            onOpenStoredSource={openStoredPdf}
-            onDeleteStoredSource={(id, storagePath) => {
-              if (!projectId) return;
-              deleteProjectSource(projectId, id, storagePath)
-                .then(() => reloadProjectData())
-                .catch(() => undefined);
-            }}
-          />
+    <div className="w-full h-full bg-gray-100 relative">
+      {/* Main Content Container */}
+      <div className="w-full max-w-screen-3xl mx-auto relative h-full p-4">
+        {/* Knowledge Base Panel (Left) */}
+        <div className="absolute left-4 top-4 bottom-4 z-10">
+          <CollapsiblePanel
+            title="Files"
+            position="left"
+            defaultOpen={true}
+            className="h-full"
+            sidebarIcons={[
+              // Document icon
+              <svg key="documents" className="w-5 h-5 text-blue-400" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zM16 18H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
+              </svg>,
+              // PDF/Source icon
+              <svg key="sources" className="w-5 h-5 text-red-400" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zM9.498 16.19c-.309.29-.765.42-1.296.42a2.23 2.23 0 0 1-.308-.018v1.426H7v-3.936A7.558 7.558 0 0 1 8.219 14c.557 0 .953.106 1.22.319.254.202.426.533.426.923-.001.392-.131.723-.367.948zm3.807 1.355c-.42.349-1.059.515-1.84.515-.468 0-.799-.03-1.024-.06v-3.917A7.947 7.947 0 0 1 11.66 14c.757 0 1.249.136 1.633.426.415.308.675.799.675 1.504 0 .763-.279 1.29-.663 1.615zM17 14.77h-1.532v.911H16.9v.734h-1.432v1.604h-.906V14.03H17v.74zM14 9h-1V4l5 5h-4z" />
+              </svg>
+            ]}
+          >
+            <KnowledgeBase
+              onFileUpload={handleKnowledgeBaseFileUpload}
+              onSelectedSourcesChange={handleSelectedSourcesChange}
+              externalFiles={chatbotUploadedFiles}
+              onExternalFileRemove={handleChatbotFileRemove}
+              currentAttachedCount={currentAttachedCount}
+              onOpenSource={openPdf}
+              documents={kbDocuments}
+              onCreateDocument={createNewDocument}
+              onOpenDocument={openDocument}
+              storedSources={kbStoredSources}
+              onOpenStoredSource={openStoredPdf}
+              onDeleteStoredSource={(id, storagePath) => {
+                if (!projectId) return;
+                deleteProjectSource(projectId, id, storagePath)
+                  .then(() => reloadProjectData())
+                  .catch(() => undefined);
+              }}
+            />
+          </CollapsiblePanel>
         </div>
 
-        {/* Editor Panel */}
-        <div className="h-full bg-white overflow-hidden">
-          <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-            <WorkspaceTabs
-              items={openItems}
-              activeId={activeItem.id}
-              onActivate={activate}
-              onClose={close}
-            />
-            <div style={{ flex: 1, minHeight: 0 }}>
-              {activeItem.kind === 'editor' ? (
-                <TiptapEditor
-                  key={activeItem.id} // Force re-render when switching between documents
-                  onContentChange={handleContentChange}
-                  initialContent={documentContent}
-                  onEditorReady={onEditorReady}
-                />
-              ) : (
-                <PdfViewer
-                  file={(activeItem as PdfItem).file}
-                  url={(activeItem as PdfItem).url}
-                  title={activeItem.title}
-                />
-              )}
+        {/* Editor Panel (Center) - Fixed width and centered */}
+        <div className="absolute left-1/2 transform -translate-x-1/2 top-4 bottom-4 w-[950px] z-20">
+          <div className="w-full h-full bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+            <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+              <WorkspaceTabs
+                items={openItems}
+                activeId={activeItem.id}
+                onActivate={activate}
+                onClose={close}
+              />
+              <div style={{ flex: 1, minHeight: 0 }}>
+                {activeItem.kind === 'editor' ? (
+                  <TiptapEditor
+                    key={activeItem.id} // Force re-render when switching between documents
+                    onContentChange={handleContentChange}
+                    initialContent={documentContent}
+                    onEditorReady={onEditorReady}
+                  />
+                ) : (
+                  <PdfViewer
+                    file={(activeItem as PdfItem).file}
+                    url={(activeItem as PdfItem).url}
+                    title={activeItem.title}
+                  />
+                )}
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Chatbot Panel */}
-        <div className="h-full bg-gray-50 overflow-hidden">
-          <MainChatbot
-            documentContent={documentContent}
-            selectedSources={selectedSources}
-            onFileUpload={handleChatbotFileUpload}
-            onFileRemove={handleFileRemove}
-            onChatbotFileRemove={handleChatbotFileRemove}
-          />
+        {/* Chatbot Panel (Right) */}
+        <div className="absolute right-4 top-4 bottom-4 z-10">
+          <CollapsiblePanel
+            title="Chat"
+            position="right"
+            defaultOpen={true}
+            className="h-full"
+          >
+            <MainChatbot
+              documentContent={documentContent}
+              selectedSources={selectedSources}
+              onFileUpload={handleChatbotFileUpload}
+              onFileRemove={handleFileRemove}
+              onChatbotFileRemove={handleChatbotFileRemove}
+            />
+          </CollapsiblePanel>
         </div>
-      </ResizableContainer>
+      </div>
     </div>
   );
 };
