@@ -1,4 +1,4 @@
-import styles from './TipTapEditor.module.css';
+
 
 import { useEditor, EditorContent, type Editor } from '@tiptap/react';
 import React, { useRef } from 'react';
@@ -28,7 +28,7 @@ export const TiptapEditor = ({
     content: initialContent || '',
     editorProps: {
       attributes: {
-        class: styles.tiptap,
+        class: 'tiptap-editor-content',
       },
     },
     onCreate: ({ editor }) => {
@@ -118,9 +118,11 @@ export const TiptapEditor = ({
   }, []);
 
   return (
-    <div className={styles.editorWrapper}>
-      <div className={styles.tiptapEditor} ref={editorContainerRef}>
-        <EditorContent editor={editor} />
+    <div className="flex flex-col w-full max-w-full items-stretch gap-0 mt-0 h-full">
+      <div className="flex flex-col w-full max-w-full h-full bg-white rounded-bl-lg rounded-br-lg border border-gray-300 border-t-0 shadow-lg overflow-x-hidden overflow-y-auto relative mt-0" ref={editorContainerRef}>
+        <div className="prose prose-lg max-w-none p-6 focus:outline-none">
+          <EditorContent editor={editor} />
+        </div>
       </div>
     </div>
   );

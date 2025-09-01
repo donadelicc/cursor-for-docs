@@ -1,5 +1,4 @@
 import React, { useState, useRef, useEffect } from 'react';
-import styles from './SaveButton.module.css';
 import { useAuth } from '@/contexts/AuthContext';
 import { createDocument, updateDocument, generateDocumentTitle } from '@/utils/firestore';
 
@@ -115,23 +114,23 @@ export const SaveModal: React.FC<SaveModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className={styles.modalOverlay}>
-      <div className={styles.modal} ref={modalRef}>
-        <div className={styles.modalHeader}>
-          <h3>Save Document</h3>
-          <button className={styles.closeButton} onClick={onClose} aria-label="Close">
+    <div className="fixed top-0 left-0 right-0 bottom-0 bg-black bg-opacity-50 flex items-center justify-center z-[1000] animate-[fadeIn_0.2s_ease]">
+      <div className="bg-white rounded-xl shadow-[0_20px_40px_rgba(0,0,0,0.2)] w-[90%] max-w-md animate-[slideIn_0.2s_ease]" ref={modalRef}>
+        <div className="flex justify-between items-center px-6 pt-5 pb-0 border-b border-gray-100 mb-5">
+          <h3 className="m-0 text-lg font-semibold text-gray-800">Save Document</h3>
+          <button className="bg-none border-none text-2xl text-gray-400 cursor-pointer p-0 w-8 h-8 flex items-center justify-center rounded-full transition-all duration-200 hover:bg-gray-100 hover:text-gray-800" onClick={onClose} aria-label="Close">
             ×
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className={styles.modalContent}>
+        <form onSubmit={handleSubmit} className="px-6 pb-6">
           {/* Save Mode Selection */}
-          <div className={styles.inputGroup}>
-            <label>Save Option:</label>
-            <div className={styles.saveModeButtons}>
+          <div className="mb-5">
+            <label className="block mb-2 font-medium text-gray-800 text-sm">Save Option:</label>
+            <div className="flex gap-2 bg-gray-50 p-1 rounded-lg border border-gray-200">
               <button
                 type="button"
-                className={`${styles.saveModeButton} ${saveMode === 'cloud' ? styles.active : ''}`}
+                className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 border-none bg-transparent text-gray-600 rounded-md text-sm font-medium cursor-pointer transition-all duration-200 hover:bg-gray-200 hover:text-gray-800 ${saveMode === 'cloud' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30' : ''}`}
                 onClick={() => setSaveMode('cloud')}
               >
                 <svg
@@ -150,7 +149,7 @@ export const SaveModal: React.FC<SaveModalProps> = ({
               </button>
               <button
                 type="button"
-                className={`${styles.saveModeButton} ${saveMode === 'export' ? styles.active : ''}`}
+                className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 border-none bg-transparent text-gray-600 rounded-md text-sm font-medium cursor-pointer transition-all duration-200 hover:bg-gray-200 hover:text-gray-800 ${saveMode === 'export' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30' : ''}`}
                 onClick={() => setSaveMode('export')}
               >
                 <svg
@@ -173,45 +172,45 @@ export const SaveModal: React.FC<SaveModalProps> = ({
           </div>
 
           {saveMode === 'cloud' ? (
-            <div className={styles.inputGroup}>
-              <label htmlFor="documentTitle">Document Title:</label>
+            <div className="mb-5">
+              <label htmlFor="documentTitle" className="block mb-2 font-medium text-gray-800 text-sm">Document Title:</label>
               <input
                 ref={inputRef}
                 type="text"
                 id="documentTitle"
                 value={documentTitle}
                 onChange={(e) => setDocumentTitle(e.target.value)}
-                className={styles.titleInput}
+                className="w-full py-3 px-4 border-2 border-gray-200 rounded-lg text-sm outline-none transition-colors duration-200 text-black focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/10"
                 placeholder="Enter document title"
                 required
               />
             </div>
           ) : (
             <>
-              <div className={styles.inputGroup}>
-                <label htmlFor="filename">File Name:</label>
-                <div className={styles.filenameContainer}>
+              <div className="mb-5">
+                <label htmlFor="filename" className="block mb-2 font-medium text-gray-800 text-sm">File Name:</label>
+                <div className="flex items-center border-2 border-gray-200 rounded-lg overflow-hidden transition-colors duration-200 focus-within:border-indigo-600 focus-within:ring-4 focus-within:ring-indigo-600/10">
                   <input
                     ref={inputRef}
                     type="text"
                     id="filename"
                     value={filename}
                     onChange={(e) => setFilename(e.target.value)}
-                    className={styles.filenameInput}
+                    className="flex-1 border-none py-3 px-4 text-sm outline-none bg-transparent text-black"
                     placeholder="Enter filename"
                     required
                   />
-                  <span className={styles.fileExtension}>{getFileExtension()}</span>
+                  <span className="py-3 px-4 bg-gray-50 text-gray-600 text-sm font-medium border-l border-gray-200">{getFileExtension()}</span>
                 </div>
               </div>
 
-              <div className={styles.inputGroup}>
-                <label htmlFor="format">Format:</label>
+              <div className="mb-5">
+                <label htmlFor="format" className="block mb-2 font-medium text-gray-800 text-sm">Format:</label>
                 <select
                   id="format"
                   value={format}
                   onChange={(e) => setFormat(e.target.value as SaveFormat)}
-                  className={styles.formatSelect}
+                  className="w-full py-3 px-4 border-2 border-gray-200 rounded-lg text-sm bg-white text-black cursor-pointer transition-colors duration-200 focus:outline-none focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/10"
                 >
                   <option value="pdf">PDF Document (.pdf)</option>
                   <option value="docx">Word Document (.docx)</option>
@@ -221,13 +220,13 @@ export const SaveModal: React.FC<SaveModalProps> = ({
             </>
           )}
 
-          <div className={styles.modalActions}>
-            <button type="button" onClick={onClose} className={styles.cancelButton}>
+          <div className="flex gap-3 justify-end mt-6">
+            <button type="button" onClick={onClose} className="py-2.5 px-5 border-2 border-gray-200 bg-white text-gray-600 rounded-lg text-sm font-medium cursor-pointer transition-all duration-200 hover:border-gray-300 hover:bg-gray-50">
               Cancel
             </button>
             <button
               type="submit"
-              className={styles.saveButton}
+              className="flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white border-none rounded-lg py-3 px-4 text-sm font-semibold cursor-pointer transition-all duration-200 shadow-lg shadow-indigo-600/40 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-indigo-600/60 active:translate-y-0 active:shadow-lg active:shadow-indigo-600/40 disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-lg disabled:shadow-indigo-600/20"
               disabled={saveMode === 'cloud' ? !documentTitle.trim() : !filename.trim()}
             >
               <svg
@@ -321,9 +320,9 @@ export const SaveButton: React.FC<SaveButtonProps> = ({
 
   return (
     <>
-      <div className={styles.saveButtonContainer}>
+      <div className="relative flex">
         <button
-          className={styles.saveButton}
+          className="flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white border-none rounded-lg py-3 px-4 text-sm font-semibold cursor-pointer transition-all duration-200 shadow-lg shadow-indigo-600/40 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-indigo-600/60 active:translate-y-0 active:shadow-lg active:shadow-indigo-600/40 disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-lg disabled:shadow-indigo-600/20 md:py-2.5 md:px-3.5 md:text-xs md:gap-1.5 md:min-h-[40px]"
           onClick={handleSaveClick}
           disabled={disabled || isSaving || !currentUser}
           title={!currentUser ? 'Sign in to save documents' : 'Save document'}
@@ -339,7 +338,7 @@ export const SaveButton: React.FC<SaveButtonProps> = ({
               strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
-              className={styles.spinning}
+              className="animate-spin md:w-[18px] md:h-[18px]"
             >
               <path d="M21 12a9 9 0 1 1-6.219-8.56" />
             </svg>
@@ -353,6 +352,7 @@ export const SaveButton: React.FC<SaveButtonProps> = ({
               strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
+              className="md:w-[18px] md:h-[18px]"
             >
               <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
               <polyline points="17,21 17,13 7,13 7,21" />

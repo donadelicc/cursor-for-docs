@@ -1,5 +1,4 @@
 import React, { useState, useRef, useCallback } from 'react';
-import styles from './ResizableContainer.module.css';
 
 interface ResizableContainerProps {
   children: [React.ReactNode, React.ReactNode, React.ReactNode];
@@ -177,7 +176,7 @@ const ResizableContainer: React.FC<ResizableContainerProps> = ({
   return (
     <div
       ref={containerRef}
-      className={`${styles.resizableContainer} ${className}`}
+      className={`flex w-full h-full bg-white relative overflow-visible ${className}`}
       style={
         {
           '--panel-1-width': `${panelWidths[0]}%`,
@@ -188,7 +187,7 @@ const ResizableContainer: React.FC<ResizableContainerProps> = ({
     >
       {/* First Panel */}
       <div
-        className={styles.panel}
+        className="flex flex-col min-w-0 h-full shrink-0 grow-0 overflow-hidden transition-[flex-basis] duration-200 ease-in-out"
         style={{
           flexBasis: `${panelWidths[0]}%`,
           width: `${panelWidths[0]}%`,
@@ -199,16 +198,16 @@ const ResizableContainer: React.FC<ResizableContainerProps> = ({
 
       {/* First Divider */}
       <div
-        className={`${styles.divider} ${draggingDivider === 0 ? styles.dragging : ''}`}
+        className={`w-1 h-full bg-transparent cursor-col-resize relative shrink-0 z-[1001] flex items-center justify-center transition-colors duration-200 pointer-events-auto hover:bg-blue-100 md:w-1.5 motion-reduce:transition-none ${draggingDivider === 0 ? 'bg-blue-200 select-none' : ''}`}
         onMouseDown={(e) => handleMouseDown(0, e)}
         onTouchStart={(e) => handleTouchStart(0, e)}
       >
-        <div className={styles.dividerHandle} />
+        <div className={`w-0.5 h-6 bg-gray-300 rounded-sm transition-all duration-200 relative pointer-events-auto z-[1002] md:w-0.5 md:h-10 motion-reduce:transition-none contrast-more:bg-black contrast-more:border contrast-more:border-white ${draggingDivider === 0 ? 'bg-blue-600 h-10 w-0.5 shadow-lg shadow-blue-600/30 contrast-more:bg-black contrast-more:border-2 contrast-more:border-white' : 'hover:bg-blue-600 hover:h-8 hover:w-0.5'}`} />
       </div>
 
       {/* Second Panel */}
       <div
-        className={styles.panel}
+        className="flex flex-col min-w-0 h-full shrink-0 grow-0 overflow-hidden transition-[flex-basis] duration-200 ease-in-out"
         style={{
           flexBasis: `${panelWidths[1]}%`,
           width: `${panelWidths[1]}%`,
@@ -219,16 +218,16 @@ const ResizableContainer: React.FC<ResizableContainerProps> = ({
 
       {/* Second Divider */}
       <div
-        className={`${styles.divider} ${draggingDivider === 1 ? styles.dragging : ''}`}
+        className={`w-1 h-full bg-transparent cursor-col-resize relative shrink-0 z-[1001] flex items-center justify-center transition-colors duration-200 pointer-events-auto hover:bg-blue-100 md:w-1.5 motion-reduce:transition-none ${draggingDivider === 1 ? 'bg-blue-200 select-none' : ''}`}
         onMouseDown={(e) => handleMouseDown(1, e)}
         onTouchStart={(e) => handleTouchStart(1, e)}
       >
-        <div className={styles.dividerHandle} />
+        <div className={`w-0.5 h-6 bg-gray-300 rounded-sm transition-all duration-200 relative pointer-events-auto z-[1002] md:w-0.5 md:h-10 motion-reduce:transition-none contrast-more:bg-black contrast-more:border contrast-more:border-white ${draggingDivider === 1 ? 'bg-blue-600 h-10 w-0.5 shadow-lg shadow-blue-600/30 contrast-more:bg-black contrast-more:border-2 contrast-more:border-white' : 'hover:bg-blue-600 hover:h-8 hover:w-0.5'}`} />
       </div>
 
       {/* Third Panel */}
       <div
-        className={styles.panel}
+        className="flex flex-col min-w-0 h-full shrink-0 grow-0 overflow-hidden transition-[flex-basis] duration-200 ease-in-out"
         style={{
           flexBasis: `${panelWidths[2]}%`,
           width: `${panelWidths[2]}%`,

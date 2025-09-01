@@ -1,6 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
-import styles from './MainChatbot.module.css';
 import { useChatbotState } from '@/hooks/useChatbotState';
 // apiClient removed; no longer sending files to /documents
 
@@ -81,7 +80,7 @@ const MainChatbot = ({
         return;
       }
       const target = event.target as Element;
-      if (!target.closest(`.${styles.modeSelector}`)) {
+      if (!target.closest('[data-mode-selector]')) {
         setShowModeDropdown(false);
       }
     };
@@ -393,26 +392,26 @@ const MainChatbot = ({
   return (
     <div
       ref={chatbotContainerRef}
-      className={styles.chatbotContainer}
+      className="flex flex-col w-full h-full bg-white font-sans relative"
       onDragOver={handleDragOver}
       onDrop={handleDrop}
     >
       {/* Notification */}
       {notification && (
-        <div className={styles.notification}>
-          <span className={styles.notificationText}>{notification}</span>
-          <button className={styles.notificationClose} onClick={() => setNotification(null)}>
+        <div className="absolute top-2 left-2 right-2 bg-yellow-50 border border-yellow-400 rounded-lg p-3 flex items-center justify-between z-50 shadow-lg">
+          <span className="text-sm text-yellow-800 flex-1 mr-2">{notification}</span>
+          <button className="bg-none border-none text-yellow-800 cursor-pointer text-xl leading-none p-0 w-6 h-6 flex items-center justify-center rounded transition-colors duration-200 hover:bg-yellow-100" onClick={() => setNotification(null)}>
             ×
           </button>
         </div>
       )}
 
       {/* Header */}
-      <div className={styles.header}>
-        <div className={styles.headerContent}>
-          <button className={styles.newChatButton} title="New Chat" onClick={clearChat}>
+      <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-200 shrink-0">
+        <div className="flex items-center gap-3">
+          <button className="flex items-center justify-center w-8 h-8 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200" title="New Chat" onClick={clearChat}>
             <svg
-              className={styles.buttonIcon}
+              className="w-4 h-4"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -429,37 +428,41 @@ const MainChatbot = ({
       </div>
 
       {/* Messages */}
-      <div className={styles.messagesContainer}>
-        <div className={styles.messagesList}>
+      <div className="flex-1 overflow-y-auto px-4 py-4">
+        <div className="space-y-4">
           {messages.map((message) => (
             <div
               key={message.id}
-              className={`${styles.messageWrapper} ${
-                message.role === 'user' ? styles.userMessage : styles.assistantMessage
+              className={`flex w-full ${
+                message.role === 'user' ? 'justify-end' : 'justify-start'
               }`}
             >
-              <div className={styles.messageContent}>
-                <div className={styles.messageText}>
+              <div className={`max-w-[80%] ${
+                message.role === 'user' 
+                  ? 'bg-blue-600 text-white rounded-lg rounded-br-sm' 
+                  : 'bg-gray-100 text-gray-900 rounded-lg rounded-bl-sm'
+              }`}>
+                <div className="px-4 py-3">
                   {message.role === 'assistant' ? (
                     <div className="prose prose-sm max-w-none prose-gray prose-headings:font-semibold prose-headings:text-gray-900 prose-p:text-gray-700 prose-li:text-gray-700 prose-strong:text-gray-900">
                       <ReactMarkdown>{message.content}</ReactMarkdown>
                     </div>
                   ) : (
-                    <div className={styles.messageBody}>{message.content}</div>
+                    <div className="text-sm leading-relaxed">{message.content}</div>
                   )}
                 </div>
               </div>
             </div>
           ))}
           {isLoading && (
-            <div className={`${styles.messageWrapper} ${styles.assistantMessage}`}>
-              <div className={styles.messageContent}>
-                <div className={styles.messageText}>
-                  <div className={styles.loadingIndicator}>
-                    <div className={styles.loadingDots}>
-                      <div></div>
-                      <div></div>
-                      <div></div>
+            <div className="flex justify-start">
+              <div className="max-w-[80%] bg-gray-100 text-gray-900 rounded-lg rounded-bl-sm">
+                <div className="px-4 py-3">
+                  <div className="flex items-center space-x-1">
+                    <div className="flex space-x-1">
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
                     </div>
                   </div>
                 </div>
@@ -471,26 +474,26 @@ const MainChatbot = ({
       </div>
 
       {/* Input */}
-      <div className={styles.inputContainer}>
+      <div className="border-t border-gray-200 bg-white p-4 shrink-0">
         {/* Individual Source Files - Above Input */}
         {allUploadedFiles.length > 0 && (
-          <div className={styles.sourceFilesContainer}>
+          <div className="mb-4 flex flex-wrap gap-2">
             {allUploadedFiles.map((file, index) => {
               const isUploading = uploadingFiles.has(file.name);
               return (
-                <div key={index} className={styles.sourceFileItem}>
-                  <div className={styles.sourceFileInfo}>
-                    <div className={styles.sourceFileIcon}>
+                <div key={index} className="flex items-center gap-2 bg-gray-100 rounded-lg p-2 text-sm">
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 flex items-center justify-center">
                       {isUploading ? (
-                        <div className={styles.loadingSpinner}>
+                        <div className="relative">
                           <svg
-                            className={styles.spinnerIcon}
+                            className="w-4 h-4 text-blue-600 animate-spin"
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
                           >
                             <circle
-                              className={styles.spinnerCircle}
+                              className="opacity-25"
                               cx="12"
                               cy="12"
                               r="10"
@@ -506,12 +509,10 @@ const MainChatbot = ({
                         <div
                           onClick={() => removeUploadedFile(index)}
                           title="Remove source"
-                          style={{
-                            cursor: 'pointer',
-                          }}
+                          className="cursor-pointer relative group"
                         >
                           <svg
-                            className={styles.pdfIcon}
+                            className="w-4 h-4 text-red-600"
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
@@ -525,7 +526,7 @@ const MainChatbot = ({
                           </svg>
                           {/* Show remove icon for all files */}
                           <svg
-                            className={styles.removeIcon}
+                            className="absolute top-0 right-0 w-3 h-3 text-red-600 opacity-0 group-hover:opacity-100 transition-opacity duration-200 transform translate-x-1 -translate-y-1"
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
@@ -540,8 +541,8 @@ const MainChatbot = ({
                         </div>
                       )}
                     </div>
-                    <div className={styles.sourceFileDetails}>
-                      <span className={styles.sourceFileName}>{file.name}</span>
+                    <div className="flex-1 min-w-0">
+                      <span className="text-gray-700 text-sm font-medium truncate block">{file.name}</span>
                     </div>
                   </div>
                 </div>
@@ -550,9 +551,9 @@ const MainChatbot = ({
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className={styles.inputForm}>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-3">
           {/* Text Input with Embedded Buttons */}
-          <div className={styles.textInputWrapper}>
+          <div className="relative flex items-end bg-gray-50 border border-gray-300 rounded-xl p-3 focus-within:border-blue-500 focus-within:bg-white transition-all duration-200">
             <textarea
               ref={inputRef}
               value={inputValue}
@@ -568,27 +569,27 @@ const MainChatbot = ({
                     ? `Ask questions about your uploaded sources...`
                     : `Ask questions about your document...`
               }
-              className={styles.textInput}
+              className="flex-1 resize-none border-none bg-transparent outline-none text-gray-900 text-sm leading-relaxed min-h-[20px] max-h-32"
               rows={1}
               disabled={isLoading}
               data-chatbot-input="true"
             />
 
             {/* Embedded Buttons */}
-            <div className={styles.embeddedButtons}>
+            <div className="flex items-end gap-2 ml-2">
               {/* Mode Selector - Bottom Left */}
-              <div className={styles.modeSelector}>
+              <div className="relative" data-mode-selector>
                 <button
                   type="button"
-                  className={styles.modeButton}
+                  className="flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-200"
                   onClick={() => setShowModeDropdown(!showModeDropdown)}
                 >
-                  <span className={styles.modeButtonText}>
+                  <span className="font-medium">
                     {mode === 'general' ? 'General' : mode === 'sources' ? 'Sources' : 'Focused'}
                   </span>
                   <svg
-                    className={`${styles.chevronIcon} ${
-                      showModeDropdown ? styles.chevronUp : styles.chevronDown
+                    className={`w-4 h-4 transition-transform duration-200 ${
+                      showModeDropdown ? 'rotate-180' : ''
                     }`}
                     fill="none"
                     stroke="currentColor"
@@ -604,11 +605,11 @@ const MainChatbot = ({
                 </button>
 
                 {showModeDropdown && (
-                  <div className={styles.modeDropdown}>
+                  <div className="absolute bottom-full left-0 mb-2 bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[120px] z-50">
                     <button
                       type="button"
-                      className={`${styles.modeOption} ${
-                        mode === 'general' ? styles.modeOptionActive : ''
+                      className={`w-full text-left px-3 py-2 text-sm transition-colors duration-200 hover:bg-gray-50 ${
+                        mode === 'general' ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700'
                       }`}
                       onClick={() => handleModeChange('general')}
                     >
@@ -616,8 +617,8 @@ const MainChatbot = ({
                     </button>
                     <button
                       type="button"
-                      className={`${styles.modeOption} ${
-                        mode === 'sources' ? styles.modeOptionActive : ''
+                      className={`w-full text-left px-3 py-2 text-sm transition-colors duration-200 hover:bg-gray-50 ${
+                        mode === 'sources' ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700'
                       }`}
                       onClick={() => handleModeChange('sources')}
                     >
@@ -625,8 +626,8 @@ const MainChatbot = ({
                     </button>
                     <button
                       type="button"
-                      className={`${styles.modeOption} ${
-                        mode === 'focused' ? styles.modeOptionActive : ''
+                      className={`w-full text-left px-3 py-2 text-sm transition-colors duration-200 hover:bg-gray-50 ${
+                        mode === 'focused' ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700'
                       }`}
                       onClick={() => handleModeChange('focused')}
                     >
@@ -637,17 +638,17 @@ const MainChatbot = ({
               </div>
 
               {/* Right Side Buttons */}
-              <div className={styles.rightButtons}>
+              <div className="flex items-center gap-2">
                 {/* Upload Button */}
                 <button
                   type="button"
                   onClick={handleFileUpload}
                   disabled={isLoading || isUploadingFiles}
-                  className={styles.uploadButton}
+                  className="flex items-center justify-center w-8 h-8 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 hover:text-gray-800 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                   title="Upload PDF files"
                 >
                   <svg
-                    className={styles.uploadIcon}
+                    className="w-4 h-4"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -665,10 +666,10 @@ const MainChatbot = ({
                 <button
                   type="submit"
                   disabled={!inputValue.trim() || isLoading}
-                  className={styles.sendButton}
+                  className="flex items-center justify-center w-8 h-8 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <svg
-                    className={styles.sendIcon}
+                    className="w-4 h-4"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"

@@ -1,5 +1,4 @@
 import React, { useState, useRef, useEffect } from 'react';
-import styles from './KnowledgeBase.module.css';
 
 interface UnifiedSource {
   id: string;
@@ -330,29 +329,29 @@ const KnowledgeBase = ({
   };
 
   return (
-    <div className={styles.sourcesContainer}>
+    <div className="flex flex-col w-full h-full bg-gray-50 border-r border-gray-300 font-sans relative">
       {/* Notification */}
       {notification && (
-        <div className={styles.notification}>
-          <span className={styles.notificationText}>{notification}</span>
-          <button className={styles.notificationClose} onClick={() => setNotification(null)}>
+        <div className="absolute top-2 left-2 right-2 bg-yellow-50 border border-yellow-400 rounded-lg p-3 flex items-center justify-between z-50 shadow-lg">
+          <span className="text-sm text-yellow-800 flex-1 mr-2">{notification}</span>
+          <button className="bg-none border-none text-yellow-800 cursor-pointer text-xl leading-none p-0 w-6 h-6 flex items-center justify-center rounded transition-colors duration-200 hover:bg-yellow-100" onClick={() => setNotification(null)}>
             ×
           </button>
         </div>
       )}
 
       {/* Header */}
-      <div className={styles.header}>
-        <h3 className={styles.title}>Files</h3>
+      <div className="flex items-center justify-between p-4 bg-white border-b border-gray-200 shrink-0">
+        <h3 className="text-lg font-semibold text-gray-800 m-0">Files</h3>
         <div
-          className={`${styles.compactUploadArea} ${isDragOver ? styles.dragOver : ''}`}
+          className={`flex items-center gap-2 py-2 px-3 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50 cursor-pointer transition-all duration-200 hover:border-blue-400 hover:bg-blue-50 ${isDragOver ? 'border-blue-500 bg-blue-50' : ''}`}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
           onClick={handleButtonClick}
         >
           <svg
-            className={styles.compactUploadIcon}
+            className="w-4 h-4 text-gray-600"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -364,7 +363,7 @@ const KnowledgeBase = ({
               d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
             />
           </svg>
-          <span className={styles.compactUploadText}>Add Files</span>
+          <span className="text-sm font-medium text-gray-700">Add Files</span>
         </div>
       </div>
 
@@ -375,36 +374,36 @@ const KnowledgeBase = ({
         multiple
         accept=".pdf"
         onChange={handleInputChange}
-        className={styles.hiddenInput}
+        className="hidden"
       />
 
       {/* Documents Section */}
       {documents.length > 0 && (
-        <div className={styles.documentsSection}>
-          <div className={styles.documentsHeader}>
-            <span className={styles.sectionTitle}>Documents</span>
-            <button className={styles.newDocButton} onClick={onCreateDocument}>
+        <div className="px-4 py-3 bg-white border-b border-gray-200 shrink-0">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-semibold text-gray-800 uppercase tracking-wide">Documents</span>
+            <button className="py-1 px-2 bg-blue-600 text-white border-none rounded text-xs font-medium cursor-pointer transition-colors duration-200 hover:bg-blue-700" onClick={onCreateDocument}>
               + New
             </button>
           </div>
-          <div className={styles.documentsList}>
+          <div className="space-y-1">
             {documents.map((doc) => (
               <div
                 key={doc.id}
-                className={styles.documentItem}
+                className="flex items-center justify-between p-2 bg-gray-50 rounded-md cursor-pointer transition-colors duration-200 hover:bg-gray-100"
                 onDoubleClick={() => onOpenDocument?.(doc.id)}
               >
-                <span className={styles.documentName} title={doc.title}>
+                <span className="text-sm text-gray-800 truncate flex-1 mr-2" title={doc.title}>
                   {doc.title}
                   {doc.isMain && (
-                    <span className={styles.mainBadge} title="Main document">
+                    <span className="ml-2 py-0.5 px-1.5 bg-green-100 text-green-800 text-xs font-medium rounded-full" title="Main document">
                       ★
                     </span>
                   )}
                 </span>
                 {!doc.isMain && (
                   <button
-                    className={styles.setMainButton}
+                    className="py-1 px-2 bg-gray-200 text-gray-700 border-none rounded text-xs cursor-pointer transition-colors duration-200 hover:bg-gray-300"
                     onClick={() => onSetMainDocument?.(doc.id)}
                   >
                     Set main
@@ -418,15 +417,15 @@ const KnowledgeBase = ({
 
       {/* Unified Sources List */}
       <div
-        className={`${styles.sourcesList} ${isDragOver ? styles.dragOver : ''}`}
+        className={`flex-1 p-4 overflow-y-auto transition-colors duration-200 ${isDragOver ? 'bg-blue-50' : ''}`}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
       >
         {allSources.length === 0 ? (
-          <div className={styles.emptyState}>
-            <p className={styles.emptyText}>No sources uploaded yet</p>
-            <p className={styles.emptySubtext}>Drop PDF files here to get started</p>
+          <div className="flex flex-col items-center justify-center h-full text-center py-8">
+            <p className="text-gray-500 text-base mb-2">No sources uploaded yet</p>
+            <p className="text-gray-400 text-sm">Drop PDF files here to get started</p>
           </div>
         ) : (
           allSources.map((source) => {
@@ -453,20 +452,20 @@ const KnowledgeBase = ({
             return (
               <div
                 key={source.id}
-                className={styles.sourceItem}
+                className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-200 cursor-pointer transition-all duration-200 hover:shadow-md hover:border-gray-300"
                 onDoubleClick={handleSourceClick}
               >
-                <div className={styles.sourceIcon}>
+                <div className="flex-shrink-0 w-10 h-10 flex items-center justify-center">
                   {source.isUploading ? (
-                    <div className={styles.loadingSpinner}>
+                    <div className="relative">
                       <svg
-                        className={styles.spinnerIcon}
+                        className="w-6 h-6 text-blue-600 animate-spin"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
                       >
                         <circle
-                          className={styles.spinnerCircle}
+                          className="opacity-25"
                           cx="12"
                           cy="12"
                           r="10"
@@ -479,35 +478,41 @@ const KnowledgeBase = ({
                       </svg>
                     </div>
                   ) : (
-                    <svg className={styles.pdfIcon} fill="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-6 h-6 text-red-600" fill="currentColor" viewBox="0 0 24 24">
                       <path d="M8.267 14.68c-.184 0-.308.018-.372.036v1.178c.076.018.171.023.302.023.479 0 .774-.242.774-.651 0-.366-.254-.586-.704-.586zm3.487.012c-.2 0-.33.018-.407.036v2.61c.077.018.201.018.313.018.817.006 1.349-.444 1.349-1.396.006-.83-.479-1.268-1.255-1.268z" />
                       <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zM9.498 16.19c-.309.29-.765.42-1.296.42a2.23 2.23 0 0 1-.308-.018v1.426H7v-3.936A7.558 7.558 0 0 1 8.219 14c.557 0 .953.106 1.22.319.254.202.426.533.426.923-.001.392-.131.723-.367.948zm3.807 1.355c-.42.349-1.059.515-1.84.515-.468 0-.799-.03-1.024-.06v-3.917A7.947 7.947 0 0 1 11.66 14c.757 0 1.249.136 1.633.426.415.308.675.799.675 1.504 0 .763-.279 1.29-.663 1.615zM17 14.77h-1.532v.911H16.9v.734h-1.432v1.604h-.906V14.03H17v.74zM14 9h-1V4l5 5h-4z" />
                     </svg>
                   )}
                 </div>
-                <div className={styles.sourceInfo}>
-                  <p className={styles.sourceName} title={source.name}>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-900 truncate" title={source.name}>
                     {truncateFilename(source.name)}
                     {getSourceIcon() && (
-                      <span className={styles.externalBadge} title={getSourceTooltip()}>
+                      <span className="ml-2 text-xs" title={getSourceTooltip()}>
                         {getSourceIcon()}
                       </span>
                     )}
                   </p>
                 </div>
-                <div className={styles.sourceActions}>
-                  <label className={styles.checkboxContainer}>
+                <div className="flex items-center gap-2">
+                  <label className="relative inline-flex items-center cursor-pointer">
                     <input
                       type="checkbox"
                       checked={source.isSelected}
                       onChange={() => toggleSourceSelection(source.id)}
-                      className={styles.checkbox}
+                      className="sr-only"
                       disabled={source.isUploading}
                     />
-                    <span className={styles.checkmark}></span>
+                    <div className={`w-4 h-4 border-2 border-gray-300 rounded transition-colors duration-200 flex items-center justify-center ${source.isSelected ? 'bg-blue-600 border-blue-600' : 'bg-white'} ${source.isUploading ? 'opacity-50' : ''}`}>
+                      {source.isSelected && (
+                        <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      )}
+                    </div>
                   </label>
                   <button
-                    className={styles.removeButton}
+                    className="w-6 h-6 text-gray-400 hover:text-red-600 transition-colors duration-200 disabled:opacity-50"
                     onClick={() => removeSource(source.id)}
                     title="Remove source"
                     disabled={source.isUploading}

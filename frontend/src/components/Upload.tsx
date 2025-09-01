@@ -1,5 +1,4 @@
 import React, { useRef } from 'react';
-import styles from './Upload.module.css';
 
 interface UploadProps {
   onUpload: (file: File) => Promise<void>;
@@ -49,7 +48,7 @@ export const Upload: React.FC<UploadProps> = ({ onUpload, disabled = false }) =>
         aria-label="Upload DOCX file"
       />
       <button
-        className={styles.uploadButton}
+        className="flex items-center justify-center p-0 bg-white text-gray-800 border border-gray-300 rounded-md cursor-pointer transition-all duration-200 w-9 h-9 hover:bg-gray-50 hover:border-gray-400 hover:-translate-y-px hover:shadow-lg active:translate-y-0 active:shadow-sm disabled:bg-gray-100 disabled:text-gray-400 disabled:border-gray-200 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none lg:w-8 lg:h-8 md:w-7 md:h-7"
         onClick={handleUploadClick}
         disabled={disabled}
         title="Import DOCX document"
@@ -58,6 +57,7 @@ export const Upload: React.FC<UploadProps> = ({ onUpload, disabled = false }) =>
         <svg
           width="20"
           height="20"
+          className="shrink-0 transition-transform duration-200 hover:-translate-y-px lg:w-4 lg:h-4 md:w-3.5 md:h-3.5"
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"

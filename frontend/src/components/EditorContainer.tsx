@@ -1,6 +1,5 @@
 import React, { useState, useCallback, useRef } from 'react';
 import { Editor } from '@tiptap/react';
-import styles from './EditorContainer.module.css';
 import ResizableContainer from './ResizableContainer';
 import KnowledgeBase, { SourceSelection } from './KnowledgeBase';
 import MainChatbot from './MainChatbot';
@@ -516,13 +515,13 @@ const EditorContainer = ({
 
 
   return (
-    <div className={styles.editorContainer}>
+    <div className="w-full h-full bg-white relative border-t border-gray-300">
       <ResizableContainer
         minWidth={15} // 15% minimum width for each panel
         onResize={handleResize}
       >
         {/* Knowledge Base Panel */}
-        <div className={styles.sourcesSection}>
+        <div className="h-full bg-gray-50 overflow-hidden">
           <KnowledgeBase
             onFileUpload={handleKnowledgeBaseFileUpload}
             onSelectedSourcesChange={handleSelectedSourcesChange}
@@ -546,7 +545,7 @@ const EditorContainer = ({
         </div>
 
         {/* Editor Panel */}
-        <div className={styles.editorSection}>
+        <div className="h-full bg-white overflow-hidden">
           <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
             <WorkspaceTabs
               items={openItems}
@@ -574,7 +573,7 @@ const EditorContainer = ({
         </div>
 
         {/* Chatbot Panel */}
-        <div className={styles.chatbotSection}>
+        <div className="h-full bg-gray-50 overflow-hidden">
           <MainChatbot
             documentContent={documentContent}
             selectedSources={selectedSources}
