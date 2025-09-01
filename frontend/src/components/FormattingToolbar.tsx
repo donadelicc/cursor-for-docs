@@ -37,8 +37,8 @@ const FormattingToolbar: React.FC<FormattingToolbarProps> = ({
   // Show simplified toolbar when editor is not ready
   if (!editor) {
     return (
-      <div>
-        <div className="flex items-center px-4 py-1.5 bg-transparent border-none rounded-xl gap-1 min-h-[40px] relative z-[100] pointer-events-auto w-full max-w-full overflow-x-visible flex-nowrap">
+      <div className="relative">
+        <div className="flex items-center px-4 py-1.5 bg-transparent border-none rounded-xl gap-1 min-h-[40px] relative z-10 pointer-events-auto overflow-visible flex-nowrap">
           <div className="flex items-center gap-0.5 shrink-0">
             <span className="text-gray-400 text-sm">Loading editor...</span>
           </div>
@@ -48,8 +48,8 @@ const FormattingToolbar: React.FC<FormattingToolbarProps> = ({
   }
 
   return (
-    <div>
-      <div className="flex items-center px-4 py-1.5 bg-transparent border-none rounded-xl gap-1 min-h-[40px] relative z-[100] pointer-events-auto w-full max-w-full overflow-x-visible flex-nowrap xl:px-3.5 xl:gap-0.5 xl:min-h-[44px] lg:px-2.5 lg:gap-px lg:min-h-[40px] lg:max-w-full lg:overflow-x-auto">
+    <div className="relative">
+      <div className="flex items-center px-4 py-1.5 bg-transparent border-none rounded-xl gap-1 min-h-[40px] relative z-10 pointer-events-auto overflow-visible flex-nowrap xl:px-3.5 xl:gap-0.5 xl:min-h-[44px] lg:px-2.5 lg:gap-px lg:min-h-[40px]">
         {/* File Menu - Only show if required props are provided */}
         {onExportSave && documentContent !== undefined && (
           <>

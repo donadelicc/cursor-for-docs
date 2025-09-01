@@ -275,7 +275,7 @@ export const createProjectDocument = async (
       PROJECT_DOCUMENTS_SUBCOLLECTION,
       data.id,
     );
-    const payload = { title: data.title, content: data.content, isMain: !!data.isMain };
+    const payload = { title: data.title, content: data.content };
     await setDoc(docRef, {
       ...payload,
       createdAt: serverTimestamp(),
@@ -289,7 +289,6 @@ export const createProjectDocument = async (
       {
         title: data.title,
         content: data.content,
-        isMain: !!data.isMain,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
         lastModified: serverTimestamp(),
@@ -299,23 +298,7 @@ export const createProjectDocument = async (
   }
 };
 
-// Ensure a single main document using a fixed ID to avoid duplicates under StrictMode
-export const ensureMainProjectDocument = async (projectId: string): Promise<string> => {
-  const mainId = 'main';
-  const dref = fsDoc(db, PROJECTS_COLLECTION, projectId, PROJECT_DOCUMENTS_SUBCOLLECTION, mainId);
-  const snap = await fsGetDoc(dref);
-  if (!snap.exists()) {
-    await setDoc(dref, {
-      title: 'Document',
-      content: '',
-      isMain: true,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-      lastModified: serverTimestamp(),
-    });
-  }
-  return mainId;
-};
+
 
 export const getProjectDocuments = async (projectId: string): Promise<ProjectDocumentMeta[]> => {
   const q = query(
@@ -328,7 +311,6 @@ export const getProjectDocuments = async (projectId: string): Promise<ProjectDoc
     return {
       id: d.id,
       title: data.title,
-      isMain: !!data.isMain,
       createdAt: (data.createdAt as Timestamp).toDate(),
       updatedAt: (data.updatedAt as Timestamp).toDate(),
       lastModified: (data.lastModified as Timestamp).toDate(),
@@ -357,7 +339,6 @@ export const getProjectDocument = async (
   const result = {
     title: data.title,
     content: data.content,
-    isMain: !!data.isMain,
   } as ProjectDocumentData;
 
   console.log('✅ [Firestore] getProjectDocument SUCCESS:', {

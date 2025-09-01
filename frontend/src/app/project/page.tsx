@@ -15,6 +15,7 @@ export default function ProjectPage() {
   const [documentContent, setDocumentContent] = useState('');
   const [currentProjectTitle, setCurrentProjectTitle] = useState<string>('');
   const [editor, setEditor] = useState<Editor | null>(null);
+  const [activeDocumentId, setActiveDocumentId] = useState<string | undefined>(undefined);
   const searchParams = useSearchParams();
   const { currentUser } = useAuth();
 
@@ -39,6 +40,11 @@ export default function ProjectPage() {
   // Function to handle editor instance ready
   const handleEditorReady = (editorInstance: Editor) => {
     setEditor(editorInstance);
+  };
+
+  // Function to handle active document ID changes from EditorContainer
+  const handleActiveDocumentIdChange = (documentId: string | undefined) => {
+    setActiveDocumentId(documentId);
   };
 
   // Functions for FormattingToolbar (moved from TipTapEditor)
@@ -138,7 +144,7 @@ export default function ProjectPage() {
           await renameProject(projectId, name);
         }}
         projectId={searchParams.get('id') || undefined}
-        activeDocumentId="main"
+        activeDocumentId={activeDocumentId}
         onProjectSave={() => {
           console.log('📄 [Project Page] Manual save completed');
         }}
@@ -160,6 +166,7 @@ export default function ProjectPage() {
             documentTitle={currentProjectTitle}
             userId={currentUser?.uid}
             projectId={searchParams.get('id') || undefined}
+            onActiveDocumentIdChange={handleActiveDocumentIdChange}
           />
         )}
       </div>

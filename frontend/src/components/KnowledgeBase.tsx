@@ -3,7 +3,7 @@ import React, { useState, useRef, useEffect } from 'react';
 interface UnifiedSource {
   id: string;
   name: string;
-  type: 'pdf';
+  type: 'pdf' | 'docx';
   size: number;
   uploadDate: Date;
   isSelected: boolean;
@@ -30,9 +30,15 @@ interface KnowledgeBaseProps {
   documents?: { id: string; title: string }[];
   onCreateDocument?: () => void;
   onOpenDocument?: (id: string) => void;
+  onRenameDocument?: (id: string, newTitle: string) => void;
+  onDeleteDocument?: (id: string) => void;
   storedSources?: { id: string; name: string; storagePath: string }[];
   onOpenStoredSource?: (name: string, storagePath: string) => void;
   onDeleteStoredSource?: (id: string, storagePath: string) => void;
+  // New callback for DOCX to document conversion
+  onConvertDocxToDocument?: (file: File, filename: string) => Promise<void>;
+  // New callback for converting documents to sources
+  onConvertDocumentToSource?: (docId: string, docTitle: string) => Promise<void>;
 }
 
 const KnowledgeBase = ({
@@ -45,44 +51,57 @@ const KnowledgeBase = ({
   documents = [],
   onCreateDocument,
   onOpenDocument,
+  onRenameDocument,
+  onDeleteDocument,
   storedSources = [],
   onOpenStoredSource,
   onDeleteStoredSource,
+  onConvertDocxToDocument,
+  onConvertDocumentToSource,
 }: KnowledgeBaseProps) => {
   const [allSources, setAllSources] = useState<UnifiedSource[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
   const [notification, setNotification] = useState<string | null>(null);
+  const [editingDocId, setEditingDocId] = useState<string | null>(null);
+  const [editingDocValue, setEditingDocValue] = useState('');
+  const [openMenuDocId, setOpenMenuDocId] = useState<string | null>(null);
   const fileRegistryRef = useRef<Map<string, File>>(new Map()); // Keep track of uploaded files
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const docInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileUpload = (files: FileList | null) => {
+  const handleFileUpload = async (files: FileList | null) => {
     if (!files) return;
 
-    const validFiles: File[] = [];
+    const validPdfFiles: File[] = [];
+    const validDocxFiles: File[] = [];
     const fileArray = Array.from(files);
     const duplicateFiles: string[] = [];
     const invalidFiles: string[] = [];
 
     fileArray.forEach((file) => {
-      // Check if file is PDF
+      // Check if file is PDF or DOCX
       const isPdf = file.type === 'application/pdf';
+      const isDocx = file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || file.name.toLowerCase().endsWith('.docx');
 
-      if (!isPdf) {
+      if (!isPdf && !isDocx) {
         invalidFiles.push(file.name);
         return;
       }
 
-      // Check for duplicates across all sources
-      const isDuplicate = allSources.some(
-        (source) => source.name === file.name && source.size === file.size,
-      );
+      // Check for duplicates across all sources (only for PDFs since DOCX become documents)
+      if (isPdf) {
+        const isDuplicate = allSources.some(
+          (source) => source.name === file.name && source.size === file.size,
+        );
 
-      if (isDuplicate) {
-        duplicateFiles.push(file.name);
-        return;
+        if (isDuplicate) {
+          duplicateFiles.push(file.name);
+          return;
+        }
+        validPdfFiles.push(file);
+      } else {
+        validDocxFiles.push(file);
       }
-
-      validFiles.push(file);
     });
 
     // Show user feedback for issues
@@ -92,7 +111,7 @@ const KnowledgeBase = ({
         messages.push(`Duplicate file`);
       }
       if (invalidFiles.length > 0) {
-        messages.push(`Invalid files (only PDF supported): ${invalidFiles.join(', ')}`);
+        messages.push(`Invalid files (only PDF and DOCX supported): ${invalidFiles.join(', ')}`);
       }
 
       const fullMessage = messages.join(' | ');
@@ -104,18 +123,19 @@ const KnowledgeBase = ({
       }, 5000);
     }
 
-    if (validFiles.length > 0) {
+    // Handle PDF files - upload as sources
+    if (validPdfFiles.length > 0) {
       // Store files in registry for later access (for chat functionality)
-      validFiles.forEach(file => {
+      validPdfFiles.forEach(file => {
         const key = `${file.name}_${file.size}`;
         fileRegistryRef.current.set(key, file);
       });
 
       // Create temporary uploading sources for immediate feedback
-      const tempUploadingSources: UnifiedSource[] = validFiles.map(file => ({
+      const tempUploadingSources: UnifiedSource[] = validPdfFiles.map(file => ({
         id: `temp-${Math.random().toString(36).substring(2)}`,
         name: file.name,
-        type: 'pdf',
+        type: 'pdf' as const,
         size: file.size,
         uploadDate: new Date(),
         isSelected: false,
@@ -128,7 +148,7 @@ const KnowledgeBase = ({
       setAllSources((prev) => [...prev, ...tempUploadingSources]);
 
       // Call parent callback - this will upload to Firestore and reload data
-      onFileUpload?.(validFiles);
+      onFileUpload?.(validPdfFiles);
 
       // Remove temporary sources after upload completes (they'll be replaced by stored sources)
       setTimeout(() => {
@@ -138,6 +158,19 @@ const KnowledgeBase = ({
           )
         );
       }, 3000);
+    }
+
+    // Handle DOCX files - convert to documents immediately
+    if (validDocxFiles.length > 0 && onConvertDocxToDocument) {
+      for (const file of validDocxFiles) {
+        const filename = file.name; // Keep full filename with .docx extension
+        try {
+          await onConvertDocxToDocument(file, filename);
+          console.log('✅ [DOCX Upload] Converted to document:', filename);
+        } catch (error) {
+          console.error('❌ [DOCX Upload] Error converting file:', file.name, error);
+        }
+      }
     }
   };
 
@@ -189,10 +222,14 @@ const KnowledgeBase = ({
           }
         }
 
+        // Determine file type from name/extension
+        const isPdf = storedSource.name.toLowerCase().endsWith('.pdf');
+        const isDocx = storedSource.name.toLowerCase().endsWith('.docx');
+        
         updatedSources.push({
           id: storedSource.id,
           name: storedSource.name,
-          type: 'pdf',
+          type: isPdf ? 'pdf' : isDocx ? 'docx' : 'pdf', // Default to pdf for backwards compatibility
           size: registryFile?.size || 0,
           uploadDate: new Date(),
           isSelected: false,
@@ -205,7 +242,9 @@ const KnowledgeBase = ({
 
     // 2. Add external files from chatbot (auto-selected) – preserve existing entries if present
     externalFiles.forEach((file) => {
-      if (file.type !== 'application/pdf') return;
+      // Only handle PDF files as external files - DOCX files are converted to documents
+      const isPdf = file.type === 'application/pdf';
+      if (!isPdf) return;
       const existingExternal = allSources.find(
         (existing) =>
           existing.sourceType === 'external' &&
@@ -326,6 +365,87 @@ const KnowledgeBase = ({
     return `${truncatedName}...${extension}`;
   };
 
+  // Document editing functions
+  const startEditingDoc = (docId: string, currentTitle: string) => {
+    setEditingDocId(docId);
+    setEditingDocValue(currentTitle);
+    // Focus will be handled in useEffect
+  };
+
+  const finishEditingDoc = (docId: string) => {
+    if (editingDocValue.trim() && onRenameDocument) {
+      onRenameDocument(docId, editingDocValue.trim());
+    }
+    setEditingDocId(null);
+    setEditingDocValue('');
+  };
+
+  const cancelEditingDoc = () => {
+    setEditingDocId(null);
+    setEditingDocValue('');
+  };
+
+  const handleDocInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, docId: string) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      finishEditingDoc(docId);
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      cancelEditingDoc();
+    }
+  };
+
+  // Focus input when editing starts
+  React.useEffect(() => {
+    if (editingDocId && docInputRef.current) {
+      docInputRef.current.focus();
+      docInputRef.current.select();
+    }
+  }, [editingDocId]);
+
+  // Close menu when clicking outside
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (openMenuDocId) {
+        setOpenMenuDocId(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [openMenuDocId]);
+
+  // Document delete function with confirmation
+  const handleDeleteDocument = (docId: string, docTitle: string) => {
+    const confirmDelete = window.confirm(
+      `Are you sure you want to delete "${docTitle}"?\n\nThis action cannot be undone.`
+    );
+    
+    if (confirmDelete && onDeleteDocument) {
+      onDeleteDocument(docId);
+    }
+  };
+
+  // Convert document to source function
+  const handleConvertToSource = async (docId: string, docTitle: string) => {
+    console.log('🔧 [Convert to Source] Starting conversion:', { docId, docTitle });
+    
+    if (!onConvertDocumentToSource) {
+      console.error('❌ [Convert to Source] onConvertDocumentToSource callback not provided');
+      return;
+    }
+
+    try {
+      console.log('🔧 [Convert to Source] Calling conversion function...');
+      await onConvertDocumentToSource(docId, docTitle);
+      setOpenMenuDocId(null); // Close menu after conversion
+      console.log('✅ [Convert to Source] Document converted successfully:', docTitle);
+    } catch (error) {
+      console.error('❌ [Convert to Source] Error converting document:', error);
+      alert(`Failed to convert document to source: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  };
+
   return (
     <div className="flex flex-col w-full h-full font-sans relative">
       {/* Notification */}
@@ -359,7 +479,7 @@ const KnowledgeBase = ({
         ref={fileInputRef}
         type="file"
         multiple
-        accept=".pdf"
+        accept=".pdf,.docx"
         onChange={handleInputChange}
         className="hidden"
       />
@@ -392,21 +512,96 @@ const KnowledgeBase = ({
               {documents.map((doc) => (
                 <div
                   key={doc.id}
-                  className="flex items-center justify-between px-4 py-2 hover:bg-gray-100 cursor-pointer transition-colors duration-200"
+                  className="flex items-center justify-between px-4 py-2 hover:bg-gray-100 cursor-pointer transition-colors duration-200 group"
                   onDoubleClick={() => onOpenDocument?.(doc.id)}
                 >
                   <div className="flex items-center gap-3 flex-1 min-w-0">
                     <svg className="w-5 h-5 text-blue-600 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
                       <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zM16 18H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
                     </svg>
-                    <span className="text-sm text-gray-800 truncate" title={doc.title}>
-                      {truncateFilename(doc.title + '.md', 30)}
-                    </span>
+                    {editingDocId === doc.id ? (
+                      <input
+                        ref={docInputRef}
+                        type="text"
+                        value={editingDocValue}
+                        onChange={(e) => setEditingDocValue(e.target.value)}
+                        onKeyDown={(e) => handleDocInputKeyDown(e, doc.id)}
+                        onBlur={() => finishEditingDoc(doc.id)}
+                        className="text-sm text-gray-800 bg-transparent border-none outline-none flex-1 min-w-0"
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    ) : (
+                      <span 
+                        className="text-sm text-gray-800 truncate flex-1 min-w-0" 
+                        title={doc.title}
+                      >
+                        {truncateFilename(doc.title, 30)}
+                      </span>
+                    )}
                   </div>
-                  <input
-                    type="checkbox"
-                    className="w-4 h-4 border-gray-300 rounded text-blue-600 focus:ring-blue-500"
-                  />
+                  {editingDocId !== doc.id && (
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all duration-200">
+                      <button
+                        className="appearance-none border-none bg-transparent text-gray-400 cursor-pointer p-1 rounded hover:bg-gray-200 hover:text-gray-600 transition-all duration-200"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          startEditingDoc(doc.id, doc.title);
+                        }}
+                        title="Rename document"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                        </svg>
+                      </button>
+                      
+                      {/* Three-dots menu */}
+                      <div className="relative">
+                        <button
+                          className="appearance-none border-none bg-transparent text-gray-400 cursor-pointer p-1 rounded hover:bg-gray-200 hover:text-gray-600 transition-all duration-200"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setOpenMenuDocId(openMenuDocId === doc.id ? null : doc.id);
+                          }}
+                          title="More options"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                          </svg>
+                        </button>
+                        
+                        {openMenuDocId === doc.id && (
+                          <div className="absolute right-0 top-full mt-1 w-40 bg-white border border-gray-200 rounded-md shadow-lg z-50">
+                            <button
+                              className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                              onClick={(e) => {
+                                console.log('🔧 [KnowledgeBase] Convert to Source button clicked:', { docId: doc.id, docTitle: doc.title });
+                                e.stopPropagation();
+                                handleConvertToSource(doc.id, doc.title);
+                              }}
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                              </svg>
+                              Convert to Source
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                      
+                      <button
+                        className="appearance-none border-none bg-transparent text-gray-400 cursor-pointer p-1 rounded hover:bg-red-200 hover:text-red-600 transition-all duration-200"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteDocument(doc.id, doc.title);
+                        }}
+                        title="Delete document"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -422,11 +617,12 @@ const KnowledgeBase = ({
             {allSources.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-8 px-4 text-center">
                 <p className="text-gray-500 text-sm mb-2">No sources uploaded yet</p>
-                <p className="text-gray-400 text-xs">Drop PDF files here to get started</p>
+                <p className="text-gray-400 text-xs">Drop PDF or DOCX files here to get started</p>
               </div>
             ) : (
               allSources.map((source) => {
                 const handleSourceClick = () => {
+                  // Only handle PDF files now - DOCX files are converted to documents immediately
                   if (source.sourceType === 'stored' && source.storagePath) {
                     onOpenStoredSource?.(source.name, source.storagePath);
                   } else if (source.file) {
@@ -447,9 +643,13 @@ const KnowledgeBase = ({
                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" strokeDasharray="32" strokeDashoffset="32" />
                           </svg>
                         </div>
-                      ) : (
+                      ) : source.type === 'pdf' ? (
                         <svg className="w-5 h-5 text-red-600 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
                           <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zM9.498 16.19c-.309.29-.765.42-1.296.42a2.23 2.23 0 0 1-.308-.018v1.426H7v-3.936A7.558 7.558 0 0 1 8.219 14c.557 0 .953.106 1.22.319.254.202.426.533.426.923-.001.392-.131.723-.367.948zm3.807 1.355c-.42.349-1.059.515-1.84.515-.468 0-.799-.03-1.024-.06v-3.917A7.947 7.947 0 0 1 11.66 14c.757 0 1.249.136 1.633.426.415.308.675.799.675 1.504 0 .763-.279 1.29-.663 1.615zM17 14.77h-1.532v.911H16.9v.734h-1.432v1.604h-.906V14.03H17v.74zM14 9h-1V4l5 5h-4z" />
+                        </svg>
+                      ) : (
+                        <svg className="w-5 h-5 text-blue-600 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zM16 18H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
                         </svg>
                       )}
                       <span className="text-sm text-gray-800 truncate" title={source.name}>

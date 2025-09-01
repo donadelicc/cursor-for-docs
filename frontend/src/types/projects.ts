@@ -9,7 +9,6 @@ export interface Project {
 export interface ProjectDocumentMeta {
   id: string;
   title: string;
-  isMain: boolean;
   createdAt: Date;
   updatedAt: Date;
   lastModified: Date;
@@ -18,7 +17,6 @@ export interface ProjectDocumentMeta {
 export interface ProjectDocumentData {
   title: string;
   content: string;
-  isMain?: boolean;
 }
 
 export interface ProjectSource {

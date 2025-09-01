@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { createDocument, updateDocument, generateDocumentTitle, updateProjectDocument } from '@/utils/firestore';
+import { createDocument, updateDocument, generateDocumentTitle, updateProjectDocument, createProjectDocument } from '@/utils/firestore';
 import { SaveFormat } from './SaveButton';
 
 interface FileMenuProps {
@@ -270,11 +270,26 @@ export const FileMenu: React.FC<FileMenuProps> = ({
           contentLength: documentContent.length
         });
         
-        await updateProjectDocument(projectId, activeDocumentId, {
-          content: documentContent,
-        });
+        try {
+          await updateProjectDocument(projectId, activeDocumentId, {
+            content: documentContent,
+          });
+          console.log('✅ [Manual Save] SUCCESS! Document saved to project');
+        } catch (updateError: any) {
+          // If document doesn't exist, create it
+          if (updateError?.code === 'not-found' || updateError?.message?.includes('No document to update')) {
+            console.log('📝 [Manual Save] Document not found, creating new document...');
+            await createProjectDocument(projectId, {
+              id: activeDocumentId,
+              title: 'Untitled',
+              content: documentContent,
+            });
+            console.log('✅ [Manual Save] SUCCESS! New document created and saved');
+          } else {
+            throw updateError;
+          }
+        }
         
-        console.log('✅ [Manual Save] SUCCESS! Document saved to project');
         onProjectSave?.(); // Notify parent component
       } else if (currentDocumentId && currentDocumentTitle) {
         // Fallback: Save to legacy documents (old structure)
@@ -352,7 +367,7 @@ export const FileMenu: React.FC<FileMenuProps> = ({
         </button>
 
         {isOpen && (
-          <div className="absolute top-full left-0 mt-1 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-[1100]">
+          <div className="absolute top-full left-0 mt-1 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-[1200]">
             {/* Save Section */}
             <div className="py-1">
               <button
