@@ -16,8 +16,8 @@ import {
 import { User } from 'firebase/auth';
 import { db, storage } from '@/lib/firebase';
 import { UserProfile, Document, CreateDocumentData, UpdateDocumentData } from '@/types/editor';
-import { Project, ProjectDocumentMeta, ProjectDocumentData, ProjectSource } from '@/types/projects';
-import { ref, uploadBytes, deleteObject, getDownloadURL } from 'firebase/storage';
+import { Project, ProjectDocumentMeta, ProjectDocumentData, ProjectSource, DeletedItem } from '@/types/projects';
+import { ref, uploadBytes, deleteObject, getDownloadURL, getBytes } from 'firebase/storage';
 import { doc as fsDoc, getDoc as fsGetDoc } from 'firebase/firestore';
 
 // Collection names
@@ -26,6 +26,7 @@ const PROJECTS_COLLECTION = 'projects';
 const DOCUMENTS_COLLECTION = 'documents'; // legacy
 const SOURCES_SUBCOLLECTION = 'sources';
 const PROJECT_DOCUMENTS_SUBCOLLECTION = 'documents';
+const DELETED_ITEMS_SUBCOLLECTION = 'deleted_items';
 
 // User operations
 export const createUserProfile = async (user: User): Promise<void> => {
@@ -209,26 +210,31 @@ export const getProject = async (projectId: string): Promise<Project | null> => 
 };
 
 export const deleteProject = async (projectId: string): Promise<void> => {
-  console.log('🗑️ [Delete Project] Starting deletion of project:', projectId);
-
   try {
-    // 1. Delete all project documents
-    console.log('🗑️ [Delete Project] Deleting project documents...');
+    // 1. Delete all project documents (both Storage files + Firestore metadata)
     const docsQuery = query(
       collection(db, PROJECTS_COLLECTION, projectId, PROJECT_DOCUMENTS_SUBCOLLECTION),
     );
     const docsSnapshot = await getDocs(docsQuery);
 
-    const docDeletePromises = docsSnapshot.docs.map((docSnap) =>
-      deleteDoc(
+    const docDeletePromises = docsSnapshot.docs.map(async (docSnap) => {
+      const docData = docSnap.data();
+      // Delete file from Storage if it exists
+      if (docData.storagePath) {
+        try {
+          await deleteObject(ref(storage, docData.storagePath));
+        } catch (error) {
+          // File already deleted or not found - ignore
+        }
+      }
+      // Delete metadata document
+      await deleteDoc(
         doc(db, PROJECTS_COLLECTION, projectId, PROJECT_DOCUMENTS_SUBCOLLECTION, docSnap.id),
-      ),
     );
+    });
     await Promise.all(docDeletePromises);
-    console.log(`✅ [Delete Project] Deleted ${docsSnapshot.docs.length} documents`);
 
     // 2. Delete all project sources (files + metadata)
-    console.log('🗑️ [Delete Project] Deleting project sources...');
     const sourcesQuery = query(
       collection(db, PROJECTS_COLLECTION, projectId, SOURCES_SUBCOLLECTION),
     );
@@ -241,7 +247,7 @@ export const deleteProject = async (projectId: string): Promise<void> => {
         try {
           await deleteObject(ref(storage, sourceData.storagePath));
         } catch (error) {
-          console.warn('File already deleted or not found:', sourceData.storagePath, error);
+          // File already deleted or not found - ignore
         }
       }
       // Delete metadata document
@@ -250,14 +256,23 @@ export const deleteProject = async (projectId: string): Promise<void> => {
       );
     });
     await Promise.all(sourceDeletePromises);
-    console.log(`✅ [Delete Project] Deleted ${sourcesSnapshot.docs.length} sources`);
 
-    // 3. Finally, delete the main project document
-    console.log('🗑️ [Delete Project] Deleting main project document...');
+    // 3. Delete all deleted items (cleanup the recycle bin)
+    const deletedItemsQuery = query(
+      collection(db, PROJECTS_COLLECTION, projectId, DELETED_ITEMS_SUBCOLLECTION),
+    );
+    const deletedItemsSnapshot = await getDocs(deletedItemsQuery);
+
+    const deletedItemsDeletePromises = deletedItemsSnapshot.docs.map((deletedSnap) =>
+      deleteDoc(
+        doc(db, PROJECTS_COLLECTION, projectId, DELETED_ITEMS_SUBCOLLECTION, deletedSnap.id),
+      ),
+    );
+    await Promise.all(deletedItemsDeletePromises);
+
+    // 4. Finally, delete the main project document
     await deleteDoc(doc(db, PROJECTS_COLLECTION, projectId));
-    console.log('✅ [Delete Project] Project completely deleted');
   } catch (error) {
-    console.error('❌ [Delete Project] Error deleting project:', error);
     throw error;
   }
 };
@@ -267,35 +282,37 @@ export const createProjectDocument = async (
   projectId: string,
   data: ProjectDocumentData & { id?: string },
 ): Promise<string> => {
-  if (data.id) {
+  // Create HTML file and upload to Firebase Storage
+  const htmlContent = data.content || '';
+  const filename = `${data.title.replace(/[^a-zA-Z0-9]/g, '_')}.html`;
+  const blob = new Blob([htmlContent], { type: 'text/html' });
+  
+  const storagePath = `${projectId}/documents/${Date.now()}_${filename}`;
+  const storageRef = ref(storage, storagePath);
+  
+  await uploadBytes(storageRef, blob);
+  
+  // Create metadata in Firestore
+  const docId = data.id || crypto.randomUUID();
     const docRef = doc(
       db,
       PROJECTS_COLLECTION,
       projectId,
       PROJECT_DOCUMENTS_SUBCOLLECTION,
-      data.id,
+    docId,
     );
-    const payload = { title: data.title, content: data.content };
+  
     await setDoc(docRef, {
-      ...payload,
+    title: data.title,
+    size: blob.size,
+    mimeType: 'text/html',
+    storagePath: storagePath,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
       lastModified: serverTimestamp(),
     });
-    return data.id;
-  } else {
-    const docRef = await addDoc(
-      collection(db, PROJECTS_COLLECTION, projectId, PROJECT_DOCUMENTS_SUBCOLLECTION),
-      {
-        title: data.title,
-        content: data.content,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-        lastModified: serverTimestamp(),
-      },
-    );
-    return docRef.id;
-  }
+  
+  return docId;
 };
 
 
@@ -306,77 +323,128 @@ export const getProjectDocuments = async (projectId: string): Promise<ProjectDoc
     orderBy('lastModified', 'desc'),
   );
   const qs = await getDocs(q);
-  return qs.docs.map((d) => {
-    const data = d.data();
-    return {
-      id: d.id,
-      title: data.title,
-      createdAt: (data.createdAt as Timestamp).toDate(),
-      updatedAt: (data.updatedAt as Timestamp).toDate(),
-      lastModified: (data.lastModified as Timestamp).toDate(),
-    } as ProjectDocumentMeta;
-  });
+  
+  return qs.docs
+    .filter((d) => {
+      const data = d.data();
+      // Filter out any legacy soft-deleted items that shouldn't be in this collection
+      if (data.isDeleted === true) {
+        // Clean up legacy soft-deleted items by removing them from main collection
+        deleteDoc(d.ref).catch(() => undefined);
+        return false;
+      }
+      return true;
+    })
+    .map((d) => {
+      const data = d.data();
+      return {
+        id: d.id,
+        title: data.title,
+        size: data.size || 0,
+        mimeType: data.mimeType || 'text/html',
+        storagePath: data.storagePath,
+        createdAt: (data.createdAt as Timestamp).toDate(),
+        updatedAt: (data.updatedAt as Timestamp).toDate(),
+        lastModified: (data.lastModified as Timestamp).toDate(),
+      } as ProjectDocumentMeta;
+    });
 };
 
 export const getProjectDocument = async (
   projectId: string,
   documentId: string,
 ): Promise<ProjectDocumentData | null> => {
-  console.log('🔍 [Firestore] getProjectDocument called:', {
-    projectId,
-    documentId,
-  });
-
   const dref = doc(db, PROJECTS_COLLECTION, projectId, PROJECT_DOCUMENTS_SUBCOLLECTION, documentId);
   const snap = await getDoc(dref);
 
   if (!snap.exists()) {
-    console.log('❌ [Firestore] Document does not exist');
     return null;
   }
 
   const data = snap.data();
-  const result = {
+  
+  // Check if document is deleted
+  if (data.isDeleted) {
+    return null;
+  }
+  
+  // Download content from Firebase Storage
+  let content = '';
+  if (data.storagePath) {
+    // Check if this is a newly created document (size <= 7 bytes means empty content)
+    const isNewDocument = (data.size || 0) <= 7;
+    
+    if (isNewDocument) {
+      content = '';
+    } else {
+      try {
+        // Use Firebase Storage SDK directly to avoid CORS issues
+        const storageRef = ref(storage, data.storagePath);
+        const bytes = await getBytes(storageRef);
+        
+        // Convert bytes to string
+        const decoder = new TextDecoder('utf-8');
+        content = decoder.decode(bytes);
+      } catch (error) {
+        // Gracefully fallback to empty content
+        content = '';
+      }
+    }
+  } else {
+    // Fallback for old documents that still have content in Firestore
+    content = data.content || '';
+  }
+  
+  return {
     title: data.title,
-    content: data.content,
+    content: content,
   } as ProjectDocumentData;
-
-  console.log('✅ [Firestore] getProjectDocument SUCCESS:', {
-    title: result.title,
-    hasContent: !!result.content,
-    contentLength: result.content?.length,
-    contentPreview: result.content?.substring(0, 100) + '...',
-  });
-
-  return result;
 };
 
 export const updateProjectDocument = async (
   projectId: string,
   documentId: string,
-  data: Partial<ProjectDocumentData>,
+  updateData: { title?: string; content?: string },
 ): Promise<void> => {
-  console.log('🔄 [Firestore] updateProjectDocument called:', {
-    projectId,
-    documentId,
-    hasContent: !!data.content,
-    contentLength: data.content?.length,
-    contentPreview: data.content?.substring(0, 50) + '...',
-  });
-
   const dref = doc(db, PROJECTS_COLLECTION, projectId, PROJECT_DOCUMENTS_SUBCOLLECTION, documentId);
+  const docSnap = await getDoc(dref);
+  
+  if (!docSnap.exists()) {
+    throw new Error('Document not found');
+  }
 
-  try {
-    await updateDoc(dref, {
-      ...data,
+  const data = docSnap.data();
+  const updates: any = {
       updatedAt: serverTimestamp(),
       lastModified: serverTimestamp(),
-    });
-    console.log('✅ [Firestore] updateProjectDocument SUCCESS');
-  } catch (error) {
-    console.error('❌ [Firestore] updateProjectDocument FAILED:', error);
-    throw error;
+  };
+  
+  // Update title if provided
+  if (updateData.title !== undefined) {
+    updates.title = updateData.title;
   }
+  
+  // Update content if provided - upload to Firebase Storage
+  if (updateData.content !== undefined) {
+    const htmlContent = updateData.content;
+    const blob = new Blob([htmlContent], { type: 'text/html' });
+    
+    // Upload new content to existing storage path or create new one
+    let storagePath = data.storagePath;
+    if (!storagePath) {
+      // For old documents without storage path, create new one
+      const filename = `${(updateData.title || data.title).replace(/[^a-zA-Z0-9]/g, '_')}.html`;
+      storagePath = `${projectId}/documents/${Date.now()}_${filename}`;
+      updates.storagePath = storagePath;
+      updates.mimeType = 'text/html';
+    }
+    
+    const storageRef = ref(storage, storagePath);
+    await uploadBytes(storageRef, blob);
+    updates.size = blob.size;
+  }
+  
+  await updateDoc(dref, updates);
 };
 
 export const deleteProjectDocument = async (
@@ -384,7 +452,34 @@ export const deleteProjectDocument = async (
   documentId: string,
 ): Promise<void> => {
   const dref = doc(db, PROJECTS_COLLECTION, projectId, PROJECT_DOCUMENTS_SUBCOLLECTION, documentId);
-  await deleteDoc(dref);
+  const docSnap = await getDoc(dref);
+  
+  if (!docSnap.exists()) {
+    throw new Error('Document not found');
+  }
+  
+  const data = docSnap.data();
+  
+  // Store in deleted items for potential restoration
+  await addDoc(
+    collection(db, PROJECTS_COLLECTION, projectId, DELETED_ITEMS_SUBCOLLECTION),
+    {
+      originalId: documentId,
+      name: data.title,
+      type: 'document',
+      size: data.size || 0,
+      mimeType: data.mimeType || 'text/html',
+      storagePath: data.storagePath,
+      deletedAt: serverTimestamp(),
+      originalData: data,
+    },
+  );
+  
+  // Soft delete - mark as deleted instead of actually deleting
+  await updateDoc(dref, {
+    isDeleted: true,
+    deletedAt: serverTimestamp(),
+  });
 };
 
 // Project Sources (files in Storage + metadata in Firestore)
@@ -418,19 +513,35 @@ export const uploadProjectSource = async (
 };
 
 export const listProjectSources = async (projectId: string): Promise<ProjectSource[]> => {
-  const qs = await getDocs(collection(db, PROJECTS_COLLECTION, projectId, SOURCES_SUBCOLLECTION));
-  return qs.docs.map((d) => {
-    const data = d.data();
-    return {
-      id: d.id,
-      name: data.name,
-      size: data.size,
-      mimeType: data.mimeType,
-      storagePath: data.storagePath,
-      createdAt: (data.createdAt as Timestamp).toDate(),
-      updatedAt: (data.updatedAt as Timestamp).toDate(),
-    } as ProjectSource;
-  });
+  const q = query(
+    collection(db, PROJECTS_COLLECTION, projectId, SOURCES_SUBCOLLECTION),
+    orderBy('createdAt', 'desc'),
+  );
+  const qs = await getDocs(q);
+  
+  return qs.docs
+    .filter((d) => {
+      const data = d.data();
+      // Filter out any legacy soft-deleted items that shouldn't be in this collection
+      if (data.isDeleted === true) {
+        // Clean up legacy soft-deleted items by removing them from main collection
+        deleteDoc(d.ref).catch(() => undefined);
+        return false;
+      }
+      return true;
+    })
+    .map((d) => {
+      const data = d.data();
+      return {
+        id: d.id,
+        name: data.name,
+        size: data.size,
+        mimeType: data.mimeType,
+        storagePath: data.storagePath,
+        createdAt: (data.createdAt as Timestamp).toDate(),
+        updatedAt: (data.updatedAt as Timestamp).toDate(),
+      } as ProjectSource;
+    });
 };
 
 export const deleteProjectSource = async (
@@ -438,11 +549,125 @@ export const deleteProjectSource = async (
   sourceId: string,
   storagePath: string,
 ) => {
-  // Delete file from storage, then metadata
-  await deleteObject(ref(storage, storagePath)).catch(() => undefined);
-  await deleteDoc(doc(db, PROJECTS_COLLECTION, projectId, SOURCES_SUBCOLLECTION, sourceId));
+  const sourceRef = doc(db, PROJECTS_COLLECTION, projectId, SOURCES_SUBCOLLECTION, sourceId);
+  const sourceSnap = await getDoc(sourceRef);
+  
+  if (!sourceSnap.exists()) {
+    throw new Error('Source not found');
+  }
+  
+  const data = sourceSnap.data();
+  
+  // Store in deleted items for potential restoration
+  await addDoc(
+    collection(db, PROJECTS_COLLECTION, projectId, DELETED_ITEMS_SUBCOLLECTION),
+    {
+      originalId: sourceId,
+      name: data.name,
+      type: 'source',
+      size: data.size,
+      mimeType: data.mimeType,
+      storagePath: data.storagePath,
+      deletedAt: serverTimestamp(),
+      originalData: data,
+    },
+  );
+  
+  // Actually remove from the main sources collection
+  await deleteDoc(sourceRef);
 };
 
 export const getProjectSourceDownloadURL = async (storagePath: string): Promise<string> => {
   return await getDownloadURL(ref(storage, storagePath));
+};
+
+// Deleted Items Management
+export const getDeletedItems = async (projectId: string): Promise<DeletedItem[]> => {
+  const q = query(
+    collection(db, PROJECTS_COLLECTION, projectId, DELETED_ITEMS_SUBCOLLECTION),
+    orderBy('deletedAt', 'desc'),
+  );
+  const qs = await getDocs(q);
+  return qs.docs.map((d) => {
+    const data = d.data();
+    return {
+      id: d.id,
+      name: data.name,
+      type: data.type,
+      size: data.size,
+      mimeType: data.mimeType,
+      storagePath: data.storagePath,
+      deletedAt: (data.deletedAt as Timestamp).toDate(),
+      originalData: data.originalData,
+    } as DeletedItem;
+  });
+};
+
+export const restoreDeletedItem = async (
+  projectId: string,
+  deletedItemId: string,
+): Promise<void> => {
+  const deletedRef = doc(db, PROJECTS_COLLECTION, projectId, DELETED_ITEMS_SUBCOLLECTION, deletedItemId);
+  const deletedSnap = await getDoc(deletedRef);
+  
+  if (!deletedSnap.exists()) {
+    throw new Error('Deleted item not found');
+  }
+  
+  const deletedData = deletedSnap.data();
+  const { type, originalData, originalId } = deletedData;
+  
+  if (type === 'document') {
+    // Recreate document in the main documents collection with original ID
+    const docRef = doc(db, PROJECTS_COLLECTION, projectId, PROJECT_DOCUMENTS_SUBCOLLECTION, originalId);
+    await setDoc(docRef, {
+      ...originalData,
+      updatedAt: serverTimestamp(), // Update the timestamp to show it was restored
+    });
+  } else if (type === 'source') {
+    // Recreate source in the main sources collection with original ID
+    const sourceRef = doc(db, PROJECTS_COLLECTION, projectId, SOURCES_SUBCOLLECTION, originalId);
+    await setDoc(sourceRef, {
+      ...originalData,
+      updatedAt: serverTimestamp(), // Update the timestamp to show it was restored
+    });
+  }
+  
+  // Remove from deleted items
+  await deleteDoc(deletedRef);
+};
+
+export const permanentlyDeleteItem = async (
+  projectId: string,
+  deletedItemId: string,
+): Promise<void> => {
+  const deletedRef = doc(db, PROJECTS_COLLECTION, projectId, DELETED_ITEMS_SUBCOLLECTION, deletedItemId);
+  const deletedSnap = await getDoc(deletedRef);
+  
+  if (!deletedSnap.exists()) {
+    throw new Error('Deleted item not found');
+  }
+  
+  const deletedData = deletedSnap.data();
+  
+  // Delete the actual file from Firebase Storage
+  if (deletedData.storagePath) {
+    await deleteObject(ref(storage, deletedData.storagePath)).catch(() => undefined);
+  }
+  
+  // Remove the original document/source metadata if it still exists
+  try {
+    if (deletedData.type === 'document') {
+      const docRef = doc(db, PROJECTS_COLLECTION, projectId, PROJECT_DOCUMENTS_SUBCOLLECTION, deletedData.originalId);
+      await deleteDoc(docRef);
+    } else if (deletedData.type === 'source') {
+      const sourceRef = doc(db, PROJECTS_COLLECTION, projectId, SOURCES_SUBCOLLECTION, deletedData.originalId);
+      await deleteDoc(sourceRef);
+    }
+  } catch (error) {
+    // Item might already be deleted, which is fine
+  }
+  
+  // Remove from deleted items
+  await deleteDoc(deletedRef);
 };

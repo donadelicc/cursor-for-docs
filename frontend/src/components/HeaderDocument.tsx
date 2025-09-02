@@ -171,7 +171,11 @@ const HeaderDocument: React.FC<HeaderDocumentProps> = ({
           Saving...
         </div>
       );
-    } else if (autoSaveStatus?.status === 'saved' || currentDocumentId) {
+    } else if (autoSaveStatus?.status === 'saved' || currentDocumentId || (projectId && activeDocumentId)) {
+      // Show "Saved" if:
+      // 1. AutoSave status is 'saved' (legacy system)
+      // 2. currentDocumentId exists (legacy system)
+      // 3. We have both projectId and activeDocumentId (new project system with auto-save)
       return (
         <div className="flex items-center text-sm text-green-600">
           <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
@@ -346,13 +350,7 @@ const HeaderDocument: React.FC<HeaderDocumentProps> = ({
                 editor={editor}
                 disabled={disabled}
                 onExportSave={onExportSave}
-                onUpload={onUpload}
                 documentContent={documentContent}
-                currentDocumentId={currentDocumentId}
-                currentDocumentTitle={title}
-                projectId={projectId}
-                activeDocumentId={activeDocumentId}
-                onProjectSave={onProjectSave}
               />
             </div>
           </div>

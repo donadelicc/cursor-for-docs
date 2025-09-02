@@ -1,38 +1,25 @@
 import React, { ReactNode } from 'react';
 import { Editor } from '@tiptap/react';
-import { FileMenu } from './FileMenu';
+import { Export } from './Export';
 import { SaveFormat } from './SaveButton';
 
 interface FormattingToolbarProps {
   editor: Editor | null;
   onSave?: () => void;
-  onUpload?: (file: File) => Promise<void>;
   disabled?: boolean;
   children?: ReactNode;
-  // FileMenu props
+  // Export props
   onExportSave?: (format: SaveFormat, filename: string) => void;
   documentContent?: string;
-  currentDocumentId?: string;
-  currentDocumentTitle?: string;
-  // Project saving props
-  projectId?: string;
-  activeDocumentId?: string;
-  onProjectSave?: () => void;
 }
 
 const FormattingToolbar: React.FC<FormattingToolbarProps> = ({
   editor,
   onSave,
-  onUpload,
   disabled = false,
   children,
   onExportSave,
   documentContent,
-  currentDocumentId,
-  currentDocumentTitle,
-  projectId,
-  activeDocumentId,
-  onProjectSave,
 }) => {
   // Show simplified toolbar when editor is not ready
   if (!editor) {
@@ -50,20 +37,14 @@ const FormattingToolbar: React.FC<FormattingToolbarProps> = ({
   return (
     <div className="relative">
       <div className="flex items-center px-4 py-1.5 bg-transparent border-none rounded-xl gap-1 min-h-[40px] relative z-10 pointer-events-auto overflow-visible flex-nowrap xl:px-3.5 xl:gap-0.5 xl:min-h-[44px] lg:px-2.5 lg:gap-px lg:min-h-[40px]">
-        {/* File Menu - Only show if required props are provided */}
+        {/* Export Button - Only show if required props are provided */}
         {onExportSave && documentContent !== undefined && (
           <>
             <div className="flex items-center gap-0.5 shrink-0">
-              <FileMenu
+              <Export
                 onSave={onExportSave}
-                onUpload={onUpload || (() => Promise.resolve())}
                 documentContent={documentContent}
-                currentDocumentId={currentDocumentId}
-                currentDocumentTitle={currentDocumentTitle}
                 disabled={disabled}
-                projectId={projectId}
-                activeDocumentId={activeDocumentId}
-                onProjectSave={onProjectSave}
               />
             </div>
             <div className="w-px h-6 bg-gray-300 mx-1.5 shrink-0"></div>

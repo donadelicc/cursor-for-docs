@@ -9,6 +9,9 @@ export interface Project {
 export interface ProjectDocumentMeta {
   id: string;
   title: string;
+  size: number;
+  mimeType: string;
+  storagePath: string; // Now stored in Firebase Storage
   createdAt: Date;
   updatedAt: Date;
   lastModified: Date;
@@ -27,4 +30,16 @@ export interface ProjectSource {
   storagePath: string;
   createdAt: Date;
   updatedAt: Date;
+}
+
+// For recently deleted items that can be restored
+export interface DeletedItem {
+  id: string;
+  name: string;
+  type: 'document' | 'source';
+  size: number;
+  mimeType: string;
+  storagePath: string;
+  deletedAt: Date;
+  originalData: any; // Store original metadata for restoration
 }

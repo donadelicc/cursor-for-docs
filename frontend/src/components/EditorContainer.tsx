@@ -19,8 +19,11 @@ import {
   uploadProjectSource,
   deleteProjectSource,
   getProjectSourceDownloadURL,
+  getDeletedItems,
+  restoreDeletedItem,
+  permanentlyDeleteItem,
 } from '@/utils/firestore';
-import { ProjectDocumentMeta, ProjectSource } from '@/types/projects';
+import { ProjectDocumentMeta, ProjectSource, DeletedItem } from '@/types/projects';
 
 interface EditorContainerProps {
   documentContent: string;
@@ -53,6 +56,7 @@ const EditorContainer = ({
   const [projectId, setProjectId] = useState<string | undefined>(providedProjectId);
   const [projectDocs, setProjectDocs] = useState<ProjectDocumentMeta[]>([]);
   const [projectSources, setProjectSources] = useState<ProjectSource[]>([]);
+  const [deletedItems, setDeletedItems] = useState<DeletedItem[]>([]);
 
   // Document state management
   const [activeDocumentId, setActiveDocumentId] = useState<string | undefined>(undefined);
@@ -114,10 +118,14 @@ const EditorContainer = ({
       }
       setProjectId(pid);
 
-      const docs = await getProjectDocuments(pid);
+      const [docs, sources, deleted] = await Promise.all([
+        getProjectDocuments(pid),
+        listProjectSources(pid),
+        getDeletedItems(pid),
+      ]);
       setProjectDocs(docs);
-      const sources = await listProjectSources(pid);
       setProjectSources(sources);
+      setDeletedItems(deleted);
 
       // If no documents exist, create the first one
       if (docs.length === 0) {
@@ -228,12 +236,14 @@ const EditorContainer = ({
   // Document actions for KnowledgeBase
   const reloadProjectData = useCallback(async () => {
     if (!projectId) return;
-    const [docs, sources] = await Promise.all([
+    const [docs, sources, deleted] = await Promise.all([
       getProjectDocuments(projectId),
       listProjectSources(projectId),
+      getDeletedItems(projectId),
     ]);
     setProjectDocs(docs);
     setProjectSources(sources);
+    setDeletedItems(deleted);
   }, [projectId]);
 
   const close = useCallback((id: string) => {
@@ -475,7 +485,31 @@ const EditorContainer = ({
     }
   }, [projectId, reloadProjectData]);
 
+  // Handle restoring deleted items
+  const handleRestoreItem = useCallback(async (deletedItemId: string) => {
+    if (!projectId) return;
+    
+    try {
+      await restoreDeletedItem(projectId, deletedItemId);
+      await reloadProjectData(); // Refresh the data to show restored item
+    } catch (error) {
+      console.error('❌ [Restore Item] Error restoring item:', error);
+      throw error; // Re-throw so KnowledgeBase can handle the error
+    }
+  }, [projectId, reloadProjectData]);
 
+  // Handle permanently deleting items
+  const handlePermanentlyDeleteItem = useCallback(async (deletedItemId: string) => {
+    if (!projectId) return;
+    
+    try {
+      await permanentlyDeleteItem(projectId, deletedItemId);
+      await reloadProjectData(); // Refresh the data to remove from deleted items
+    } catch (error) {
+      console.error('❌ [Permanent Delete] Error permanently deleting item:', error);
+      throw error; // Re-throw so KnowledgeBase can handle the error
+    }
+  }, [projectId, reloadProjectData]);
 
   // Enhanced content change handler with auto-save
   const handleContentChange = useCallback(
@@ -770,6 +804,14 @@ const EditorContainer = ({
               }}
               onConvertDocxToDocument={handleConvertDocxToDocument}
               onConvertDocumentToSource={handleConvertDocumentToSource}
+              deletedItems={deletedItems.map((item) => ({
+                id: item.id,
+                name: item.name,
+                type: item.type,
+                deletedAt: item.deletedAt,
+              }))}
+              onRestoreItem={handleRestoreItem}
+              onPermanentlyDeleteItem={handlePermanentlyDeleteItem}
             />
           </CollapsiblePanel>
         </div>

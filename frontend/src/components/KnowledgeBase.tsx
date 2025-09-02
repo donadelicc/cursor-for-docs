@@ -39,6 +39,10 @@ interface KnowledgeBaseProps {
   onConvertDocxToDocument?: (file: File, filename: string) => Promise<void>;
   // New callback for converting documents to sources
   onConvertDocumentToSource?: (docId: string, docTitle: string) => Promise<void>;
+  // New callbacks for deleted items management
+  deletedItems?: { id: string; name: string; type: 'document' | 'source'; deletedAt: Date }[];
+  onRestoreItem?: (deletedItemId: string) => Promise<void>;
+  onPermanentlyDeleteItem?: (deletedItemId: string) => Promise<void>;
 }
 
 const KnowledgeBase = ({
@@ -58,6 +62,9 @@ const KnowledgeBase = ({
   onDeleteStoredSource,
   onConvertDocxToDocument,
   onConvertDocumentToSource,
+  deletedItems = [],
+  onRestoreItem,
+  onPermanentlyDeleteItem,
 }: KnowledgeBaseProps) => {
   const [allSources, setAllSources] = useState<UnifiedSource[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
@@ -65,6 +72,7 @@ const KnowledgeBase = ({
   const [editingDocId, setEditingDocId] = useState<string | null>(null);
   const [editingDocValue, setEditingDocValue] = useState('');
   const [openMenuDocId, setOpenMenuDocId] = useState<string | null>(null);
+  const [showDeletedItems, setShowDeletedItems] = useState(false);
   const fileRegistryRef = useRef<Map<string, File>>(new Map()); // Keep track of uploaded files
   const fileInputRef = useRef<HTMLInputElement>(null);
   const docInputRef = useRef<HTMLInputElement>(null);
@@ -320,6 +328,8 @@ const KnowledgeBase = ({
     } else if (sourceToRemove.sourceType === 'stored' && sourceToRemove.storagePath) {
       // Handle stored source deletion
       onDeleteStoredSource?.(sourceToRemove.id, sourceToRemove.storagePath);
+      setNotification(`"${sourceToRemove.name}" moved to Recently Deleted`);
+      setTimeout(() => setNotification(null), 3000);
     } else {
       // Handle local source removal
       setAllSources((prev) => prev.filter((source) => source.id !== id));
@@ -415,14 +425,12 @@ const KnowledgeBase = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [openMenuDocId]);
 
-  // Document delete function with confirmation
+  // Document delete function (no confirmation needed since it's recoverable)
   const handleDeleteDocument = (docId: string, docTitle: string) => {
-    const confirmDelete = window.confirm(
-      `Are you sure you want to delete "${docTitle}"?\n\nThis action cannot be undone.`
-    );
-    
-    if (confirmDelete && onDeleteDocument) {
+    if (onDeleteDocument) {
       onDeleteDocument(docId);
+      setNotification(`"${docTitle}" moved to Recently Deleted`);
+      setTimeout(() => setNotification(null), 3000);
     }
   };
 
@@ -443,6 +451,36 @@ const KnowledgeBase = ({
     } catch (error) {
       console.error('❌ [Convert to Source] Error converting document:', error);
       alert(`Failed to convert document to source: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  };
+
+  // Restore deleted item function
+  const handleRestoreItem = async (deletedItemId: string, itemName: string) => {
+    if (!onRestoreItem) return;
+    
+    try {
+      await onRestoreItem(deletedItemId);
+      setNotification(`"${itemName}" has been restored successfully`);
+      setTimeout(() => setNotification(null), 3000);
+    } catch (error) {
+      console.error('❌ [Restore Item] Error restoring item:', error);
+      setNotification(`Failed to restore "${itemName}"`);
+      setTimeout(() => setNotification(null), 5000);
+    }
+  };
+
+  // Permanently delete item function (no confirmation needed - user intent is clear)
+  const handlePermanentlyDeleteItem = async (deletedItemId: string, itemName: string) => {
+    if (!onPermanentlyDeleteItem) return;
+    
+    try {
+      await onPermanentlyDeleteItem(deletedItemId);
+      setNotification(`"${itemName}" has been permanently deleted`);
+      setTimeout(() => setNotification(null), 3000);
+    } catch (error) {
+      console.error('❌ [Permanent Delete] Error permanently deleting item:', error);
+      setNotification(`Failed to permanently delete "${itemName}"`);
+      setTimeout(() => setNotification(null), 5000);
     }
   };
 
@@ -645,7 +683,7 @@ const KnowledgeBase = ({
                         </div>
                       ) : source.type === 'pdf' ? (
                         <svg className="w-5 h-5 text-red-600 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zM9.498 16.19c-.309.29-.765.42-1.296.42a2.23 2.23 0 0 1-.308-.018v1.426H7v-3.936A7.558 7.558 0 0 1 8.219 14c.557 0 .953.106 1.22.319.254.202.426.533.426.923-.001.392-.131.723-.367.948zm3.807 1.355c-.42.349-1.059.515-1.84.515-.468 0-.799-.03-1.024-.06v-3.917A7.947 7.947 0 0 1 11.66 14c.757 0 1.249.136 1.633.426.415.308.675.799.675 1.504 0 .763-.279 1.29-.663 1.615zM17 14.77h-1.532v.911H16.9v.734h-1.432v1.604h-.906V14.03H17v.74zM14 9h-1V4l5 5h-4z" />
+                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zM9.498 16.19c-.309.29-.765.42-1.296.42a2.23 2.23 0 0 1-.308-.018v1.426H7v-3.936A7.558 7.558 0 0 1 8.219 14c.557 0 .953.106 1.22.319.254.202.426.533.426.923-.001.392-.131.723-.367.948zm3.807 1.355c-.42.349-1.059.515-1.84.515-.468 0-.799-.03-1.024-.60v-3.917A7.947 7.947 0 0 1 11.66 14c.757 0 1.249.136 1.633.426.415.308.675.799.675 1.504 0 .763-.279 1.29-.663 1.615zM17 14.77h-1.532v.911H16.9v.734h-1.432v1.604h-.906V14.03H17v.74zM14 9h-1V4l5 5h-4z" />
                         </svg>
                       ) : (
                         <svg className="w-5 h-5 text-blue-600 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
@@ -656,19 +694,98 @@ const KnowledgeBase = ({
                         {truncateFilename(source.name, 30)}
                       </span>
                     </div>
-                    <input
-                      type="checkbox"
-                      checked={source.isSelected}
-                      onChange={() => toggleSourceSelection(source.id)}
-                      disabled={source.isUploading}
-                      className="w-4 h-4 border-gray-300 rounded text-blue-600 focus:ring-blue-500"
-                    />
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={source.isSelected}
+                        onChange={() => toggleSourceSelection(source.id)}
+                        disabled={source.isUploading}
+                        className="w-4 h-4 border-gray-300 rounded text-blue-600 focus:ring-blue-500"
+                      />
+                      {!source.isUploading && source.sourceType === 'stored' && (
+                        <button
+                          className="appearance-none border-none bg-transparent text-gray-400 cursor-pointer p-1 rounded hover:bg-red-200 hover:text-red-600 transition-all duration-200"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeSource(source.id);
+                          }}
+                          title="Delete source"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      )}
+                    </div>
                   </div>
                 );
               })
             )}
           </div>
         </div>
+
+        {/* Recently Deleted Section */}
+        {deletedItems.length > 0 && (
+          <div className="border-t border-gray-200">
+            <div className="p-4 pb-2">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-medium text-gray-700 uppercase tracking-wide">Recently Deleted</h3>
+                <button
+                  onClick={() => setShowDeletedItems(!showDeletedItems)}
+                  className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                >
+                  {showDeletedItems ? 'Hide' : `Show (${deletedItems.length})`}
+                </button>
+              </div>
+            </div>
+            {showDeletedItems && (
+              <div className="pb-4">
+                {deletedItems.map((item) => (
+                  <div
+                    key={item.id}
+                    className="flex items-center justify-between px-4 py-2 bg-red-50 hover:bg-red-100 transition-colors duration-200"
+                  >
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      {item.type === 'document' ? (
+                        <svg className="w-5 h-5 text-blue-600 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zM16 18H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
+                        </svg>
+                      ) : (
+                        <svg className="w-5 h-5 text-red-600 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zM9.498 16.19c-.309.29-.765.42-1.296.42a2.23 2.23 0 0 1-.308-.018v1.426H7v-3.936A7.558 7.558 0 0 1 8.219 14c.557 0 .953.106 1.22.319.254.202.426.533.426.923-.001.392-.131.723-.367.948zm3.807 1.355c-.42.349-1.059.515-1.84.515-.468 0-.799-.03-1.024-.60v-3.917A7.947 7.947 0 0 1 11.66 14c.757 0 1.249.136 1.633.426.415.308.675.799.675 1.504 0 .763-.279 1.29-.663 1.615zM17 14.77h-1.532v.911H16.9v.734h-1.432v1.604h-.906V14.03H17v.74zM14 9h-1V4l5 5h-4z" />
+                        </svg>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <span className="text-sm text-gray-800 truncate block" title={item.name}>
+                          {truncateFilename(item.name, 25)}
+                        </span>
+                        <span className="text-xs text-gray-500">
+                          Deleted {new Date(item.deletedAt).toLocaleDateString()}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <button
+                        className="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                        onClick={() => handleRestoreItem(item.id, item.name)}
+                        title="Restore item"
+                      >
+                        Restore
+                      </button>
+                      <button
+                        className="px-2 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+                        onClick={() => handlePermanentlyDeleteItem(item.id, item.name)}
+                        title="Permanently delete"
+                      >
+                        Delete Forever
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

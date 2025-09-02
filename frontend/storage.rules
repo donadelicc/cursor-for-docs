@@ -5,14 +5,21 @@ rules_version = '2';
 //    /databases/(default)/documents/users/$(request.auth.uid)).data.isAdmin == true;
 service firebase.storage {
   match /b/{bucket}/o {
-    // Users can upload files to their own project folders
+    // Users can access files in their own project folders - sources
     match /{projectId}/sources/{allPaths=**} {
       allow read, write: if request.auth != null && 
         firestore.exists(/databases/(default)/documents/projects/$(projectId)) &&
         firestore.get(/databases/(default)/documents/projects/$(projectId)).data.userId == request.auth.uid;
     }
     
-    // Allow authenticated users to upload files (general case)
+    // Users can access files in their own project folders - documents
+    match /{projectId}/documents/{allPaths=**} {
+      allow read, write: if request.auth != null && 
+        firestore.exists(/databases/(default)/documents/projects/$(projectId)) &&
+        firestore.get(/databases/(default)/documents/projects/$(projectId)).data.userId == request.auth.uid;
+    }
+    
+    // Allow authenticated users to upload files (general case fallback)
     match /{allPaths=**} {
       allow read, write: if request.auth != null;
     }
