@@ -6,7 +6,7 @@ import LoginButton from "./LoginButton";
 
 export default function HeaderHome() {
   return (
-    <header className="bg-white shadow-lg border-b border-gray-200 sticky top-0 z-[1050]">
+    <header className="bg-transparent border-b border-gray-700/30 sticky top-0 z-[1050] backdrop-blur-sm">
       <div className="w-full px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center py-4">
           {/* Logo on the left */}

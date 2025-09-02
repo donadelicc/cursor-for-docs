@@ -131,10 +131,10 @@ export default function FeaturesSection() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
         <div className="text-center mb-16">
-          <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
+          <h2 className="text-3xl sm:text-4xl font-bold mb-4 bg-gradient-to-r from-teal-400 via-blue-500 to-purple-600 bg-clip-text text-transparent">
             Your Modern Text Editor
           </h2>
-          <p className="text-lg text-gray-600 max-w-3xl mx-auto">
+          <p className="text-lg text-gray-300 max-w-3xl mx-auto">
             Research and interact with your sources while writing your paper.
           </p>
         </div>
@@ -144,15 +144,19 @@ export default function FeaturesSection() {
           {features.map((feature, index) => (
             <div
               key={index}
-              className="bg-white rounded-xl p-8 shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-100 hover:border-blue-200"
+              className="backdrop-blur-sm border border-gray-700/30 rounded-xl p-8 shadow-sm hover:shadow-lg transition-all duration-300 hover:border-gray-600/50"
+              style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)' }}
             >
-              <div className="flex items-center justify-center w-16 h-16 bg-blue-100 text-blue-600 rounded-lg mb-6">
-                {feature.icon}
+              <div className="flex items-center justify-center w-16 h-16 rounded-lg mb-6"
+                   style={{ backgroundColor: 'rgba(41,167,172,0.1)' }}>
+                <div style={{ color: '#29a7ac' }}>
+                  {feature.icon}
+                </div>
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-4">
+              <h3 className="text-xl font-semibold text-white mb-4">
                 {feature.title}
               </h3>
-              <p className="text-gray-600 leading-relaxed">
+              <p className="text-gray-300 leading-relaxed">
                 {feature.description}
               </p>
             </div>
@@ -162,16 +166,28 @@ export default function FeaturesSection() {
         {/* CTA Section */}
         <div className="text-center mt-16">
           <div className="p-8">
-            <h3 className="text-2xl font-bold text-gray-900 mb-4">
+            <h3 className="text-2xl font-bold mb-4 bg-gradient-to-r from-teal-400 via-blue-500 to-purple-600 bg-clip-text text-transparent">
               Start writing for free
             </h3>
-            <p className="text-gray-600 mb-6">
+            <p className="text-gray-300 mb-6">
               Stop wasting time navigating between different tools. Write
               seamlessly with your sources.{" "}
             </p>
             <Link
               href="/login"
-              className="inline-flex items-center justify-center px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 text-lg"
+              className="inline-flex items-center justify-center px-8 py-4 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 text-lg backdrop-blur-md border border-white/20 hover:border-white/40 hover:scale-105"
+              style={{ 
+                backgroundColor: 'rgba(41,167,172,0.15)',
+                boxShadow: '0 8px 32px rgba(41,167,172,0.2)'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = 'rgba(41,167,172,0.25)';
+                e.currentTarget.style.boxShadow = '0 12px 40px rgba(41,167,172,0.3)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'rgba(41,167,172,0.15)';
+                e.currentTarget.style.boxShadow = '0 8px 32px rgba(41,167,172,0.2)';
+              }}
             >
               Get Started
             </Link>
