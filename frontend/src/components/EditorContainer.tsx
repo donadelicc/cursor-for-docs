@@ -443,44 +443,70 @@ const EditorContainer = ({
       // Get the document content
       const document = await getProjectDocument(projectId, docId);
       if (!document) {
+        console.error('❌ [EditorContainer] Document not found for ID:', docId);
         throw new Error('Document not found');
       }
-      console.log('🔧 [EditorContainer] Document content retrieved, length:', document.content.length);
-
-      // For now, let's convert to a markdown file as a source
-      // This is simpler and will work reliably
-      console.log('🔧 [EditorContainer] Converting HTML to markdown...');
-      const { htmlToMarkdown } = await import('@/utils/markdownConverter');
-      const markdownContent = htmlToMarkdown(document.content);
-      
-      // Create filename - keep original extension or add .md
-      const sourceFilename = docTitle.endsWith('.md') ? docTitle : `${docTitle}.md`;
-      
-      // Create a blob with the markdown content
-      const blob = new Blob([markdownContent], { type: 'text/markdown' });
-      const file = new File([blob], sourceFilename, { 
-        type: 'text/markdown' 
+      console.log('🔧 [EditorContainer] Document content retrieved:', {
+        title: document.title,
+        contentLength: document.content.length,
+        contentPreview: document.content.substring(0, 100)
       });
 
-      console.log('🔧 [EditorContainer] Uploading file as source...');
-      // Upload as a project source
-      await uploadProjectSource(projectId, file);
-      console.log('✅ [EditorContainer] File uploaded as source');
+      // Store the HTML content as an HTML file for the source
+      // This preserves the document content and can be opened properly
+      console.log('🔧 [EditorContainer] Preparing HTML content for source...');
+      const htmlContent = document.content;
       
-      console.log('🔧 [EditorContainer] Deleting original document...');
-      // Delete the original document
-      await deleteProjectDocument(projectId, docId);
-      console.log('✅ [EditorContainer] Original document deleted');
+      // Change extension to .html since we're storing HTML content
+      let sourceFilename = docTitle;
+      if (sourceFilename.endsWith('.docx')) {
+        sourceFilename = sourceFilename.replace(/\.docx$/i, '.html');
+      } else if (!sourceFilename.endsWith('.html')) {
+        sourceFilename = `${sourceFilename}.html`;
+      }
+      
+      console.log('🔧 [EditorContainer] Source filename will be:', sourceFilename);
+      
+      // Create a proper HTML file with UTF-8 encoding
+      const htmlBlob = new Blob([htmlContent], { type: 'text/html; charset=utf-8' });
+      const file = new File([htmlBlob], sourceFilename, { 
+        type: 'text/html'
+      });
+
+      console.log('🔧 [EditorContainer] Created HTML file for upload:', {
+        name: file.name,
+        size: file.size,
+        type: file.type
+      });
+
+      console.log('🔧 [EditorContainer] Uploading HTML file as source...');
+      // Upload as a project source
+      const uploadedSource = await uploadProjectSource(projectId, file);
+      console.log('✅ [EditorContainer] HTML file uploaded as source:', uploadedSource);
+      
+      // Don't delete the original document - keep it in the Documents tab
+      console.log('✅ [EditorContainer] Keeping original document in Documents tab');
       
       console.log('🔧 [EditorContainer] Reloading project data...');
       // Reload project data to refresh both documents and sources
       await reloadProjectData();
       console.log('✅ [EditorContainer] Project data reloaded');
       
-      console.log('✅ [Convert to Source] Document converted to source successfully:', docTitle);
+      console.log('✅ [Convert to Source] Document converted to source successfully:', {
+        originalTitle: docTitle,
+        newSourceName: sourceFilename,
+        sourceId: uploadedSource.id
+      });
       
     } catch (error) {
-      console.error('❌ [Convert to Source] Error converting document to source:', error);
+      console.error('❌ [Convert to Source] Error converting document to source:', {
+        error: error,
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+        docId,
+        docTitle,
+        projectId
+      });
       throw error; // Re-throw so KnowledgeBase can handle the error
     }
   }, [projectId, reloadProjectData]);

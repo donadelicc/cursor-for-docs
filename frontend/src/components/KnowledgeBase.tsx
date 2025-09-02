@@ -71,7 +71,7 @@ const KnowledgeBase = ({
   const [notification, setNotification] = useState<string | null>(null);
   const [editingDocId, setEditingDocId] = useState<string | null>(null);
   const [editingDocValue, setEditingDocValue] = useState('');
-  const [openMenuDocId, setOpenMenuDocId] = useState<string | null>(null);
+
   const [showDeletedItems, setShowDeletedItems] = useState(false);
   const fileRegistryRef = useRef<Map<string, File>>(new Map()); // Keep track of uploaded files
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -87,17 +87,19 @@ const KnowledgeBase = ({
     const invalidFiles: string[] = [];
 
     fileArray.forEach((file) => {
-      // Check if file is PDF or DOCX
+      // Check if file is PDF, DOCX, HTML, or Markdown
       const isPdf = file.type === 'application/pdf';
       const isDocx = file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || file.name.toLowerCase().endsWith('.docx');
+      const isHtml = file.type === 'text/html' || file.name.toLowerCase().endsWith('.html');
+      const isMarkdown = file.type === 'text/markdown' || file.name.toLowerCase().endsWith('.md');
 
-      if (!isPdf && !isDocx) {
+      if (!isPdf && !isDocx && !isHtml && !isMarkdown) {
         invalidFiles.push(file.name);
         return;
       }
 
-      // Check for duplicates across all sources (only for PDFs since DOCX become documents)
-      if (isPdf) {
+      // Check for duplicates across all sources (for non-DOCX files since DOCX become documents)
+      if (isPdf || isHtml || isMarkdown) {
         const isDuplicate = allSources.some(
           (source) => source.name === file.name && source.size === file.size,
         );
@@ -106,8 +108,8 @@ const KnowledgeBase = ({
           duplicateFiles.push(file.name);
           return;
         }
-        validPdfFiles.push(file);
-      } else {
+        validPdfFiles.push(file); // Treat HTML and Markdown as sources like PDFs
+      } else if (isDocx) {
         validDocxFiles.push(file);
       }
     });
@@ -119,7 +121,7 @@ const KnowledgeBase = ({
         messages.push(`Duplicate file`);
       }
       if (invalidFiles.length > 0) {
-        messages.push(`Invalid files (only PDF and DOCX supported): ${invalidFiles.join(', ')}`);
+        messages.push(`Invalid files (only PDF, DOCX, HTML, and Markdown supported): ${invalidFiles.join(', ')}`);
       }
 
       const fullMessage = messages.join(' | ');
@@ -233,11 +235,18 @@ const KnowledgeBase = ({
         // Determine file type from name/extension
         const isPdf = storedSource.name.toLowerCase().endsWith('.pdf');
         const isDocx = storedSource.name.toLowerCase().endsWith('.docx');
+        const isHtml = storedSource.name.toLowerCase().endsWith('.html');
+        const isMarkdown = storedSource.name.toLowerCase().endsWith('.md');
+        
+        // Determine the display type
+        let displayType: 'pdf' | 'docx' = 'pdf'; // Default for backwards compatibility
+        if (isPdf) displayType = 'pdf';
+        else if (isDocx || isHtml || isMarkdown) displayType = 'docx'; // Use docx icon for document-like files
         
         updatedSources.push({
           id: storedSource.id,
           name: storedSource.name,
-          type: isPdf ? 'pdf' : isDocx ? 'docx' : 'pdf', // Default to pdf for backwards compatibility
+          type: displayType,
           size: registryFile?.size || 0,
           uploadDate: new Date(),
           isSelected: false,
@@ -250,9 +259,11 @@ const KnowledgeBase = ({
 
     // 2. Add external files from chatbot (auto-selected) – preserve existing entries if present
     externalFiles.forEach((file) => {
-      // Only handle PDF files as external files - DOCX files are converted to documents
+      // Handle PDF, HTML, and Markdown files as external files - DOCX files are converted to documents
       const isPdf = file.type === 'application/pdf';
-      if (!isPdf) return;
+      const isHtml = file.type === 'text/html' || file.name.toLowerCase().endsWith('.html');
+      const isMarkdown = file.type === 'text/markdown' || file.name.toLowerCase().endsWith('.md');
+      if (!isPdf && !isHtml && !isMarkdown) return;
       const existingExternal = allSources.find(
         (existing) =>
           existing.sourceType === 'external' &&
@@ -262,10 +273,15 @@ const KnowledgeBase = ({
       if (existingExternal) {
         updatedSources.push(existingExternal);
       } else {
+        // Determine display type for external files
+        let externalDisplayType: 'pdf' | 'docx' = 'pdf';
+        if (isPdf) externalDisplayType = 'pdf';
+        else if (isHtml || isMarkdown) externalDisplayType = 'docx'; // Use docx icon for document-like files
+        
         updatedSources.push({
           id: Math.random().toString(36).substring(2) + Date.now().toString(36),
           name: file.name,
-          type: 'pdf',
+          type: externalDisplayType,
           size: file.size,
           uploadDate: new Date(),
           isSelected: true,
@@ -413,17 +429,7 @@ const KnowledgeBase = ({
     }
   }, [editingDocId]);
 
-  // Close menu when clicking outside
-  React.useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (openMenuDocId) {
-        setOpenMenuDocId(null);
-      }
-    };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [openMenuDocId]);
 
   // Document delete function (no confirmation needed since it's recoverable)
   const handleDeleteDocument = (docId: string, docTitle: string) => {
@@ -436,21 +442,36 @@ const KnowledgeBase = ({
 
   // Convert document to source function
   const handleConvertToSource = async (docId: string, docTitle: string) => {
-    console.log('🔧 [Convert to Source] Starting conversion:', { docId, docTitle });
+    console.log('🔧 [KnowledgeBase] Starting conversion:', { docId, docTitle });
     
     if (!onConvertDocumentToSource) {
-      console.error('❌ [Convert to Source] onConvertDocumentToSource callback not provided');
+      console.error('❌ [KnowledgeBase] onConvertDocumentToSource callback not provided');
+      setNotification('Conversion function not available');
+      setTimeout(() => setNotification(null), 3000);
       return;
     }
 
     try {
-      console.log('🔧 [Convert to Source] Calling conversion function...');
+      console.log('🔧 [KnowledgeBase] Calling conversion function...');
+      setNotification('Converting document to source...');
+      
       await onConvertDocumentToSource(docId, docTitle);
-      setOpenMenuDocId(null); // Close menu after conversion
-      console.log('✅ [Convert to Source] Document converted successfully:', docTitle);
+      
+      console.log('✅ [KnowledgeBase] Document converted successfully:', docTitle);
+      setNotification(`"${docTitle}" converted to HTML source (document kept in Documents)`);
+      setTimeout(() => setNotification(null), 4000);
+      
     } catch (error) {
-      console.error('❌ [Convert to Source] Error converting document:', error);
-      alert(`Failed to convert document to source: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      console.error('❌ [KnowledgeBase] Error converting document:', {
+        error,
+        docId,
+        docTitle,
+        message: error instanceof Error ? error.message : 'Unknown error'
+      });
+      
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      setNotification(`Failed to convert "${docTitle}": ${errorMessage}`);
+      setTimeout(() => setNotification(null), 5000);
     }
   };
 
@@ -517,7 +538,7 @@ const KnowledgeBase = ({
         ref={fileInputRef}
         type="file"
         multiple
-        accept=".pdf,.docx"
+        accept=".pdf,.docx,.html,.md"
         onChange={handleInputChange}
         className="hidden"
       />
@@ -580,6 +601,20 @@ const KnowledgeBase = ({
                   {editingDocId !== doc.id && (
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all duration-200">
                       <button
+                        className="appearance-none border-none bg-transparent text-gray-400 cursor-pointer p-1 rounded hover:bg-blue-200 hover:text-blue-600 transition-all duration-200"
+                        onClick={(e) => {
+                          console.log('🔧 [KnowledgeBase] Convert to Source button clicked:', { docId: doc.id, docTitle: doc.title });
+                          e.stopPropagation();
+                          handleConvertToSource(doc.id, doc.title);
+                        }}
+                        title="Convert to Source"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                        </svg>
+                      </button>
+                      
+                      <button
                         className="appearance-none border-none bg-transparent text-gray-400 cursor-pointer p-1 rounded hover:bg-gray-200 hover:text-gray-600 transition-all duration-200"
                         onClick={(e) => {
                           e.stopPropagation();
@@ -591,40 +626,6 @@ const KnowledgeBase = ({
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                         </svg>
                       </button>
-                      
-                      {/* Three-dots menu */}
-                      <div className="relative">
-                        <button
-                          className="appearance-none border-none bg-transparent text-gray-400 cursor-pointer p-1 rounded hover:bg-gray-200 hover:text-gray-600 transition-all duration-200"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setOpenMenuDocId(openMenuDocId === doc.id ? null : doc.id);
-                          }}
-                          title="More options"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
-                          </svg>
-                        </button>
-                        
-                        {openMenuDocId === doc.id && (
-                          <div className="absolute right-0 top-full mt-1 w-40 bg-white border border-gray-200 rounded-md shadow-lg z-50">
-                            <button
-                              className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
-                              onClick={(e) => {
-                                console.log('🔧 [KnowledgeBase] Convert to Source button clicked:', { docId: doc.id, docTitle: doc.title });
-                                e.stopPropagation();
-                                handleConvertToSource(doc.id, doc.title);
-                              }}
-                            >
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
-                              </svg>
-                              Convert to Source
-                            </button>
-                          </div>
-                        )}
-                      </div>
                       
                       <button
                         className="appearance-none border-none bg-transparent text-gray-400 cursor-pointer p-1 rounded hover:bg-red-200 hover:text-red-600 transition-all duration-200"
@@ -655,12 +656,12 @@ const KnowledgeBase = ({
             {allSources.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-8 px-4 text-center">
                 <p className="text-gray-500 text-sm mb-2">No sources uploaded yet</p>
-                <p className="text-gray-400 text-xs">Drop PDF or DOCX files here to get started</p>
+                <p className="text-gray-400 text-xs">Drop PDF, DOCX, HTML, or Markdown files here to get started</p>
               </div>
             ) : (
               allSources.map((source) => {
                 const handleSourceClick = () => {
-                  // Only handle PDF files now - DOCX files are converted to documents immediately
+                  // Handle all source files (PDF, HTML, Markdown) - DOCX files are converted to documents immediately
                   if (source.sourceType === 'stored' && source.storagePath) {
                     onOpenStoredSource?.(source.name, source.storagePath);
                   } else if (source.file) {
