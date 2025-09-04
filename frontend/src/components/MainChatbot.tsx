@@ -114,8 +114,8 @@ const MainChatbot = ({
     if (!query || isLoading) return;
 
     // Add the user's message to the state immediately for a responsive UI
-    addMessage({ role: 'user', content: query });
-    setInputValue('');
+    addMessage({ role: "user", content: query });
+    setInputValue("");
     setIsLoading(true);
 
     try {
@@ -161,10 +161,10 @@ const MainChatbot = ({
         }
       }
 
-      if (!response.body) throw new Error('Response body is empty.');
+      if (!response.body) throw new Error("Response body is empty.");
 
       // Add an empty placeholder message for the assistant
-      addMessage({ role: 'assistant', content: '' });
+      addMessage({ role: "assistant", content: "" });
 
       // Handle the streaming response
       const reader = response.body.getReader();
@@ -182,8 +182,11 @@ const MainChatbot = ({
       }
       console.log(`[chat] ← streaming response completed`);
     } catch (error) {
-      console.error('Error fetching chat response:', error);
-      addMessage({ role: 'assistant', content: 'Sorry, an error occurred. Please try again.' });
+      console.error("Error fetching chat response:", error);
+      addMessage({
+        role: "assistant",
+        content: "Sorry, an error occurred. Please try again.",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -205,10 +208,48 @@ const MainChatbot = ({
     fileInputRef.current?.click();
   };
 
-  // File ingestion to backend has been removed; keep UI state only
-  const handleIngestFiles = async () => {
-    setIsUploadingFiles(false);
-    setUploadingFiles(new Set());
+  // NEW: The actual API call for ingestion
+  const handleIngestFiles = async (filesToUpload: File[]) => {
+    if (filesToUpload.length === 0) return;
+
+    // 1. Show a spinner
+    setUploadingFiles(
+      (prev) => new Set([...prev, ...filesToUpload.map((f) => f.name)]),
+    );
+
+    try {
+      const formData = new FormData();
+      filesToUpload.forEach((file) => {
+        formData.append("files", file);
+      });
+      // 2. Start the REAL backend upload and WAIT for it to finish
+      console.log(`[upload] → POST /documents`, {
+        files: filesToUpload.map((f) => ({ name: f.name, size: f.size })),
+      });
+      const response = await apiClient.post("/documents", formData);
+      console.log(`[upload] ← /documents ${response.status}`);
+
+      // 3. If it succeeds, we're done! The spinner will be hidden in the 'finally' block.
+      //setTimeout(() => setNotification(null), 3000);
+    } catch (error) {
+      console.error("Error ingesting files:", error);
+      setNotification(`Error: Could not upload files. Please try again.`);
+      setTimeout(() => setNotification(null), 5000);
+
+      // If upload fails, remove the files from the UI state
+      setUploadedFiles((prev) =>
+        prev.filter((f) => !filesToUpload.some((fu) => fu.name === f.name)),
+      );
+    } finally {
+      // Remove files from the "uploading" state after completion
+      setUploadingFiles((prev) => {
+        const newSet = new Set(prev);
+        filesToUpload.forEach((f) => newSet.delete(f.name));
+        return newSet;
+      });
+      // Re-enable upload button
+      setIsUploadingFiles(false);
+    }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -228,22 +269,16 @@ const MainChatbot = ({
     const fileToRemove = allUploadedFiles[index];
     if (!fileToRemove) return;
 
-    // Update local state only; no backend deletion
-    const isFromSelectedSources = selectedSources.some(
-      (f) => f.name === fileToRemove.name && f.size === fileToRemove.size,
-    );
+    try {
+      const endpoint = `/documents/${encodeURIComponent(fileToRemove.name)}`;
+      console.log(`[upload] → DELETE ${endpoint}`);
+      const resp = await apiClient.delete(endpoint);
+      console.log(`[upload] ← DELETE ${endpoint} ${resp.status}`);
 
-    const isFromUploadedFiles = uploadedFiles.some(
-      (f) => f.name === fileToRemove.name && f.size === fileToRemove.size,
-    );
-
-    if (isFromSelectedSources) {
-      onFileRemove?.(fileToRemove);
-    }
-
-    if (isFromUploadedFiles) {
-      setUploadedFiles((prev) =>
-        prev.filter((f) => !(f.name === fileToRemove.name && f.size === fileToRemove.size)),
+      // --- If API call is successful, then update the local state ---
+      // Check if file is from selectedSources (Knowledge Base)
+      const isFromSelectedSources = selectedSources.some(
+        (f) => f.name === fileToRemove.name && f.size === fileToRemove.size,
       );
       onChatbotFileRemove?.(fileToRemove);
     }

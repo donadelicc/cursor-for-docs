@@ -14,7 +14,10 @@ export default function Home() {
   // Show different home page based on authentication status
   if (!currentUser) {
     return (
-      <div className="min-h-screen bg-white dark:bg-gray-900 transition-colors duration-200">
+      <div
+        className="min-h-screen"
+        style={{ backgroundColor: "hsl(220, 40%, 8%)" }}
+      >
         <HeaderHome />
         <HeroSection />
         <FeaturesSection />

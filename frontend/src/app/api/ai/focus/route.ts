@@ -67,7 +67,7 @@ Always base your responses on the actual document content provided to you.`;
 
           // Iterate through the stream chunks
           for await (const chunk of streamResponse) {
-            if (chunk.content && typeof chunk.content === 'string') {
+            if (chunk.content && typeof chunk.content === "string") {
               // Encode the content and push to stream
               const encoded = textEncoder.encode(chunk.content);
               controller.enqueue(encoded);
@@ -77,9 +77,11 @@ Always base your responses on the actual document content provided to you.`;
           // Close the stream when done
           controller.close();
         } catch (error) {
-          console.error('Error in streaming AI response:', error);
+          console.error("Error in streaming AI response:", error);
           const errorMessage =
-            error instanceof Error ? error.message : 'An unknown error occurred.';
+            error instanceof Error
+              ? error.message
+              : "An unknown error occurred.";
           const errorText = `Error: ${errorMessage}`;
           const encoded = new TextEncoder().encode(errorText);
           controller.enqueue(encoded);
@@ -91,7 +93,7 @@ Always base your responses on the actual document content provided to you.`;
     // Return a Response with the stream and appropriate headers
     return new Response(stream, {
       headers: {
-        'Content-Type': 'text/plain; charset=utf-8',
+        "Content-Type": "text/plain; charset=utf-8",
       },
     });
   } catch (error) {

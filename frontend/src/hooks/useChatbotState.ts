@@ -8,7 +8,19 @@ export interface Message {
   timestamp: Date;
 }
 
-export const useChatbotState = () => {
+interface UseChatbotStateProps {
+  documentContent: string;
+  uploadedFiles?: File[];
+  mode: "general" | "sources" | "focused";
+}
+
+export const useChatbotState = ({
+  documentContent,
+  uploadedFiles = [],
+  mode,
+}: UseChatbotStateProps) => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _unused = { documentContent, uploadedFiles, mode };
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 'welcome',
