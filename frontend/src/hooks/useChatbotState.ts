@@ -19,6 +19,8 @@ export const useChatbotState = ({
   uploadedFiles = [],
   mode,
 }: UseChatbotStateProps) => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _unused = { documentContent, uploadedFiles, mode };
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "welcome",

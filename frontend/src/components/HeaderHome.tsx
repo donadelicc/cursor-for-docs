@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import LoginButton from "./LoginButton";
+import WaitlistLoginButton from "./WaitlistLoginButton";
 
 export default function HeaderHome() {
   return (
@@ -23,9 +23,9 @@ export default function HeaderHome() {
             </Link>
           </div>
 
-          {/* Login button on the right */}
+          {/* Waitlist button on the right */}
           <div className="flex items-center">
-            <LoginButton />
+            <WaitlistLoginButton />
           </div>
         </div>
       </div>

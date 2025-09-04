@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import WaitlistButton from "./WaitlistButton";
 
 export default function FeaturesSection() {
   const features = [
@@ -145,13 +145,13 @@ export default function FeaturesSection() {
             <div
               key={index}
               className="backdrop-blur-sm border border-gray-700/30 rounded-xl p-8 shadow-sm hover:shadow-lg transition-all duration-300 hover:border-gray-600/50"
-              style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)' }}
+              style={{ backgroundColor: "rgba(255, 255, 255, 0.05)" }}
             >
-              <div className="flex items-center justify-center w-16 h-16 rounded-lg mb-6"
-                   style={{ backgroundColor: 'rgba(41,167,172,0.1)' }}>
-                <div style={{ color: '#29a7ac' }}>
-                  {feature.icon}
-                </div>
+              <div
+                className="flex items-center justify-center w-16 h-16 rounded-lg mb-6"
+                style={{ backgroundColor: "rgba(41,167,172,0.1)" }}
+              >
+                <div style={{ color: "#29a7ac" }}>{feature.icon}</div>
               </div>
               <h3 className="text-xl font-semibold text-white mb-4">
                 {feature.title}
@@ -173,24 +173,25 @@ export default function FeaturesSection() {
               Stop wasting time navigating between different tools. Write
               seamlessly with your sources.{" "}
             </p>
-            <Link
-              href="/login"
+            <WaitlistButton
               className="inline-flex items-center justify-center px-8 py-4 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 text-lg backdrop-blur-md border border-white/20 hover:border-white/40 hover:scale-105"
-              style={{ 
-                backgroundColor: 'rgba(41,167,172,0.15)',
-                boxShadow: '0 8px 32px rgba(41,167,172,0.2)'
+              style={{
+                backgroundColor: "rgba(41,167,172,0.15)",
+                boxShadow: "0 4px 16px rgba(41,167,172,0.15)",
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = 'rgba(41,167,172,0.25)';
-                e.currentTarget.style.boxShadow = '0 12px 40px rgba(41,167,172,0.3)';
+                e.currentTarget.style.backgroundColor = "rgba(41,167,172,0.25)";
+                e.currentTarget.style.boxShadow =
+                  "0 6px 20px rgba(41,167,172,0.2)";
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'rgba(41,167,172,0.15)';
-                e.currentTarget.style.boxShadow = '0 8px 32px rgba(41,167,172,0.2)';
+                e.currentTarget.style.backgroundColor = "rgba(41,167,172,0.15)";
+                e.currentTarget.style.boxShadow =
+                  "0 4px 16px rgba(41,167,172,0.15)";
               }}
             >
-              Get Started
-            </Link>
+              Join Waitlist
+            </WaitlistButton>
           </div>
         </div>
       </div>
