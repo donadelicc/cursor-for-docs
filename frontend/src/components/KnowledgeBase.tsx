@@ -347,8 +347,6 @@ const KnowledgeBase = ({
     } else if (sourceToRemove.sourceType === 'stored' && sourceToRemove.storagePath) {
       // Handle stored source deletion
       onDeleteStoredSource?.(sourceToRemove.id, sourceToRemove.storagePath);
-      setNotification(`"${sourceToRemove.name}" moved to Recently Deleted`);
-      setTimeout(() => setNotification(null), 3000);
     } else {
       // Handle local source removal
       setAllSources((prev) => prev.filter((source) => source.id !== id));
@@ -437,11 +435,9 @@ const KnowledgeBase = ({
   }, [editingDocId]);
 
   // Document delete function (no confirmation needed since it's recoverable)
-  const handleDeleteDocument = (docId: string, docTitle: string) => {
+  const handleDeleteDocument = (docId: string) => {
     if (onDeleteDocument) {
       onDeleteDocument(docId);
-      setNotification(`"${docTitle}" moved to Recently Deleted`);
-      setTimeout(() => setNotification(null), 3000);
     }
   };
 
@@ -458,13 +454,10 @@ const KnowledgeBase = ({
 
     try {
       console.log('🔧 [KnowledgeBase] Calling conversion function...');
-      setNotification('Converting document to source...');
 
       await onConvertDocumentToSource(docId, docTitle);
 
       console.log('✅ [KnowledgeBase] Document converted successfully:', docTitle);
-      setNotification(`"${docTitle}" converted to HTML source (document kept in Documents)`);
-      setTimeout(() => setNotification(null), 4000);
     } catch (error) {
       console.error('❌ [KnowledgeBase] Error converting document:', {
         error,
@@ -480,32 +473,24 @@ const KnowledgeBase = ({
   };
 
   // Restore deleted item function
-  const handleRestoreItem = async (deletedItemId: string, itemName: string) => {
+  const handleRestoreItem = async (deletedItemId: string) => {
     if (!onRestoreItem) return;
 
     try {
       await onRestoreItem(deletedItemId);
-      setNotification(`"${itemName}" has been restored successfully`);
-      setTimeout(() => setNotification(null), 3000);
     } catch (error) {
       console.error('❌ [Restore Item] Error restoring item:', error);
-      setNotification(`Failed to restore "${itemName}"`);
-      setTimeout(() => setNotification(null), 5000);
     }
   };
 
   // Permanently delete item function (no confirmation needed - user intent is clear)
-  const handlePermanentlyDeleteItem = async (deletedItemId: string, itemName: string) => {
+  const handlePermanentlyDeleteItem = async (deletedItemId: string) => {
     if (!onPermanentlyDeleteItem) return;
 
     try {
       await onPermanentlyDeleteItem(deletedItemId);
-      setNotification(`"${itemName}" has been permanently deleted`);
-      setTimeout(() => setNotification(null), 3000);
     } catch (error) {
       console.error('❌ [Permanent Delete] Error permanently deleting item:', error);
-      setNotification(`Failed to permanently delete "${itemName}"`);
-      setTimeout(() => setNotification(null), 5000);
     }
   };
 
@@ -684,7 +669,7 @@ const KnowledgeBase = ({
                         className="appearance-none border-none bg-transparent text-gray-400 dark:text-gray-500 cursor-pointer p-1 rounded hover:bg-red-200 dark:hover:bg-red-800 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleDeleteDocument(doc.id, doc.title);
+                          handleDeleteDocument(doc.id);
                         }}
                         title="Delete document"
                       >
@@ -886,14 +871,14 @@ const KnowledgeBase = ({
                     <div className="flex items-center gap-1">
                       <button
                         className="px-2 py-1 text-xs bg-blue-600 dark:bg-blue-700 text-white rounded hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
-                        onClick={() => handleRestoreItem(item.id, item.name)}
+                        onClick={() => handleRestoreItem(item.id)}
                         title="Restore item"
                       >
                         Restore
                       </button>
                       <button
                         className="px-2 py-1 text-xs bg-red-600 dark:bg-red-700 text-white rounded hover:bg-red-700 dark:hover:bg-red-600 transition-colors"
-                        onClick={() => handlePermanentlyDeleteItem(item.id, item.name)}
+                        onClick={() => handlePermanentlyDeleteItem(item.id)}
                         title="Permanently delete"
                       >
                         Delete Forever

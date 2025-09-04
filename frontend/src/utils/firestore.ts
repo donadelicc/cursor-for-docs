@@ -12,6 +12,7 @@ import {
   orderBy,
   serverTimestamp,
   Timestamp,
+  FieldValue,
 } from 'firebase/firestore';
 import { User } from 'firebase/auth';
 import { db, storage } from '@/lib/firebase';
@@ -412,7 +413,7 @@ export const updateProjectDocument = async (
   }
 
   const data = docSnap.data();
-  const updates: Record<string, unknown> = {
+  const updates: { [key: string]: string | number | FieldValue } = {
     updatedAt: serverTimestamp(),
     lastModified: serverTimestamp(),
   };
@@ -428,10 +429,10 @@ export const updateProjectDocument = async (
     const blob = new Blob([htmlContent], { type: 'text/html' });
 
     // Upload new content to existing storage path or create new one
-    let storagePath = data.storagePath;
+    let storagePath: string = data.storagePath as string;
     if (!storagePath) {
       // For old documents without storage path, create new one
-      const filename = `${(updateData.title || data.title).replace(/[^a-zA-Z0-9]/g, '_')}.html`;
+      const filename = `${(updateData.title || data.title || 'document').replace(/[^a-zA-Z0-9]/g, '_')}.html`;
       storagePath = `${projectId}/documents/${Date.now()}_${filename}`;
       updates.storagePath = storagePath;
       updates.mimeType = 'text/html';
