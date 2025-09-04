@@ -125,7 +125,7 @@ export default function ProjectPage() {
   // Keyboard shortcut for manual save (Ctrl+S) - removed since EditorContainer handles saving
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden">
+    <div className="h-screen flex flex-col overflow-hidden bg-white dark:bg-gray-900 transition-colors duration-200">
       {/* Project Header */}
       <HeaderDocument
         title={currentProjectTitle}
@@ -154,7 +154,7 @@ export default function ProjectPage() {
       <div className="flex-1 relative overflow-hidden">
         {false ? (
           <div className="flex items-center justify-center h-full">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 dark:border-indigo-400"></div>
           </div>
         ) : (
           <EditorContainer

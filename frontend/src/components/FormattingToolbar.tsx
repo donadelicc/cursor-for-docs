@@ -27,7 +27,7 @@ const FormattingToolbar: React.FC<FormattingToolbarProps> = ({
       <div className="relative">
         <div className="flex items-center px-4 py-1.5 bg-transparent border-none rounded-xl gap-1 min-h-[40px] relative z-10 pointer-events-auto overflow-visible flex-nowrap">
           <div className="flex items-center gap-0.5 shrink-0">
-            <span className="text-gray-400 text-sm">Loading editor...</span>
+            <span className="text-gray-400 dark:text-gray-500 text-sm">Loading editor...</span>
           </div>
         </div>
       </div>
@@ -36,25 +36,21 @@ const FormattingToolbar: React.FC<FormattingToolbarProps> = ({
 
   return (
     <div className="relative">
-      <div className="flex items-center px-4 py-1.5 bg-transparent border-none rounded-xl gap-1 min-h-[40px] relative z-10 pointer-events-auto overflow-visible flex-nowrap xl:px-3.5 xl:gap-0.5 xl:min-h-[44px] lg:px-2.5 lg:gap-px lg:min-h-[40px]">
+      <div className="flex items-center px-4 py-1.5 bg-gray-100 dark:bg-gray-800 border-none rounded-xl gap-1 min-h-[40px] relative z-10 pointer-events-auto overflow-visible flex-nowrap xl:px-3.5 xl:gap-0.5 xl:min-h-[44px] lg:px-2.5 lg:gap-px lg:min-h-[40px] transition-colors duration-200">
         {/* Export Button - Only show if required props are provided */}
         {onExportSave && documentContent !== undefined && (
           <>
             <div className="flex items-center gap-0.5 shrink-0">
-              <Export
-                onSave={onExportSave}
-                documentContent={documentContent}
-                disabled={disabled}
-              />
+              <Export onSave={onExportSave} documentContent={documentContent} disabled={disabled} />
             </div>
-            <div className="w-px h-6 bg-gray-300 mx-1.5 shrink-0"></div>
+            <div className="w-px h-6 bg-gray-300 dark:bg-gray-600 mx-1.5 shrink-0"></div>
           </>
         )}
 
         <div className="flex items-center gap-0.5 shrink-0">
           {/* Undo/Redo */}
           <button
-            className="flex items-center justify-center w-8 h-8 border-none bg-transparent rounded-md cursor-pointer text-gray-700 transition-all duration-200 p-0 relative z-[101] pointer-events-auto shrink-0 hover:bg-blue-50 hover:text-blue-600 active:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-gray-700 xl:w-8 xl:h-8 lg:w-7 lg:h-7"
+            className="flex items-center justify-center w-8 h-8 border border-gray-300 dark:border-gray-500 bg-white dark:bg-gray-700 rounded-md cursor-pointer text-gray-700 dark:text-gray-200 transition-all duration-200 p-0 relative z-[101] pointer-events-auto shrink-0 hover:bg-blue-50 dark:hover:bg-blue-900 hover:text-blue-600 dark:hover:text-blue-300 hover:border-blue-300 dark:hover:border-blue-500 active:bg-blue-100 dark:active:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-gray-700 dark:disabled:hover:text-gray-300 xl:w-8 xl:h-8 lg:w-7 lg:h-7 shadow-sm"
             onClick={() => editor.chain().focus().undo().run()}
             disabled={!editor.can().chain().focus().undo().run()}
             title="Undo (Ctrl+Z)"
@@ -72,7 +68,7 @@ const FormattingToolbar: React.FC<FormattingToolbarProps> = ({
             </svg>
           </button>
           <button
-            className="flex items-center justify-center w-8 h-8 border-none bg-transparent rounded-md cursor-pointer text-gray-700 transition-all duration-200 p-0 relative z-[101] pointer-events-auto shrink-0 hover:bg-blue-50 hover:text-blue-600 active:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-gray-700 xl:w-8 xl:h-8 lg:w-7 lg:h-7"
+            className="flex items-center justify-center w-8 h-8 border border-gray-300 dark:border-gray-500 bg-white dark:bg-gray-700 rounded-md cursor-pointer text-gray-700 dark:text-gray-200 transition-all duration-200 p-0 relative z-[101] pointer-events-auto shrink-0 hover:bg-blue-50 dark:hover:bg-blue-900 hover:text-blue-600 dark:hover:text-blue-300 hover:border-blue-300 dark:hover:border-blue-500 active:bg-blue-100 dark:active:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-gray-700 dark:disabled:hover:text-gray-300 xl:w-8 xl:h-8 lg:w-7 lg:h-7 shadow-sm"
             onClick={() => editor.chain().focus().redo().run()}
             disabled={!editor.can().chain().focus().redo().run()}
             title="Redo (Ctrl+Y)"
@@ -96,7 +92,7 @@ const FormattingToolbar: React.FC<FormattingToolbarProps> = ({
         <div className="flex items-center gap-0.5 shrink-0">
           {/* Text Styles Dropdown */}
           <select
-            className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-sm text-gray-700 cursor-pointer min-w-[120px] w-[120px] h-9 shrink-0 font-medium shadow-sm transition-all duration-200 hover:border-blue-600 hover:shadow-md focus:outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-200 xl:min-w-[110px] xl:w-[110px] xl:h-[34px] xl:text-xs lg:min-w-[90px] lg:w-[90px] lg:h-[30px] lg:text-xs"
+            className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-300 cursor-pointer min-w-[120px] w-[120px] h-9 shrink-0 font-medium shadow-sm transition-all duration-200 hover:border-blue-600 dark:hover:border-blue-400 hover:shadow-md focus:outline-none focus:border-blue-600 dark:focus:border-blue-400 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-800 xl:min-w-[110px] xl:w-[110px] xl:h-[34px] xl:text-xs lg:min-w-[90px] lg:w-[90px] lg:h-[30px] lg:text-xs"
             value={
               editor.isActive('heading', { level: 1 })
                 ? 'h1'
@@ -131,7 +127,7 @@ const FormattingToolbar: React.FC<FormattingToolbarProps> = ({
         <div className="flex items-center gap-0.5 shrink-0">
           {/* Font Family Dropdown */}
           <select
-            className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-sm text-gray-700 cursor-pointer min-w-[110px] w-[110px] h-9 shrink-0 font-medium shadow-sm transition-all duration-200 hover:border-blue-600 hover:shadow-md focus:outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-200 xl:min-w-[100px] xl:w-[100px] xl:h-[34px] xl:text-xs lg:min-w-[85px] lg:w-[85px] lg:h-[30px] lg:text-xs"
+            className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-300 cursor-pointer min-w-[110px] w-[110px] h-9 shrink-0 font-medium shadow-sm transition-all duration-200 hover:border-blue-600 dark:hover:border-blue-400 hover:shadow-md focus:outline-none focus:border-blue-600 dark:focus:border-blue-400 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-800 xl:min-w-[100px] xl:w-[100px] xl:h-[34px] xl:text-xs lg:min-w-[85px] lg:w-[85px] lg:h-[30px] lg:text-xs"
             value={(() => {
               const currentFont = editor.getAttributes('textStyle').fontFamily;
               if (!currentFont) return 'Arial';
@@ -177,7 +173,7 @@ const FormattingToolbar: React.FC<FormattingToolbarProps> = ({
         <div className="flex items-center gap-0.5 shrink-0">
           {/* Text Formatting Buttons */}
           <button
-            className={`flex items-center justify-center w-8 h-8 border-none bg-transparent rounded-md cursor-pointer text-gray-700 transition-all duration-200 p-0 relative z-[101] pointer-events-auto shrink-0 hover:bg-blue-50 hover:text-blue-600 active:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-gray-700 xl:w-8 xl:h-8 lg:w-7 lg:h-7 ${editor.isActive('bold') ? 'bg-blue-50 text-blue-600' : ''}`}
+            className={`flex items-center justify-center w-8 h-8 border-none bg-transparent rounded-md cursor-pointer text-gray-700 dark:text-gray-300 transition-all duration-200 p-0 relative z-[101] pointer-events-auto shrink-0 hover:bg-blue-50 dark:hover:bg-blue-900 hover:text-blue-600 dark:hover:text-blue-400 active:bg-blue-100 dark:active:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-gray-700 dark:disabled:hover:text-gray-300 xl:w-8 xl:h-8 lg:w-7 lg:h-7 ${editor.isActive('bold') ? 'bg-blue-200 dark:bg-blue-700 text-blue-800 dark:text-blue-200 border-blue-400 dark:border-blue-500 shadow-md' : ''}`}
             onClick={() => editor.chain().focus().toggleBold().run()}
             title="Bold (Ctrl+B)"
           >
@@ -194,7 +190,7 @@ const FormattingToolbar: React.FC<FormattingToolbarProps> = ({
             </svg>
           </button>
           <button
-            className={`flex items-center justify-center w-8 h-8 border-none bg-transparent rounded-md cursor-pointer text-gray-700 transition-all duration-200 p-0 relative z-[101] pointer-events-auto shrink-0 hover:bg-blue-50 hover:text-blue-600 active:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-gray-700 xl:w-8 xl:h-8 lg:w-7 lg:h-7 ${editor.isActive('italic') ? 'bg-blue-50 text-blue-600' : ''}`}
+            className={`flex items-center justify-center w-8 h-8 border-none bg-transparent rounded-md cursor-pointer text-gray-700 dark:text-gray-300 transition-all duration-200 p-0 relative z-[101] pointer-events-auto shrink-0 hover:bg-blue-50 dark:hover:bg-blue-900 hover:text-blue-600 dark:hover:text-blue-400 active:bg-blue-100 dark:active:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-gray-700 dark:disabled:hover:text-gray-300 xl:w-8 xl:h-8 lg:w-7 lg:h-7 ${editor.isActive('italic') ? 'bg-blue-200 dark:bg-blue-700 text-blue-800 dark:text-blue-200 border-blue-400 dark:border-blue-500 shadow-md' : ''}`}
             onClick={() => editor.chain().focus().toggleItalic().run()}
             title="Italic (Ctrl+I)"
           >
@@ -212,7 +208,7 @@ const FormattingToolbar: React.FC<FormattingToolbarProps> = ({
             </svg>
           </button>
           <button
-            className={`flex items-center justify-center w-8 h-8 border-none bg-transparent rounded-md cursor-pointer text-gray-700 transition-all duration-200 p-0 relative z-[101] pointer-events-auto shrink-0 hover:bg-blue-50 hover:text-blue-600 active:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-gray-700 xl:w-8 xl:h-8 lg:w-7 lg:h-7 ${editor.isActive('underline') ? 'bg-blue-50 text-blue-600' : ''}`}
+            className={`flex items-center justify-center w-8 h-8 border-none bg-transparent rounded-md cursor-pointer text-gray-700 transition-all duration-200 p-0 relative z-[101] pointer-events-auto shrink-0 hover:bg-blue-50 hover:text-blue-600 active:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-gray-700 xl:w-8 xl:h-8 lg:w-7 lg:h-7 ${editor.isActive('underline') ? 'bg-blue-200 dark:bg-blue-700 text-blue-800 dark:text-blue-200 border-blue-400 dark:border-blue-500 shadow-md' : ''}`}
             onClick={() => editor.chain().focus().toggleUnderline().run()}
             title="Underline (Ctrl+U)"
           >
@@ -229,7 +225,7 @@ const FormattingToolbar: React.FC<FormattingToolbarProps> = ({
             </svg>
           </button>
           <button
-            className={`flex items-center justify-center w-8 h-8 border-none bg-transparent rounded-md cursor-pointer text-gray-700 transition-all duration-200 p-0 relative z-[101] pointer-events-auto shrink-0 hover:bg-blue-50 hover:text-blue-600 active:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-gray-700 xl:w-8 xl:h-8 lg:w-7 lg:h-7 ${editor.isActive('strike') ? 'bg-blue-50 text-blue-600' : ''}`}
+            className={`flex items-center justify-center w-8 h-8 border-none bg-transparent rounded-md cursor-pointer text-gray-700 transition-all duration-200 p-0 relative z-[101] pointer-events-auto shrink-0 hover:bg-blue-50 hover:text-blue-600 active:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-gray-700 xl:w-8 xl:h-8 lg:w-7 lg:h-7 ${editor.isActive('strike') ? 'bg-blue-200 dark:bg-blue-700 text-blue-800 dark:text-blue-200 border-blue-400 dark:border-blue-500 shadow-md' : ''}`}
             onClick={() => editor.chain().focus().toggleStrike().run()}
             title="Strikethrough"
           >
@@ -248,7 +244,7 @@ const FormattingToolbar: React.FC<FormattingToolbarProps> = ({
             </svg>
           </button>
           <button
-            className={`flex items-center justify-center w-8 h-8 border-none bg-transparent rounded-md cursor-pointer text-gray-700 transition-all duration-200 p-0 relative z-[101] pointer-events-auto shrink-0 hover:bg-blue-50 hover:text-blue-600 active:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-gray-700 xl:w-8 xl:h-8 lg:w-7 lg:h-7 ${editor.isActive('highlight') ? 'bg-blue-50 text-blue-600' : ''}`}
+            className={`flex items-center justify-center w-8 h-8 border-none bg-transparent rounded-md cursor-pointer text-gray-700 transition-all duration-200 p-0 relative z-[101] pointer-events-auto shrink-0 hover:bg-blue-50 hover:text-blue-600 active:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-gray-700 xl:w-8 xl:h-8 lg:w-7 lg:h-7 ${editor.isActive('highlight') ? 'bg-blue-200 dark:bg-blue-700 text-blue-800 dark:text-blue-200 border-blue-400 dark:border-blue-500 shadow-md' : ''}`}
             onClick={() => editor.chain().focus().toggleHighlight().run()}
             title="Highlight"
           >
@@ -271,7 +267,7 @@ const FormattingToolbar: React.FC<FormattingToolbarProps> = ({
         <div className="flex items-center gap-0.5 shrink-0">
           {/* Text Alignment Buttons */}
           <button
-            className={`flex items-center justify-center w-8 h-8 border-none bg-transparent rounded-md cursor-pointer text-gray-700 transition-all duration-200 p-0 relative z-[101] pointer-events-auto shrink-0 hover:bg-blue-50 hover:text-blue-600 active:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-gray-700 xl:w-8 xl:h-8 lg:w-7 lg:h-7 ${editor.isActive({ textAlign: 'left' }) || (!editor.isActive({ textAlign: 'center' }) && !editor.isActive({ textAlign: 'right' }) && !editor.isActive({ textAlign: 'justify' })) ? 'bg-blue-50 text-blue-600' : ''}`}
+            className={`flex items-center justify-center w-8 h-8 border-none bg-transparent rounded-md cursor-pointer text-gray-700 transition-all duration-200 p-0 relative z-[101] pointer-events-auto shrink-0 hover:bg-blue-50 hover:text-blue-600 active:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-gray-700 xl:w-8 xl:h-8 lg:w-7 lg:h-7 ${editor.isActive({ textAlign: 'left' }) || (!editor.isActive({ textAlign: 'center' }) && !editor.isActive({ textAlign: 'right' }) && !editor.isActive({ textAlign: 'justify' })) ? 'bg-blue-200 dark:bg-blue-700 text-blue-800 dark:text-blue-200 border-blue-400 dark:border-blue-500 shadow-md' : ''}`}
             onClick={() => editor.chain().focus().setTextAlign('left').run()}
             title="Align Left"
           >
@@ -290,7 +286,7 @@ const FormattingToolbar: React.FC<FormattingToolbarProps> = ({
             </svg>
           </button>
           <button
-            className={`flex items-center justify-center w-8 h-8 border-none bg-transparent rounded-md cursor-pointer text-gray-700 transition-all duration-200 p-0 relative z-[101] pointer-events-auto shrink-0 hover:bg-blue-50 hover:text-blue-600 active:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-gray-700 xl:w-8 xl:h-8 lg:w-7 lg:h-7 ${editor.isActive({ textAlign: 'center' }) ? 'bg-blue-50 text-blue-600' : ''}`}
+            className={`flex items-center justify-center w-8 h-8 border-none bg-transparent rounded-md cursor-pointer text-gray-700 transition-all duration-200 p-0 relative z-[101] pointer-events-auto shrink-0 hover:bg-blue-50 hover:text-blue-600 active:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-gray-700 xl:w-8 xl:h-8 lg:w-7 lg:h-7 ${editor.isActive({ textAlign: 'center' }) ? 'bg-blue-200 dark:bg-blue-700 text-blue-800 dark:text-blue-200 border-blue-400 dark:border-blue-500 shadow-md' : ''}`}
             onClick={() => editor.chain().focus().setTextAlign('center').run()}
             title="Align Center"
           >
@@ -309,7 +305,7 @@ const FormattingToolbar: React.FC<FormattingToolbarProps> = ({
             </svg>
           </button>
           <button
-            className={`flex items-center justify-center w-8 h-8 border-none bg-transparent rounded-md cursor-pointer text-gray-700 transition-all duration-200 p-0 relative z-[101] pointer-events-auto shrink-0 hover:bg-blue-50 hover:text-blue-600 active:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-gray-700 xl:w-8 xl:h-8 lg:w-7 lg:h-7 ${editor.isActive({ textAlign: 'right' }) ? 'bg-blue-50 text-blue-600' : ''}`}
+            className={`flex items-center justify-center w-8 h-8 border-none bg-transparent rounded-md cursor-pointer text-gray-700 transition-all duration-200 p-0 relative z-[101] pointer-events-auto shrink-0 hover:bg-blue-50 hover:text-blue-600 active:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-gray-700 xl:w-8 xl:h-8 lg:w-7 lg:h-7 ${editor.isActive({ textAlign: 'right' }) ? 'bg-blue-200 dark:bg-blue-700 text-blue-800 dark:text-blue-200 border-blue-400 dark:border-blue-500 shadow-md' : ''}`}
             onClick={() => editor.chain().focus().setTextAlign('right').run()}
             title="Align Right"
           >
@@ -328,7 +324,7 @@ const FormattingToolbar: React.FC<FormattingToolbarProps> = ({
             </svg>
           </button>
           <button
-            className={`flex items-center justify-center w-8 h-8 border-none bg-transparent rounded-md cursor-pointer text-gray-700 transition-all duration-200 p-0 relative z-[101] pointer-events-auto shrink-0 hover:bg-blue-50 hover:text-blue-600 active:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-gray-700 xl:w-8 xl:h-8 lg:w-7 lg:h-7 ${editor.isActive({ textAlign: 'justify' }) ? 'bg-blue-50 text-blue-600' : ''}`}
+            className={`flex items-center justify-center w-8 h-8 border-none bg-transparent rounded-md cursor-pointer text-gray-700 transition-all duration-200 p-0 relative z-[101] pointer-events-auto shrink-0 hover:bg-blue-50 hover:text-blue-600 active:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-gray-700 xl:w-8 xl:h-8 lg:w-7 lg:h-7 ${editor.isActive({ textAlign: 'justify' }) ? 'bg-blue-200 dark:bg-blue-700 text-blue-800 dark:text-blue-200 border-blue-400 dark:border-blue-500 shadow-md' : ''}`}
             onClick={() => editor.chain().focus().setTextAlign('justify').run()}
             title="Justify"
           >
@@ -353,7 +349,7 @@ const FormattingToolbar: React.FC<FormattingToolbarProps> = ({
         <div className="flex items-center gap-0.5 shrink-0">
           {/* Lists */}
           <button
-            className={`flex items-center justify-center w-8 h-8 border-none bg-transparent rounded-md cursor-pointer text-gray-700 transition-all duration-200 p-0 relative z-[101] pointer-events-auto shrink-0 hover:bg-blue-50 hover:text-blue-600 active:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-gray-700 xl:w-8 xl:h-8 lg:w-7 lg:h-7 ${editor.isActive('bulletList') ? 'bg-blue-50 text-blue-600' : ''}`}
+            className={`flex items-center justify-center w-8 h-8 border-none bg-transparent rounded-md cursor-pointer text-gray-700 transition-all duration-200 p-0 relative z-[101] pointer-events-auto shrink-0 hover:bg-blue-50 hover:text-blue-600 active:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-gray-700 xl:w-8 xl:h-8 lg:w-7 lg:h-7 ${editor.isActive('bulletList') ? 'bg-blue-200 dark:bg-blue-700 text-blue-800 dark:text-blue-200 border-blue-400 dark:border-blue-500 shadow-md' : ''}`}
             onClick={() => editor.chain().focus().toggleBulletList().run()}
             title="Bullet List"
           >
@@ -374,7 +370,7 @@ const FormattingToolbar: React.FC<FormattingToolbarProps> = ({
             </svg>
           </button>
           <button
-            className={`flex items-center justify-center w-8 h-8 border-none bg-transparent rounded-md cursor-pointer text-gray-700 transition-all duration-200 p-0 relative z-[101] pointer-events-auto shrink-0 hover:bg-blue-50 hover:text-blue-600 active:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-gray-700 xl:w-8 xl:h-8 lg:w-7 lg:h-7 ${editor.isActive('orderedList') ? 'bg-blue-50 text-blue-600' : ''}`}
+            className={`flex items-center justify-center w-8 h-8 border-none bg-transparent rounded-md cursor-pointer text-gray-700 transition-all duration-200 p-0 relative z-[101] pointer-events-auto shrink-0 hover:bg-blue-50 hover:text-blue-600 active:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-gray-700 xl:w-8 xl:h-8 lg:w-7 lg:h-7 ${editor.isActive('orderedList') ? 'bg-blue-200 dark:bg-blue-700 text-blue-800 dark:text-blue-200 border-blue-400 dark:border-blue-500 shadow-md' : ''}`}
             onClick={() => editor.chain().focus().toggleOrderedList().run()}
             title="Numbered List"
           >
@@ -401,7 +397,7 @@ const FormattingToolbar: React.FC<FormattingToolbarProps> = ({
         <div className="flex items-center gap-0.5 shrink-0">
           {/* Code Buttons */}
           <button
-            className={`flex items-center justify-center w-8 h-8 border-none bg-transparent rounded-md cursor-pointer text-gray-700 transition-all duration-200 p-0 relative z-[101] pointer-events-auto shrink-0 hover:bg-blue-50 hover:text-blue-600 active:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-gray-700 xl:w-8 xl:h-8 lg:w-7 lg:h-7 ${editor.isActive('code') ? 'bg-blue-50 text-blue-600' : ''}`}
+            className={`flex items-center justify-center w-8 h-8 border-none bg-transparent rounded-md cursor-pointer text-gray-700 transition-all duration-200 p-0 relative z-[101] pointer-events-auto shrink-0 hover:bg-blue-50 hover:text-blue-600 active:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-gray-700 xl:w-8 xl:h-8 lg:w-7 lg:h-7 ${editor.isActive('code') ? 'bg-blue-200 dark:bg-blue-700 text-blue-800 dark:text-blue-200 border-blue-400 dark:border-blue-500 shadow-md' : ''}`}
             onClick={() => editor.chain().focus().toggleCode().run()}
             title="Inline Code"
           >
@@ -418,7 +414,7 @@ const FormattingToolbar: React.FC<FormattingToolbarProps> = ({
             </svg>
           </button>
           <button
-            className={`flex items-center justify-center w-8 h-8 border-none bg-transparent rounded-md cursor-pointer text-gray-700 transition-all duration-200 p-0 relative z-[101] pointer-events-auto shrink-0 hover:bg-blue-50 hover:text-blue-600 active:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-gray-700 xl:w-8 xl:h-8 lg:w-7 lg:h-7 ${editor.isActive('codeBlock') ? 'bg-blue-50 text-blue-600' : ''}`}
+            className={`flex items-center justify-center w-8 h-8 border-none bg-transparent rounded-md cursor-pointer text-gray-700 transition-all duration-200 p-0 relative z-[101] pointer-events-auto shrink-0 hover:bg-blue-50 hover:text-blue-600 active:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-gray-700 xl:w-8 xl:h-8 lg:w-7 lg:h-7 ${editor.isActive('codeBlock') ? 'bg-blue-200 dark:bg-blue-700 text-blue-800 dark:text-blue-200 border-blue-400 dark:border-blue-500 shadow-md' : ''}`}
             onClick={() => editor.chain().focus().toggleCodeBlock().run()}
             title="Code Block"
           >
@@ -441,7 +437,7 @@ const FormattingToolbar: React.FC<FormattingToolbarProps> = ({
         {onSave && (
           <div className="ml-5 flex items-center gap-1.5 shrink-0">
             <button
-              className="flex items-center justify-center p-0 bg-white text-gray-800 border border-gray-300 rounded-md cursor-pointer transition-all duration-200 shadow-sm w-8 h-8 hover:bg-gray-50 hover:border-gray-400 hover:shadow-lg hover:-translate-y-px active:translate-y-0 active:shadow-sm disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none disabled:hover:bg-white disabled:hover:border-gray-300 disabled:hover:shadow-sm xl:w-8 xl:h-8 lg:w-7 lg:h-7"
+              className="flex items-center justify-center p-0 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-md cursor-pointer transition-all duration-200 shadow-sm w-8 h-8 hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-400 dark:hover:border-gray-500 hover:shadow-lg hover:-translate-y-px active:translate-y-0 active:shadow-sm disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none disabled:hover:bg-white dark:disabled:hover:bg-gray-800 disabled:hover:border-gray-300 dark:disabled:hover:border-gray-600 disabled:hover:shadow-sm xl:w-8 xl:h-8 lg:w-7 lg:h-7"
               onClick={onSave}
               disabled={disabled}
               title="Save document"

@@ -392,30 +392,34 @@ const MainChatbot = ({
   return (
     <div
       ref={chatbotContainerRef}
-      className="flex flex-col w-full h-full bg-white font-sans relative"
+      className="flex flex-col w-full h-full bg-white dark:bg-gray-900 font-sans relative transition-colors duration-200"
       onDragOver={handleDragOver}
       onDrop={handleDrop}
     >
       {/* Notification */}
       {notification && (
-        <div className="absolute top-2 left-2 right-2 bg-yellow-50 border border-yellow-400 rounded-lg p-3 flex items-center justify-between z-50 shadow-lg">
-          <span className="text-sm text-yellow-800 flex-1 mr-2">{notification}</span>
-          <button className="bg-none border-none text-yellow-800 cursor-pointer text-xl leading-none p-0 w-6 h-6 flex items-center justify-center rounded transition-colors duration-200 hover:bg-yellow-100" onClick={() => setNotification(null)}>
+        <div className="absolute top-2 left-2 right-2 bg-yellow-50 dark:bg-yellow-900 border border-yellow-400 dark:border-yellow-600 rounded-lg p-3 flex items-center justify-between z-50 shadow-lg">
+          <span className="text-sm text-yellow-800 dark:text-yellow-200 flex-1 mr-2">
+            {notification}
+          </span>
+          <button
+            className="bg-none border-none text-yellow-800 dark:text-yellow-200 cursor-pointer text-xl leading-none p-0 w-6 h-6 flex items-center justify-center rounded transition-colors duration-200 hover:bg-yellow-100 dark:hover:bg-yellow-800"
+            onClick={() => setNotification(null)}
+          >
             ×
           </button>
         </div>
       )}
 
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-200 shrink-0">
+      <div className="flex items-center justify-between px-4 py-3 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 shrink-0 transition-colors duration-200">
         <div className="flex items-center gap-3">
-          <button className="flex items-center justify-center w-8 h-8 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200" title="New Chat" onClick={clearChat}>
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
+          <button
+            className="flex items-center justify-center w-8 h-8 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors duration-200"
+            title="New Chat"
+            onClick={clearChat}
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -433,18 +437,18 @@ const MainChatbot = ({
           {messages.map((message) => (
             <div
               key={message.id}
-              className={`flex w-full ${
-                message.role === 'user' ? 'justify-end' : 'justify-start'
-              }`}
+              className={`flex w-full ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
             >
-              <div className={`max-w-[80%] ${
-                message.role === 'user' 
-                  ? 'bg-blue-600 text-white rounded-lg rounded-br-sm' 
-                  : 'bg-gray-100 text-gray-900 rounded-lg rounded-bl-sm'
-              }`}>
+              <div
+                className={`max-w-[80%] ${
+                  message.role === 'user'
+                    ? 'bg-blue-600 dark:bg-blue-700 text-white rounded-lg rounded-br-sm'
+                    : 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-lg rounded-bl-sm'
+                }`}
+              >
                 <div className="px-4 py-3">
                   {message.role === 'assistant' ? (
-                    <div className="prose prose-sm max-w-none prose-gray prose-headings:font-semibold prose-headings:text-gray-900 prose-p:text-gray-700 prose-li:text-gray-700 prose-strong:text-gray-900">
+                    <div className="prose prose-sm max-w-none prose-gray dark:prose-invert prose-headings:font-semibold prose-headings:text-gray-900 dark:prose-headings:text-gray-100 prose-p:text-gray-700 dark:prose-p:text-gray-300 prose-li:text-gray-700 dark:prose-li:text-gray-300 prose-strong:text-gray-900 dark:prose-strong:text-gray-100">
                       <ReactMarkdown>{message.content}</ReactMarkdown>
                     </div>
                   ) : (
@@ -456,13 +460,19 @@ const MainChatbot = ({
           ))}
           {isLoading && (
             <div className="flex justify-start">
-              <div className="max-w-[80%] bg-gray-100 text-gray-900 rounded-lg rounded-bl-sm">
+              <div className="max-w-[80%] bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-lg rounded-bl-sm">
                 <div className="px-4 py-3">
                   <div className="flex items-center space-x-1">
                     <div className="flex space-x-1">
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                      <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce"></div>
+                      <div
+                        className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce"
+                        style={{ animationDelay: '0.1s' }}
+                      ></div>
+                      <div
+                        className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce"
+                        style={{ animationDelay: '0.2s' }}
+                      ></div>
                     </div>
                   </div>
                 </div>
@@ -474,20 +484,23 @@ const MainChatbot = ({
       </div>
 
       {/* Input */}
-      <div className="border-t border-gray-200 bg-white p-4 shrink-0">
+      <div className="border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4 shrink-0 transition-colors duration-200">
         {/* Individual Source Files - Above Input */}
         {allUploadedFiles.length > 0 && (
           <div className="mb-4 flex flex-wrap gap-2">
             {allUploadedFiles.map((file, index) => {
               const isUploading = uploadingFiles.has(file.name);
               return (
-                <div key={index} className="flex items-center gap-2 bg-gray-100 rounded-lg p-2 text-sm">
+                <div
+                  key={index}
+                  className="flex items-center gap-2 bg-gray-100 dark:bg-gray-800 rounded-lg p-2 text-sm"
+                >
                   <div className="flex items-center gap-2">
                     <div className="w-6 h-6 flex items-center justify-center">
                       {isUploading ? (
                         <div className="relative">
                           <svg
-                            className="w-4 h-4 text-blue-600 animate-spin"
+                            className="w-4 h-4 text-blue-600 dark:text-blue-400 animate-spin"
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
@@ -542,7 +555,9 @@ const MainChatbot = ({
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <span className="text-gray-700 text-sm font-medium truncate block">{file.name}</span>
+                      <span className="text-gray-700 dark:text-gray-300 text-sm font-medium truncate block">
+                        {file.name}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -553,7 +568,7 @@ const MainChatbot = ({
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
           {/* Text Input with Embedded Buttons */}
-          <div className="relative flex items-end bg-gray-50 border border-gray-300 rounded-xl p-3 focus-within:border-blue-500 focus-within:bg-white transition-all duration-200">
+          <div className="relative flex items-end bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl p-3 focus-within:border-blue-500 dark:focus-within:border-blue-400 focus-within:bg-white dark:focus-within:bg-gray-700 transition-all duration-200">
             <textarea
               ref={inputRef}
               value={inputValue}
@@ -569,7 +584,7 @@ const MainChatbot = ({
                     ? `Ask questions about your uploaded sources...`
                     : `Ask questions about your document...`
               }
-              className="flex-1 resize-none border-none bg-transparent outline-none text-gray-900 text-sm leading-relaxed min-h-[20px] max-h-32"
+              className="flex-1 resize-none border-none bg-transparent outline-none text-gray-900 dark:text-gray-100 text-sm leading-relaxed min-h-[20px] max-h-32"
               rows={1}
               disabled={isLoading}
               data-chatbot-input="true"
@@ -581,7 +596,7 @@ const MainChatbot = ({
               <div className="relative" data-mode-selector>
                 <button
                   type="button"
-                  className="flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-200"
+                  className="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors duration-200"
                   onClick={() => setShowModeDropdown(!showModeDropdown)}
                 >
                   <span className="font-medium">
@@ -605,11 +620,13 @@ const MainChatbot = ({
                 </button>
 
                 {showModeDropdown && (
-                  <div className="absolute bottom-full left-0 mb-2 bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[120px] z-50">
+                  <div className="absolute bottom-full left-0 mb-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg py-1 min-w-[120px] z-50">
                     <button
                       type="button"
-                      className={`w-full text-left px-3 py-2 text-sm transition-colors duration-200 hover:bg-gray-50 ${
-                        mode === 'general' ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700'
+                      className={`w-full text-left px-3 py-2 text-sm transition-colors duration-200 hover:bg-gray-50 dark:hover:bg-gray-700 ${
+                        mode === 'general'
+                          ? 'bg-blue-50 dark:bg-blue-900 text-blue-700 dark:text-blue-300 font-medium'
+                          : 'text-gray-700 dark:text-gray-300'
                       }`}
                       onClick={() => handleModeChange('general')}
                     >
@@ -617,8 +634,10 @@ const MainChatbot = ({
                     </button>
                     <button
                       type="button"
-                      className={`w-full text-left px-3 py-2 text-sm transition-colors duration-200 hover:bg-gray-50 ${
-                        mode === 'sources' ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700'
+                      className={`w-full text-left px-3 py-2 text-sm transition-colors duration-200 hover:bg-gray-50 dark:hover:bg-gray-700 ${
+                        mode === 'sources'
+                          ? 'bg-blue-50 dark:bg-blue-900 text-blue-700 dark:text-blue-300 font-medium'
+                          : 'text-gray-700 dark:text-gray-300'
                       }`}
                       onClick={() => handleModeChange('sources')}
                     >
@@ -626,8 +645,10 @@ const MainChatbot = ({
                     </button>
                     <button
                       type="button"
-                      className={`w-full text-left px-3 py-2 text-sm transition-colors duration-200 hover:bg-gray-50 ${
-                        mode === 'focused' ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700'
+                      className={`w-full text-left px-3 py-2 text-sm transition-colors duration-200 hover:bg-gray-50 dark:hover:bg-gray-700 ${
+                        mode === 'focused'
+                          ? 'bg-blue-50 dark:bg-blue-900 text-blue-700 dark:text-blue-300 font-medium'
+                          : 'text-gray-700 dark:text-gray-300'
                       }`}
                       onClick={() => handleModeChange('focused')}
                     >
@@ -644,15 +665,10 @@ const MainChatbot = ({
                   type="button"
                   onClick={handleFileUpload}
                   disabled={isLoading || isUploadingFiles}
-                  className="flex items-center justify-center w-8 h-8 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 hover:text-gray-800 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex items-center justify-center w-8 h-8 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 hover:text-gray-800 dark:hover:text-gray-300 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                   title="Upload PDF files"
                 >
-                  <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -666,14 +682,9 @@ const MainChatbot = ({
                 <button
                   type="submit"
                   disabled={!inputValue.trim() || isLoading}
-                  className="flex items-center justify-center w-8 h-8 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex items-center justify-center w-8 h-8 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"

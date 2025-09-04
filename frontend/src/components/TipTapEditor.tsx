@@ -1,5 +1,3 @@
-
-
 import { useEditor, EditorContent, type Editor } from '@tiptap/react';
 import React, { useRef } from 'react';
 
@@ -119,8 +117,11 @@ export const TiptapEditor = ({
 
   return (
     <div className="flex flex-col w-full max-w-full items-stretch gap-0 mt-0 h-full">
-      <div className="flex flex-col w-full max-w-full h-full bg-white rounded-bl-lg rounded-br-lg border border-gray-300 border-t-0 shadow-lg overflow-x-hidden overflow-y-auto relative mt-0" ref={editorContainerRef}>
-        <div className="prose prose-lg max-w-none p-6 focus:outline-none">
+      <div
+        className="flex flex-col w-full max-w-full h-full bg-white dark:bg-gray-900 rounded-bl-lg rounded-br-lg border border-gray-300 dark:border-gray-700 border-t-0 shadow-lg overflow-x-hidden overflow-y-auto relative mt-0 transition-colors duration-200"
+        ref={editorContainerRef}
+      >
+        <div className="prose prose-lg dark:prose-invert max-w-none p-6 focus:outline-none prose-headings:text-gray-900 dark:prose-headings:text-gray-100 prose-p:text-gray-800 dark:prose-p:text-gray-200 prose-li:text-gray-800 dark:prose-li:text-gray-200 prose-strong:text-gray-900 dark:prose-strong:text-gray-100 prose-em:text-gray-800 dark:prose-em:text-gray-200">
           <EditorContent editor={editor} />
         </div>
       </div>

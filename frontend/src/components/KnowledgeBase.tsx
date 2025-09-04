@@ -89,7 +89,9 @@ const KnowledgeBase = ({
     fileArray.forEach((file) => {
       // Check if file is PDF, DOCX, HTML, or Markdown
       const isPdf = file.type === 'application/pdf';
-      const isDocx = file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || file.name.toLowerCase().endsWith('.docx');
+      const isDocx =
+        file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+        file.name.toLowerCase().endsWith('.docx');
       const isHtml = file.type === 'text/html' || file.name.toLowerCase().endsWith('.html');
       const isMarkdown = file.type === 'text/markdown' || file.name.toLowerCase().endsWith('.md');
 
@@ -121,7 +123,9 @@ const KnowledgeBase = ({
         messages.push(`Duplicate file`);
       }
       if (invalidFiles.length > 0) {
-        messages.push(`Invalid files (only PDF, DOCX, HTML, and Markdown supported): ${invalidFiles.join(', ')}`);
+        messages.push(
+          `Invalid files (only PDF, DOCX, HTML, and Markdown supported): ${invalidFiles.join(', ')}`,
+        );
       }
 
       const fullMessage = messages.join(' | ');
@@ -136,13 +140,13 @@ const KnowledgeBase = ({
     // Handle PDF files - upload as sources
     if (validPdfFiles.length > 0) {
       // Store files in registry for later access (for chat functionality)
-      validPdfFiles.forEach(file => {
+      validPdfFiles.forEach((file) => {
         const key = `${file.name}_${file.size}`;
         fileRegistryRef.current.set(key, file);
       });
 
       // Create temporary uploading sources for immediate feedback
-      const tempUploadingSources: UnifiedSource[] = validPdfFiles.map(file => ({
+      const tempUploadingSources: UnifiedSource[] = validPdfFiles.map((file) => ({
         id: `temp-${Math.random().toString(36).substring(2)}`,
         name: file.name,
         type: 'pdf' as const,
@@ -162,10 +166,8 @@ const KnowledgeBase = ({
 
       // Remove temporary sources after upload completes (they'll be replaced by stored sources)
       setTimeout(() => {
-        setAllSources((prev) => 
-          prev.filter((source) => 
-            !tempUploadingSources.some(temp => temp.id === source.id)
-          )
+        setAllSources((prev) =>
+          prev.filter((source) => !tempUploadingSources.some((temp) => temp.id === source.id)),
         );
       }, 3000);
     }
@@ -215,7 +217,8 @@ const KnowledgeBase = ({
     // 1. Process stored sources from Firestore
     storedSources.forEach((storedSource) => {
       const existingStored = allSources.find(
-        (existing) => existing.sourceType === 'stored' && existing.storagePath === storedSource.storagePath
+        (existing) =>
+          existing.sourceType === 'stored' && existing.storagePath === storedSource.storagePath,
       );
 
       if (existingStored) {
@@ -237,12 +240,12 @@ const KnowledgeBase = ({
         const isDocx = storedSource.name.toLowerCase().endsWith('.docx');
         const isHtml = storedSource.name.toLowerCase().endsWith('.html');
         const isMarkdown = storedSource.name.toLowerCase().endsWith('.md');
-        
+
         // Determine the display type
         let displayType: 'pdf' | 'docx' = 'pdf'; // Default for backwards compatibility
         if (isPdf) displayType = 'pdf';
         else if (isDocx || isHtml || isMarkdown) displayType = 'docx'; // Use docx icon for document-like files
-        
+
         updatedSources.push({
           id: storedSource.id,
           name: storedSource.name,
@@ -277,7 +280,7 @@ const KnowledgeBase = ({
         let externalDisplayType: 'pdf' | 'docx' = 'pdf';
         if (isPdf) externalDisplayType = 'pdf';
         else if (isHtml || isMarkdown) externalDisplayType = 'docx'; // Use docx icon for document-like files
-        
+
         updatedSources.push({
           id: Math.random().toString(36).substring(2) + Date.now().toString(36),
           name: file.name,
@@ -304,13 +307,13 @@ const KnowledgeBase = ({
     if (!isSameByReference) {
       setAllSources(updatedSources);
     }
-  }, [storedSources, externalFiles]); // fileRegistry intentionally excluded to avoid infinite loop
+  }, [storedSources, externalFiles, allSources]); // fileRegistry intentionally excluded to avoid infinite loop
 
   // Use useEffect to notify parent of selected sources changes
   useEffect(() => {
     const selections: SourceSelection[] = [];
 
-    for (const source of allSources.filter(s => s.isSelected)) {
+    for (const source of allSources.filter((s) => s.isSelected)) {
       if (source.file) {
         // Source has a File object (local/external sources)
         selections.push({
@@ -335,7 +338,7 @@ const KnowledgeBase = ({
 
   const removeSource = (id: string) => {
     const sourceToRemove = allSources.find((source) => source.id === id);
-    
+
     if (!sourceToRemove) return;
 
     if (sourceToRemove.sourceType === 'external' && sourceToRemove.file) {
@@ -358,7 +361,11 @@ const KnowledgeBase = ({
 
     if (!sourceToToggle) return;
 
-    if (sourceToToggle.sourceType === 'external' && sourceToToggle.isSelected && sourceToToggle.file) {
+    if (
+      sourceToToggle.sourceType === 'external' &&
+      sourceToToggle.isSelected &&
+      sourceToToggle.file
+    ) {
       // If deselecting an external file (uploaded to chat), remove it from chat entirely
       onExternalFileRemove?.(sourceToToggle.file);
     } else {
@@ -429,8 +436,6 @@ const KnowledgeBase = ({
     }
   }, [editingDocId]);
 
-
-
   // Document delete function (no confirmation needed since it's recoverable)
   const handleDeleteDocument = (docId: string, docTitle: string) => {
     if (onDeleteDocument) {
@@ -443,7 +448,7 @@ const KnowledgeBase = ({
   // Convert document to source function
   const handleConvertToSource = async (docId: string, docTitle: string) => {
     console.log('🔧 [KnowledgeBase] Starting conversion:', { docId, docTitle });
-    
+
     if (!onConvertDocumentToSource) {
       console.error('❌ [KnowledgeBase] onConvertDocumentToSource callback not provided');
       setNotification('Conversion function not available');
@@ -454,21 +459,20 @@ const KnowledgeBase = ({
     try {
       console.log('🔧 [KnowledgeBase] Calling conversion function...');
       setNotification('Converting document to source...');
-      
+
       await onConvertDocumentToSource(docId, docTitle);
-      
+
       console.log('✅ [KnowledgeBase] Document converted successfully:', docTitle);
       setNotification(`"${docTitle}" converted to HTML source (document kept in Documents)`);
       setTimeout(() => setNotification(null), 4000);
-      
     } catch (error) {
       console.error('❌ [KnowledgeBase] Error converting document:', {
         error,
         docId,
         docTitle,
-        message: error instanceof Error ? error.message : 'Unknown error'
+        message: error instanceof Error ? error.message : 'Unknown error',
       });
-      
+
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       setNotification(`Failed to convert "${docTitle}": ${errorMessage}`);
       setTimeout(() => setNotification(null), 5000);
@@ -478,7 +482,7 @@ const KnowledgeBase = ({
   // Restore deleted item function
   const handleRestoreItem = async (deletedItemId: string, itemName: string) => {
     if (!onRestoreItem) return;
-    
+
     try {
       await onRestoreItem(deletedItemId);
       setNotification(`"${itemName}" has been restored successfully`);
@@ -493,7 +497,7 @@ const KnowledgeBase = ({
   // Permanently delete item function (no confirmation needed - user intent is clear)
   const handlePermanentlyDeleteItem = async (deletedItemId: string, itemName: string) => {
     if (!onPermanentlyDeleteItem) return;
-    
+
     try {
       await onPermanentlyDeleteItem(deletedItemId);
       setNotification(`"${itemName}" has been permanently deleted`);
@@ -506,30 +510,45 @@ const KnowledgeBase = ({
   };
 
   return (
-    <div className="flex flex-col w-full h-full font-sans relative">
+    <div className="flex flex-col w-full h-full font-sans relative bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-200">
       {/* Notification */}
       {notification && (
-        <div className="absolute top-2 left-2 right-2 bg-yellow-50 border border-yellow-400 rounded-lg p-3 flex items-center justify-between z-50 shadow-lg">
-          <span className="text-sm text-yellow-800 flex-1 mr-2">{notification}</span>
-          <button className="bg-none border-none text-yellow-800 cursor-pointer text-xl leading-none p-0 w-6 h-6 flex items-center justify-center rounded transition-colors duration-200 hover:bg-yellow-100" onClick={() => setNotification(null)}>
+        <div className="absolute top-2 left-2 right-2 bg-yellow-50 dark:bg-yellow-900 border border-yellow-400 dark:border-yellow-600 rounded-lg p-3 flex items-center justify-between z-50 shadow-lg">
+          <span className="text-sm text-yellow-800 dark:text-yellow-200 flex-1 mr-2">
+            {notification}
+          </span>
+          <button
+            className="bg-none border-none text-yellow-800 dark:text-yellow-200 cursor-pointer text-xl leading-none p-0 w-6 h-6 flex items-center justify-center rounded transition-colors duration-200 hover:bg-yellow-100 dark:hover:bg-yellow-800"
+            onClick={() => setNotification(null)}
+          >
             ×
           </button>
         </div>
       )}
 
       {/* Add Files Button - Drag & Drop */}
-      <div className="p-4 border-b border-gray-200 shrink-0">
+      <div className="p-4 border-b border-gray-200 dark:border-gray-700 shrink-0">
         <div
-          className={`w-full flex items-center justify-center gap-2 py-3 px-4 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50 cursor-pointer transition-all duration-200 hover:border-blue-400 hover:bg-blue-50 ${isDragOver ? 'border-blue-500 bg-blue-50' : ''}`}
+          className={`w-full flex items-center justify-center gap-2 py-3 px-4 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800 cursor-pointer transition-all duration-200 hover:border-blue-400 dark:hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900 ${isDragOver ? 'border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900' : ''}`}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
           onClick={handleButtonClick}
         >
-          <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+          <svg
+            className="w-4 h-4 text-gray-600 dark:text-gray-400"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+            />
           </svg>
-          <span className="text-sm font-medium text-gray-700">Add Files</span>
+          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Add Files</span>
         </div>
       </div>
 
@@ -544,24 +563,31 @@ const KnowledgeBase = ({
       />
 
       {/* Content Area */}
-      <div 
-        className={`flex-1 overflow-y-auto ${isDragOver ? 'bg-blue-50' : ''}`}
+      <div
+        className={`flex-1 overflow-y-auto ${isDragOver ? 'bg-blue-50 dark:bg-blue-900' : ''}`}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
       >
         {/* Documents Section */}
         {documents.length > 0 && (
-          <div className="border-b border-gray-200">
+          <div className="border-b border-gray-200 dark:border-gray-700">
             <div className="p-4 pb-2">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-medium text-gray-700 uppercase tracking-wide">Documents</h3>
-                <button 
+                <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wide">
+                  Documents
+                </h3>
+                <button
                   onClick={onCreateDocument}
-                  className="flex items-center gap-1 px-2 py-1 bg-blue-600 text-white rounded text-xs font-medium hover:bg-blue-700 transition-colors"
+                  className="flex items-center gap-1 px-2 py-1 bg-blue-600 dark:bg-blue-700 text-white rounded text-xs font-medium hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
                 >
                   <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                    />
                   </svg>
                   New
                 </button>
@@ -571,12 +597,16 @@ const KnowledgeBase = ({
               {documents.map((doc) => (
                 <div
                   key={doc.id}
-                  className="flex items-center justify-between px-4 py-2 hover:bg-gray-100 cursor-pointer transition-colors duration-200 group"
+                  className="flex items-center justify-between px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer transition-colors duration-200 group"
                   onDoubleClick={() => onOpenDocument?.(doc.id)}
                 >
                   <div className="flex items-center gap-3 flex-1 min-w-0">
-                    <svg className="w-5 h-5 text-blue-600 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zM16 18H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
+                    <svg
+                      className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0"
+                      fill="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zM16 18H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z" />
                     </svg>
                     {editingDocId === doc.id ? (
                       <input
@@ -586,12 +616,12 @@ const KnowledgeBase = ({
                         onChange={(e) => setEditingDocValue(e.target.value)}
                         onKeyDown={(e) => handleDocInputKeyDown(e, doc.id)}
                         onBlur={() => finishEditingDoc(doc.id)}
-                        className="text-sm text-gray-800 bg-transparent border-none outline-none flex-1 min-w-0"
+                        className="text-sm text-gray-800 dark:text-gray-200 bg-transparent border-none outline-none flex-1 min-w-0"
                         onClick={(e) => e.stopPropagation()}
                       />
                     ) : (
-                      <span 
-                        className="text-sm text-gray-800 truncate flex-1 min-w-0" 
+                      <span
+                        className="text-sm text-gray-800 dark:text-gray-200 truncate flex-1 min-w-0"
                         title={doc.title}
                       >
                         {truncateFilename(doc.title, 30)}
@@ -601,42 +631,75 @@ const KnowledgeBase = ({
                   {editingDocId !== doc.id && (
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all duration-200">
                       <button
-                        className="appearance-none border-none bg-transparent text-gray-400 cursor-pointer p-1 rounded hover:bg-blue-200 hover:text-blue-600 transition-all duration-200"
+                        className="appearance-none border-none bg-transparent text-gray-400 dark:text-gray-500 cursor-pointer p-1 rounded hover:bg-blue-200 dark:hover:bg-blue-800 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-200"
                         onClick={(e) => {
-                          console.log('🔧 [KnowledgeBase] Convert to Source button clicked:', { docId: doc.id, docTitle: doc.title });
+                          console.log('🔧 [KnowledgeBase] Convert to Source button clicked:', {
+                            docId: doc.id,
+                            docTitle: doc.title,
+                          });
                           e.stopPropagation();
                           handleConvertToSource(doc.id, doc.title);
                         }}
                         title="Convert to Source"
                       >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"
+                          />
                         </svg>
                       </button>
-                      
+
                       <button
-                        className="appearance-none border-none bg-transparent text-gray-400 cursor-pointer p-1 rounded hover:bg-gray-200 hover:text-gray-600 transition-all duration-200"
+                        className="appearance-none border-none bg-transparent text-gray-400 dark:text-gray-500 cursor-pointer p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-gray-600 dark:hover:text-gray-400 transition-all duration-200"
                         onClick={(e) => {
                           e.stopPropagation();
                           startEditingDoc(doc.id, doc.title);
                         }}
                         title="Rename document"
                       >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                          />
                         </svg>
                       </button>
-                      
+
                       <button
-                        className="appearance-none border-none bg-transparent text-gray-400 cursor-pointer p-1 rounded hover:bg-red-200 hover:text-red-600 transition-all duration-200"
+                        className="appearance-none border-none bg-transparent text-gray-400 dark:text-gray-500 cursor-pointer p-1 rounded hover:bg-red-200 dark:hover:bg-red-800 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
                         onClick={(e) => {
                           e.stopPropagation();
                           handleDeleteDocument(doc.id, doc.title);
                         }}
                         title="Delete document"
                       >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M6 18L18 6M6 6l12 12"
+                          />
                         </svg>
                       </button>
                     </div>
@@ -650,13 +713,19 @@ const KnowledgeBase = ({
         {/* Sources Section */}
         <div>
           <div className="p-4 pb-2">
-            <h3 className="text-sm font-medium text-gray-700 uppercase tracking-wide">Sources</h3>
+            <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wide">
+              Sources
+            </h3>
           </div>
           <div className="pb-4">
             {allSources.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-8 px-4 text-center">
-                <p className="text-gray-500 text-sm mb-2">No sources uploaded yet</p>
-                <p className="text-gray-400 text-xs">Drop PDF, DOCX, HTML, or Markdown files here to get started</p>
+                <p className="text-gray-500 dark:text-gray-400 text-sm mb-2">
+                  No sources uploaded yet
+                </p>
+                <p className="text-gray-400 dark:text-gray-500 text-xs">
+                  Drop PDF, DOCX, HTML, or Markdown files here to get started
+                </p>
               </div>
             ) : (
               allSources.map((source) => {
@@ -672,26 +741,52 @@ const KnowledgeBase = ({
                 return (
                   <div
                     key={source.id}
-                    className="flex items-center justify-between px-4 py-2 hover:bg-gray-100 cursor-pointer transition-colors duration-200"
+                    className="flex items-center justify-between px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer transition-colors duration-200"
                     onDoubleClick={handleSourceClick}
                   >
                     <div className="flex items-center gap-3 flex-1 min-w-0">
                       {source.isUploading ? (
                         <div className="w-5 h-5 flex-shrink-0">
-                          <svg className="w-5 h-5 text-blue-600 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" strokeDasharray="32" strokeDashoffset="32" />
+                          <svg
+                            className="w-5 h-5 text-blue-600 dark:text-blue-400 animate-spin"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <circle
+                              className="opacity-25"
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                              fill="none"
+                              strokeDasharray="32"
+                              strokeDashoffset="32"
+                            />
                           </svg>
                         </div>
                       ) : source.type === 'pdf' ? (
-                        <svg className="w-5 h-5 text-red-600 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
+                        <svg
+                          className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0"
+                          fill="currentColor"
+                          viewBox="0 0 24 24"
+                        >
                           <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zM9.498 16.19c-.309.29-.765.42-1.296.42a2.23 2.23 0 0 1-.308-.018v1.426H7v-3.936A7.558 7.558 0 0 1 8.219 14c.557 0 .953.106 1.22.319.254.202.426.533.426.923-.001.392-.131.723-.367.948zm3.807 1.355c-.42.349-1.059.515-1.84.515-.468 0-.799-.03-1.024-.60v-3.917A7.947 7.947 0 0 1 11.66 14c.757 0 1.249.136 1.633.426.415.308.675.799.675 1.504 0 .763-.279 1.29-.663 1.615zM17 14.77h-1.532v.911H16.9v.734h-1.432v1.604h-.906V14.03H17v.74zM14 9h-1V4l5 5h-4z" />
                         </svg>
                       ) : (
-                        <svg className="w-5 h-5 text-blue-600 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zM16 18H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
+                        <svg
+                          className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0"
+                          fill="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zM16 18H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z" />
                         </svg>
                       )}
-                      <span className="text-sm text-gray-800 truncate" title={source.name}>
+                      <span
+                        className="text-sm text-gray-800 dark:text-gray-200 truncate"
+                        title={source.name}
+                      >
                         {truncateFilename(source.name, 30)}
                       </span>
                     </div>
@@ -701,19 +796,29 @@ const KnowledgeBase = ({
                         checked={source.isSelected}
                         onChange={() => toggleSourceSelection(source.id)}
                         disabled={source.isUploading}
-                        className="w-4 h-4 border-gray-300 rounded text-blue-600 focus:ring-blue-500"
+                        className="w-4 h-4 border-gray-300 dark:border-gray-600 rounded text-blue-600 dark:text-blue-400 focus:ring-blue-500 dark:focus:ring-blue-400 bg-white dark:bg-gray-800"
                       />
                       {!source.isUploading && source.sourceType === 'stored' && (
                         <button
-                          className="appearance-none border-none bg-transparent text-gray-400 cursor-pointer p-1 rounded hover:bg-red-200 hover:text-red-600 transition-all duration-200"
+                          className="appearance-none border-none bg-transparent text-gray-400 dark:text-gray-500 cursor-pointer p-1 rounded hover:bg-red-200 dark:hover:bg-red-800 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
                           onClick={(e) => {
                             e.stopPropagation();
                             removeSource(source.id);
                           }}
                           title="Delete source"
                         >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          <svg
+                            className="w-4 h-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M6 18L18 6M6 6l12 12"
+                            />
                           </svg>
                         </button>
                       )}
@@ -727,13 +832,15 @@ const KnowledgeBase = ({
 
         {/* Recently Deleted Section */}
         {deletedItems.length > 0 && (
-          <div className="border-t border-gray-200">
+          <div className="border-t border-gray-200 dark:border-gray-700">
             <div className="p-4 pb-2">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-medium text-gray-700 uppercase tracking-wide">Recently Deleted</h3>
+                <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wide">
+                  Recently Deleted
+                </h3>
                 <button
                   onClick={() => setShowDeletedItems(!showDeletedItems)}
-                  className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                  className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium"
                 >
                   {showDeletedItems ? 'Hide' : `Show (${deletedItems.length})`}
                 </button>
@@ -744,37 +851,48 @@ const KnowledgeBase = ({
                 {deletedItems.map((item) => (
                   <div
                     key={item.id}
-                    className="flex items-center justify-between px-4 py-2 bg-red-50 hover:bg-red-100 transition-colors duration-200"
+                    className="flex items-center justify-between px-4 py-2 bg-red-50 dark:bg-red-900 hover:bg-red-100 dark:hover:bg-red-800 transition-colors duration-200"
                   >
                     <div className="flex items-center gap-3 flex-1 min-w-0">
                       {item.type === 'document' ? (
-                        <svg className="w-5 h-5 text-blue-600 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zM16 18H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
+                        <svg
+                          className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0"
+                          fill="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zM16 18H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z" />
                         </svg>
                       ) : (
-                        <svg className="w-5 h-5 text-red-600 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
+                        <svg
+                          className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0"
+                          fill="currentColor"
+                          viewBox="0 0 24 24"
+                        >
                           <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zM9.498 16.19c-.309.29-.765.42-1.296.42a2.23 2.23 0 0 1-.308-.018v1.426H7v-3.936A7.558 7.558 0 0 1 8.219 14c.557 0 .953.106 1.22.319.254.202.426.533.426.923-.001.392-.131.723-.367.948zm3.807 1.355c-.42.349-1.059.515-1.84.515-.468 0-.799-.03-1.024-.60v-3.917A7.947 7.947 0 0 1 11.66 14c.757 0 1.249.136 1.633.426.415.308.675.799.675 1.504 0 .763-.279 1.29-.663 1.615zM17 14.77h-1.532v.911H16.9v.734h-1.432v1.604h-.906V14.03H17v.74zM14 9h-1V4l5 5h-4z" />
                         </svg>
                       )}
                       <div className="flex-1 min-w-0">
-                        <span className="text-sm text-gray-800 truncate block" title={item.name}>
+                        <span
+                          className="text-sm text-gray-800 dark:text-gray-200 truncate block"
+                          title={item.name}
+                        >
                           {truncateFilename(item.name, 25)}
                         </span>
-                        <span className="text-xs text-gray-500">
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
                           Deleted {new Date(item.deletedAt).toLocaleDateString()}
                         </span>
                       </div>
                     </div>
                     <div className="flex items-center gap-1">
                       <button
-                        className="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                        className="px-2 py-1 text-xs bg-blue-600 dark:bg-blue-700 text-white rounded hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
                         onClick={() => handleRestoreItem(item.id, item.name)}
                         title="Restore item"
                       >
                         Restore
                       </button>
                       <button
-                        className="px-2 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+                        className="px-2 py-1 text-xs bg-red-600 dark:bg-red-700 text-white rounded hover:bg-red-700 dark:hover:bg-red-600 transition-colors"
                         onClick={() => handlePermanentlyDeleteItem(item.id, item.name)}
                         title="Permanently delete"
                       >

@@ -11,7 +11,6 @@ import {
   getUserProjects,
   getProjectDocuments,
   createProjectDocument,
-
   updateProjectDocument,
   getProjectDocument,
   deleteProjectDocument,
@@ -41,7 +40,6 @@ interface EditorContainerProps {
 const EditorContainer = ({
   documentContent,
   onContentChange,
-  initialContent,
   onFileUpload,
   onEditorReady,
   documentTitle,
@@ -85,13 +83,11 @@ const EditorContainer = ({
       index === self.findIndex((f) => f.name === file.name && f.size === file.size),
   ).length;
 
-
-
   // Auto-save function for documents (defined early to avoid hoisting issues)
   const saveDocumentContent = useCallback(
     async (documentId: string, content: string) => {
       if (!projectId || !documentId) return;
-      
+
       try {
         await updateProjectDocument(projectId, documentId, { content });
         console.log('💾 Auto-saved document:', documentId);
@@ -99,7 +95,7 @@ const EditorContainer = ({
         console.error('❌ Failed to auto-save document:', documentId, error);
       }
     },
-    [projectId]
+    [projectId],
   );
 
   // Load or create a default project for the user, then load docs and sources
@@ -133,7 +129,7 @@ const EditorContainer = ({
         const firstDocId = await createProjectDocument(pid, { title: 'Untitled', content: '' });
         const updatedDocs = await getProjectDocuments(pid);
         setProjectDocs(updatedDocs);
-        
+
         // Set up the first document
         setActiveDocumentIdWithLogging(firstDocId);
         setOpenItems((prev) =>
@@ -144,7 +140,7 @@ const EditorContainer = ({
           ),
         );
         onContentChange?.('');
-        setDocumentContents(prev => {
+        setDocumentContents((prev) => {
           const newMap = new Map(prev);
           newMap.set(firstDocId, '');
           return newMap;
@@ -155,7 +151,7 @@ const EditorContainer = ({
         console.log('📂 [Document Loading] Loading first document:', firstDoc);
 
         setActiveDocumentIdWithLogging(firstDoc.id);
-        
+
         try {
           const full = await getProjectDocument(pid, firstDoc.id);
           console.log('📄 [Document Loading] Retrieved document:', {
@@ -165,7 +161,7 @@ const EditorContainer = ({
 
           if (full) {
             onContentChange?.(full.content);
-            setDocumentContents(prev => {
+            setDocumentContents((prev) => {
               const newMap = new Map(prev);
               newMap.set(firstDoc.id, full.content);
               return newMap;
@@ -194,44 +190,55 @@ const EditorContainer = ({
   ]);
   const [activeId, setActiveId] = useState<string>('document');
 
-  const activate = useCallback(async (id: string) => {
-    // Save current document content before switching
-    if (activeDocumentId && documentContents.has(activeDocumentId)) {
-      const currentContent = documentContents.get(activeDocumentId)!;
-      await saveDocumentContent(activeDocumentId, currentContent);
-    }
+  const activate = useCallback(
+    async (id: string) => {
+      // Save current document content before switching
+      if (activeDocumentId && documentContents.has(activeDocumentId)) {
+        const currentContent = documentContents.get(activeDocumentId)!;
+        await saveDocumentContent(activeDocumentId, currentContent);
+      }
 
-    setActiveId(id);
-    
-    // If activating a document tab, load its content
-    const item = openItems.find((i) => i.id === id);
-    if (item?.kind === 'editor') {
-      const editorItem = item as EditorItem;
-      const documentId = editorItem.documentId;
-      
-      if (documentId) {
-        setActiveDocumentIdWithLogging(documentId);
-        
-        // Check if we have cached content first
-        if (documentContents.has(documentId)) {
-          const cachedContent = documentContents.get(documentId)!;
-          onContentChange?.(cachedContent);
-        } else if (projectId) {
-          // Load from Firestore if not cached
-          const full = await getProjectDocument(projectId, documentId);
-          if (full) {
-            onContentChange?.(full.content);
-            // Cache the loaded content
-            setDocumentContents(prev => {
-              const newMap = new Map(prev);
-              newMap.set(documentId, full.content);
-              return newMap;
-            });
+      setActiveId(id);
+
+      // If activating a document tab, load its content
+      const item = openItems.find((i) => i.id === id);
+      if (item?.kind === 'editor') {
+        const editorItem = item as EditorItem;
+        const documentId = editorItem.documentId;
+
+        if (documentId) {
+          setActiveDocumentIdWithLogging(documentId);
+
+          // Check if we have cached content first
+          if (documentContents.has(documentId)) {
+            const cachedContent = documentContents.get(documentId)!;
+            onContentChange?.(cachedContent);
+          } else if (projectId) {
+            // Load from Firestore if not cached
+            const full = await getProjectDocument(projectId, documentId);
+            if (full) {
+              onContentChange?.(full.content);
+              // Cache the loaded content
+              setDocumentContents((prev) => {
+                const newMap = new Map(prev);
+                newMap.set(documentId, full.content);
+                return newMap;
+              });
+            }
           }
         }
       }
-    }
-  }, [openItems, projectId, onContentChange, setActiveDocumentIdWithLogging, activeDocumentId, documentContents, saveDocumentContent]);
+    },
+    [
+      openItems,
+      projectId,
+      onContentChange,
+      setActiveDocumentIdWithLogging,
+      activeDocumentId,
+      documentContents,
+      saveDocumentContent,
+    ],
+  );
 
   // Document actions for KnowledgeBase
   const reloadProjectData = useCallback(async () => {
@@ -246,54 +253,67 @@ const EditorContainer = ({
     setDeletedItems(deleted);
   }, [projectId]);
 
-  const close = useCallback((id: string) => {
-    setOpenItems((prev) => {
-      const filtered = prev.filter((i) => i.id !== id);
-      // If we're closing the active tab, switch to the first available tab or create new document
-      setActiveId((currentActiveId) => {
-        if (currentActiveId === id) {
-          const nextTab = filtered[0];
-          if (nextTab) {
-            // If switching to a document tab, load its content
-            if (nextTab.kind === 'editor') {
-              const editorItem = nextTab as EditorItem;
-              if (editorItem.documentId) {
-                const loadContent = async () => {
-                  if (!projectId) return;
-                  const full = await getProjectDocument(projectId, editorItem.documentId!);
-                  if (full) {
-                    onContentChange?.(full.content);
-                    setActiveDocumentIdWithLogging(editorItem.documentId!);
-                  }
-                };
-                loadContent();
+  const close = useCallback(
+    (id: string) => {
+      setOpenItems((prev) => {
+        const filtered = prev.filter((i) => i.id !== id);
+        // If we're closing the active tab, switch to the first available tab or create new document
+        setActiveId((currentActiveId) => {
+          if (currentActiveId === id) {
+            const nextTab = filtered[0];
+            if (nextTab) {
+              // If switching to a document tab, load its content
+              if (nextTab.kind === 'editor') {
+                const editorItem = nextTab as EditorItem;
+                if (editorItem.documentId) {
+                  const loadContent = async () => {
+                    if (!projectId) return;
+                    const full = await getProjectDocument(projectId, editorItem.documentId!);
+                    if (full) {
+                      onContentChange?.(full.content);
+                      setActiveDocumentIdWithLogging(editorItem.documentId!);
+                    }
+                  };
+                  loadContent();
+                }
               }
+              return nextTab.id;
+            } else {
+              // No tabs left, create a new document
+              const createNewDoc = async () => {
+                if (!projectId) return;
+                const newDocId = await createProjectDocument(projectId, {
+                  title: 'Untitled',
+                  content: '',
+                });
+                setActiveDocumentIdWithLogging(newDocId);
+                setOpenItems([
+                  {
+                    id: 'document',
+                    kind: 'editor' as const,
+                    title: 'Untitled',
+                    documentId: newDocId,
+                  },
+                ]);
+                onContentChange?.('');
+                setDocumentContents((prev) => {
+                  const newMap = new Map(prev);
+                  newMap.set(newDocId, '');
+                  return newMap;
+                });
+                await reloadProjectData();
+              };
+              createNewDoc();
+              return 'document';
             }
-            return nextTab.id;
-          } else {
-            // No tabs left, create a new document
-            const createNewDoc = async () => {
-              if (!projectId) return;
-              const newDocId = await createProjectDocument(projectId, { title: 'Untitled', content: '' });
-              setActiveDocumentIdWithLogging(newDocId);
-              setOpenItems([{ id: 'document', kind: 'editor' as const, title: 'Untitled', documentId: newDocId }]);
-              onContentChange?.('');
-              setDocumentContents(prev => {
-                const newMap = new Map(prev);
-                newMap.set(newDocId, '');
-                return newMap;
-              });
-              await reloadProjectData();
-            };
-            createNewDoc();
-            return 'document';
           }
-        }
-        return currentActiveId;
+          return currentActiveId;
+        });
+        return filtered;
       });
-      return filtered;
-    });
-  }, [projectId, onContentChange, setActiveDocumentIdWithLogging, reloadProjectData]);
+    },
+    [projectId, onContentChange, setActiveDocumentIdWithLogging, reloadProjectData],
+  );
 
   const openPdf = useCallback((file: File) => {
     const id = `pdf:${file.name}:${file.size}`;
@@ -343,7 +363,7 @@ const EditorContainer = ({
     async (id: string) => {
       const docMeta = projectDocs.find((d) => d.id === id);
       if (!docMeta || !projectId) return;
-      
+
       // Check if this document is already open in any tab
       const existingTab = openItems.find((item) => {
         if (item.kind === 'editor') {
@@ -352,39 +372,48 @@ const EditorContainer = ({
         }
         return false;
       });
-      
+
       if (existingTab) {
         setActiveId(existingTab.id);
         return;
       }
-      
+
       // Save current document before opening new one
       if (activeDocumentId && documentContents.has(activeDocumentId)) {
         const currentContent = documentContents.get(activeDocumentId)!;
         await saveDocumentContent(activeDocumentId, currentContent);
       }
-      
+
       const full = await getProjectDocument(projectId, id);
       if (!full) return;
-      
+
       // Create new editor tab for this document
       const docTabId = `doc:${id}`;
       setOpenItems((prev) => [
         ...prev,
-        { id: docTabId, kind: 'editor' as const, title: docMeta.title, documentId: id }
+        { id: docTabId, kind: 'editor' as const, title: docMeta.title, documentId: id },
       ]);
       setActiveId(docTabId);
-      
+
       // Update content via callback and cache it
       onContentChange?.(full.content);
       setActiveDocumentIdWithLogging(id);
-      setDocumentContents(prev => {
+      setDocumentContents((prev) => {
         const newMap = new Map(prev);
         newMap.set(id, full.content);
         return newMap;
       });
     },
-    [projectDocs, projectId, onContentChange, setActiveDocumentIdWithLogging, openItems, activeDocumentId, documentContents, saveDocumentContent],
+    [
+      projectDocs,
+      projectId,
+      onContentChange,
+      setActiveDocumentIdWithLogging,
+      openItems,
+      activeDocumentId,
+      documentContents,
+      saveDocumentContent,
+    ],
   );
 
   const createNewDocument = useCallback(async () => {
@@ -393,7 +422,7 @@ const EditorContainer = ({
     const title = untitledIndex === 1 ? 'Untitled' : `Untitled ${untitledIndex}`;
     const newDocId = await createProjectDocument(projectId, { title, content: '' });
     await reloadProjectData();
-    
+
     // Auto-open the new document in the editor
     if (newDocId) {
       await openDocument(newDocId);
@@ -401,186 +430,206 @@ const EditorContainer = ({
   }, [projectId, projectDocs, reloadProjectData, openDocument]);
 
   // Handle converting DOCX files to documents immediately upon upload
-  const handleConvertDocxToDocument = useCallback(async (file: File, filename: string) => {
-    if (!projectId) return;
-    
-    try {
-      // Import the DOCX content
-      const { importDocxFile } = await import('@/utils/docxImporter');
-      const result = await importDocxFile(file);
-      
-      // Create a new document with the imported content
-      const newDocId = await createProjectDocument(projectId, {
-        title: filename,
-        content: result.html,
-      });
-      
-      await reloadProjectData();
-      
-      // Auto-open the newly created document
-      if (newDocId) {
-        await openDocument(newDocId);
+  const handleConvertDocxToDocument = useCallback(
+    async (file: File, filename: string) => {
+      if (!projectId) return;
+
+      try {
+        // Import the DOCX content
+        const { importDocxFile } = await import('@/utils/docxImporter');
+        const result = await importDocxFile(file);
+
+        // Create a new document with the imported content
+        const newDocId = await createProjectDocument(projectId, {
+          title: filename,
+          content: result.html,
+        });
+
+        await reloadProjectData();
+
+        // Auto-open the newly created document
+        if (newDocId) {
+          await openDocument(newDocId);
+        }
+
+        console.log('✅ [DOCX Import] Document created and opened:', {
+          title: filename,
+          docId: newDocId,
+        });
+      } catch (error) {
+        console.error('❌ [DOCX Import] Error importing DOCX file:', error);
+        throw error; // Re-throw so KnowledgeBase can handle the error
       }
-      
-      console.log('✅ [DOCX Import] Document created and opened:', { title: filename, docId: newDocId });
-    } catch (error) {
-      console.error('❌ [DOCX Import] Error importing DOCX file:', error);
-      throw error; // Re-throw so KnowledgeBase can handle the error
-    }
-  }, [projectId, reloadProjectData, openDocument]);
+    },
+    [projectId, reloadProjectData, openDocument],
+  );
 
   // Handle converting documents to sources
-  const handleConvertDocumentToSource = useCallback(async (docId: string, docTitle: string) => {
-    console.log('🔧 [EditorContainer] Starting document to source conversion:', { docId, docTitle, projectId });
-    
-    if (!projectId) {
-      console.error('❌ [EditorContainer] No project ID available');
-      throw new Error('No project ID available');
-    }
-    
-    try {
-      console.log('🔧 [EditorContainer] Fetching document content...');
-      // Get the document content
-      const document = await getProjectDocument(projectId, docId);
-      if (!document) {
-        console.error('❌ [EditorContainer] Document not found for ID:', docId);
-        throw new Error('Document not found');
-      }
-      console.log('🔧 [EditorContainer] Document content retrieved:', {
-        title: document.title,
-        contentLength: document.content.length,
-        contentPreview: document.content.substring(0, 100)
-      });
-
-      // Store the HTML content as an HTML file for the source
-      // This preserves the document content and can be opened properly
-      console.log('🔧 [EditorContainer] Preparing HTML content for source...');
-      const htmlContent = document.content;
-      
-      // Change extension to .html since we're storing HTML content
-      let sourceFilename = docTitle;
-      if (sourceFilename.endsWith('.docx')) {
-        sourceFilename = sourceFilename.replace(/\.docx$/i, '.html');
-      } else if (!sourceFilename.endsWith('.html')) {
-        sourceFilename = `${sourceFilename}.html`;
-      }
-      
-      console.log('🔧 [EditorContainer] Source filename will be:', sourceFilename);
-      
-      // Create a proper HTML file with UTF-8 encoding
-      const htmlBlob = new Blob([htmlContent], { type: 'text/html; charset=utf-8' });
-      const file = new File([htmlBlob], sourceFilename, { 
-        type: 'text/html'
-      });
-
-      console.log('🔧 [EditorContainer] Created HTML file for upload:', {
-        name: file.name,
-        size: file.size,
-        type: file.type
-      });
-
-      console.log('🔧 [EditorContainer] Uploading HTML file as source...');
-      // Upload as a project source
-      const uploadedSource = await uploadProjectSource(projectId, file);
-      console.log('✅ [EditorContainer] HTML file uploaded as source:', uploadedSource);
-      
-      // Don't delete the original document - keep it in the Documents tab
-      console.log('✅ [EditorContainer] Keeping original document in Documents tab');
-      
-      console.log('🔧 [EditorContainer] Reloading project data...');
-      // Reload project data to refresh both documents and sources
-      await reloadProjectData();
-      console.log('✅ [EditorContainer] Project data reloaded');
-      
-      console.log('✅ [Convert to Source] Document converted to source successfully:', {
-        originalTitle: docTitle,
-        newSourceName: sourceFilename,
-        sourceId: uploadedSource.id
-      });
-      
-    } catch (error) {
-      console.error('❌ [Convert to Source] Error converting document to source:', {
-        error: error,
-        message: error instanceof Error ? error.message : 'Unknown error',
-        stack: error instanceof Error ? error.stack : undefined,
+  const handleConvertDocumentToSource = useCallback(
+    async (docId: string, docTitle: string) => {
+      console.log('🔧 [EditorContainer] Starting document to source conversion:', {
         docId,
         docTitle,
-        projectId
+        projectId,
       });
-      throw error; // Re-throw so KnowledgeBase can handle the error
-    }
-  }, [projectId, reloadProjectData]);
+
+      if (!projectId) {
+        console.error('❌ [EditorContainer] No project ID available');
+        throw new Error('No project ID available');
+      }
+
+      try {
+        console.log('🔧 [EditorContainer] Fetching document content...');
+        // Get the document content
+        const document = await getProjectDocument(projectId, docId);
+        if (!document) {
+          console.error('❌ [EditorContainer] Document not found for ID:', docId);
+          throw new Error('Document not found');
+        }
+        console.log('🔧 [EditorContainer] Document content retrieved:', {
+          title: document.title,
+          contentLength: document.content.length,
+          contentPreview: document.content.substring(0, 100),
+        });
+
+        // Store the HTML content as an HTML file for the source
+        // This preserves the document content and can be opened properly
+        console.log('🔧 [EditorContainer] Preparing HTML content for source...');
+        const htmlContent = document.content;
+
+        // Change extension to .html since we're storing HTML content
+        let sourceFilename = docTitle;
+        if (sourceFilename.endsWith('.docx')) {
+          sourceFilename = sourceFilename.replace(/\.docx$/i, '.html');
+        } else if (!sourceFilename.endsWith('.html')) {
+          sourceFilename = `${sourceFilename}.html`;
+        }
+
+        console.log('🔧 [EditorContainer] Source filename will be:', sourceFilename);
+
+        // Create a proper HTML file with UTF-8 encoding
+        const htmlBlob = new Blob([htmlContent], { type: 'text/html; charset=utf-8' });
+        const file = new File([htmlBlob], sourceFilename, {
+          type: 'text/html',
+        });
+
+        console.log('🔧 [EditorContainer] Created HTML file for upload:', {
+          name: file.name,
+          size: file.size,
+          type: file.type,
+        });
+
+        console.log('🔧 [EditorContainer] Uploading HTML file as source...');
+        // Upload as a project source
+        const uploadedSource = await uploadProjectSource(projectId, file);
+        console.log('✅ [EditorContainer] HTML file uploaded as source:', uploadedSource);
+
+        // Don't delete the original document - keep it in the Documents tab
+        console.log('✅ [EditorContainer] Keeping original document in Documents tab');
+
+        console.log('🔧 [EditorContainer] Reloading project data...');
+        // Reload project data to refresh both documents and sources
+        await reloadProjectData();
+        console.log('✅ [EditorContainer] Project data reloaded');
+
+        console.log('✅ [Convert to Source] Document converted to source successfully:', {
+          originalTitle: docTitle,
+          newSourceName: sourceFilename,
+          sourceId: uploadedSource.id,
+        });
+      } catch (error) {
+        console.error('❌ [Convert to Source] Error converting document to source:', {
+          error: error,
+          message: error instanceof Error ? error.message : 'Unknown error',
+          stack: error instanceof Error ? error.stack : undefined,
+          docId,
+          docTitle,
+          projectId,
+        });
+        throw error; // Re-throw so KnowledgeBase can handle the error
+      }
+    },
+    [projectId, reloadProjectData],
+  );
 
   // Handle restoring deleted items
-  const handleRestoreItem = useCallback(async (deletedItemId: string) => {
-    if (!projectId) return;
-    
-    try {
-      await restoreDeletedItem(projectId, deletedItemId);
-      await reloadProjectData(); // Refresh the data to show restored item
-    } catch (error) {
-      console.error('❌ [Restore Item] Error restoring item:', error);
-      throw error; // Re-throw so KnowledgeBase can handle the error
-    }
-  }, [projectId, reloadProjectData]);
+  const handleRestoreItem = useCallback(
+    async (deletedItemId: string) => {
+      if (!projectId) return;
+
+      try {
+        await restoreDeletedItem(projectId, deletedItemId);
+        await reloadProjectData(); // Refresh the data to show restored item
+      } catch (error) {
+        console.error('❌ [Restore Item] Error restoring item:', error);
+        throw error; // Re-throw so KnowledgeBase can handle the error
+      }
+    },
+    [projectId, reloadProjectData],
+  );
 
   // Handle permanently deleting items
-  const handlePermanentlyDeleteItem = useCallback(async (deletedItemId: string) => {
-    if (!projectId) return;
-    
-    try {
-      await permanentlyDeleteItem(projectId, deletedItemId);
-      await reloadProjectData(); // Refresh the data to remove from deleted items
-    } catch (error) {
-      console.error('❌ [Permanent Delete] Error permanently deleting item:', error);
-      throw error; // Re-throw so KnowledgeBase can handle the error
-    }
-  }, [projectId, reloadProjectData]);
+  const handlePermanentlyDeleteItem = useCallback(
+    async (deletedItemId: string) => {
+      if (!projectId) return;
+
+      try {
+        await permanentlyDeleteItem(projectId, deletedItemId);
+        await reloadProjectData(); // Refresh the data to remove from deleted items
+      } catch (error) {
+        console.error('❌ [Permanent Delete] Error permanently deleting item:', error);
+        throw error; // Re-throw so KnowledgeBase can handle the error
+      }
+    },
+    [projectId, reloadProjectData],
+  );
 
   // Enhanced content change handler with auto-save
   const handleContentChange = useCallback(
     (content: string) => {
       // Update the main documentContent state (for HeaderDocument display)
       onContentChange?.(content);
-      
+
       // Update the content map for the active document
       if (activeDocumentId) {
-        setDocumentContents(prev => {
+        setDocumentContents((prev) => {
           const newMap = new Map(prev);
           newMap.set(activeDocumentId, content);
           return newMap;
         });
-        
+
         // Clear previous timeout
         if (autoSaveTimeoutRef.current) {
           clearTimeout(autoSaveTimeoutRef.current);
         }
-        
+
         // Auto-save with debounce
         autoSaveTimeoutRef.current = setTimeout(() => {
           saveDocumentContent(activeDocumentId, content);
         }, 2000); // 2-second debounce
       }
     },
-    [activeDocumentId, onContentChange, saveDocumentContent]
+    [activeDocumentId, onContentChange, saveDocumentContent],
   );
 
   const handleSelectedSourcesChange = useCallback(async (selections: SourceSelection[]) => {
     const files: File[] = [];
-    
+
     // Process File objects immediately
-    const fileSelections = selections.filter(selection => selection.type === 'file' && selection.file);
-    files.push(...fileSelections.map(selection => selection.file!));
-    
+    const fileSelections = selections.filter(
+      (selection) => selection.type === 'file' && selection.file,
+    );
+    files.push(...fileSelections.map((selection) => selection.file!));
+
     // Process stored sources by downloading them via API
-    const storedSelections = selections.filter(selection => selection.type === 'stored');
-    
+    const storedSelections = selections.filter((selection) => selection.type === 'stored');
+
     for (const selection of storedSelections) {
       if (!selection.storedSource) continue;
-      
+
       try {
         console.log('🔄 Downloading stored source via API:', selection.storedSource.name);
-        
+
         const response = await fetch('/api/download-source', {
           method: 'POST',
           headers: {
@@ -591,22 +640,23 @@ const EditorContainer = ({
             filename: selection.storedSource.name,
           }),
         });
-        
+
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
-        
+
         const arrayBuffer = await response.arrayBuffer();
-        const file = new File([arrayBuffer], selection.storedSource.name, { type: 'application/pdf' });
-        
+        const file = new File([arrayBuffer], selection.storedSource.name, {
+          type: 'application/pdf',
+        });
+
         console.log('✅ Successfully downloaded stored source:', file.name);
         files.push(file);
-        
       } catch (error) {
         console.error('❌ Failed to download stored source:', selection.storedSource.name, error);
       }
     }
-    
+
     setSelectedSources(files);
   }, []);
 
@@ -686,9 +736,8 @@ const EditorContainer = ({
     [onFileUpload, projectId, reloadProjectData],
   );
 
-
   return (
-    <div className="w-full h-full bg-gray-100 relative">
+    <div className="w-full h-full bg-gray-100 dark:bg-gray-900 relative transition-colors duration-200">
       {/* Main Content Container */}
       <div className="w-full max-w-screen-3xl mx-auto relative h-full p-4">
         {/* Knowledge Base Panel (Left) */}
@@ -700,13 +749,23 @@ const EditorContainer = ({
             className="h-full"
             sidebarIcons={[
               // Document icon
-              <svg key="documents" className="w-5 h-5 text-blue-400" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zM16 18H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
+              <svg
+                key="documents"
+                className="w-5 h-5 text-blue-400"
+                fill="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zM16 18H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z" />
               </svg>,
               // PDF/Source icon
-              <svg key="sources" className="w-5 h-5 text-red-400" fill="currentColor" viewBox="0 0 24 24">
+              <svg
+                key="sources"
+                className="w-5 h-5 text-red-400"
+                fill="currentColor"
+                viewBox="0 0 24 24"
+              >
                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zM9.498 16.19c-.309.29-.765.42-1.296.42a2.23 2.23 0 0 1-.308-.018v1.426H7v-3.936A7.558 7.558 0 0 1 8.219 14c.557 0 .953.106 1.22.319.254.202.426.533.426.923-.001.392-.131.723-.367.948zm3.807 1.355c-.42.349-1.059.515-1.84.515-.468 0-.799-.03-1.024-.06v-3.917A7.947 7.947 0 0 1 11.66 14c.757 0 1.249.136 1.633.426.415.308.675.799.675 1.504 0 .763-.279 1.29-.663 1.615zM17 14.77h-1.532v.911H16.9v.734h-1.432v1.604h-.906V14.03H17v.74zM14 9h-1V4l5 5h-4z" />
-              </svg>
+              </svg>,
             ]}
           >
             <KnowledgeBase
@@ -723,21 +782,23 @@ const EditorContainer = ({
                 if (!projectId) return;
                 try {
                   await updateProjectDocument(projectId, docId, { title: newTitle });
-                  
+
                   // Update any open tabs with the new title
-                  setOpenItems(prev => 
-                    prev.map(item => {
+                  setOpenItems((prev) =>
+                    prev.map((item) => {
                       if (item.kind === 'editor') {
                         const editorItem = item as EditorItem;
-                        if ((item.id === 'document' && editorItem.documentId === docId) ||
-                            (item.id === `doc:${docId}` && editorItem.documentId === docId)) {
+                        if (
+                          (item.id === 'document' && editorItem.documentId === docId) ||
+                          (item.id === `doc:${docId}` && editorItem.documentId === docId)
+                        ) {
                           return { ...item, title: newTitle };
                         }
                       }
                       return item;
-                    })
+                    }),
                   );
-                  
+
                   // Reload project data to sync
                   await reloadProjectData();
                 } catch (error) {
@@ -749,20 +810,20 @@ const EditorContainer = ({
                 try {
                   // Delete the document from Firestore
                   await deleteProjectDocument(projectId, docId);
-                  
+
                   // Close any open tabs for this document
-                  setOpenItems(prev => {
-                    const filtered = prev.filter(item => {
+                  setOpenItems((prev) => {
+                    const filtered = prev.filter((item) => {
                       if (item.kind === 'editor') {
                         const editorItem = item as EditorItem;
                         return editorItem.documentId !== docId;
                       }
                       return true;
                     });
-                    
+
                     // If we closed the active tab, switch to the first available tab or create a new document
                     if (filtered.length !== prev.length) {
-                      const currentActiveItem = prev.find(item => item.id === activeId);
+                      const currentActiveItem = prev.find((item) => item.id === activeId);
                       if (currentActiveItem && currentActiveItem.kind === 'editor') {
                         const editorItem = currentActiveItem as EditorItem;
                         if (editorItem.documentId === docId) {
@@ -774,7 +835,10 @@ const EditorContainer = ({
                             const nextEditorItem = nextTab as EditorItem;
                             if (nextEditorItem.documentId) {
                               const loadContent = async () => {
-                                const full = await getProjectDocument(projectId, nextEditorItem.documentId!);
+                                const full = await getProjectDocument(
+                                  projectId,
+                                  nextEditorItem.documentId!,
+                                );
                                 if (full) {
                                   onContentChange?.(full.content);
                                   setActiveDocumentIdWithLogging(nextEditorItem.documentId!);
@@ -785,12 +849,22 @@ const EditorContainer = ({
                           } else {
                             // No other tabs, create a new document
                             const createNewDoc = async () => {
-                              const newDocId = await createProjectDocument(projectId, { title: 'Untitled', content: '' });
+                              const newDocId = await createProjectDocument(projectId, {
+                                title: 'Untitled',
+                                content: '',
+                              });
                               setActiveDocumentIdWithLogging(newDocId);
-                              setOpenItems([{ id: 'document', kind: 'editor' as const, title: 'Untitled', documentId: newDocId }]);
+                              setOpenItems([
+                                {
+                                  id: 'document',
+                                  kind: 'editor' as const,
+                                  title: 'Untitled',
+                                  documentId: newDocId,
+                                },
+                              ]);
                               setActiveId('document');
                               onContentChange?.('');
-                              setDocumentContents(prev => {
+                              setDocumentContents((prev) => {
                                 const newMap = new Map(prev);
                                 newMap.set(newDocId, '');
                                 return newMap;
@@ -803,17 +877,17 @@ const EditorContainer = ({
                         }
                       }
                     }
-                    
+
                     return filtered;
                   });
-                  
+
                   // Remove from document contents cache
-                  setDocumentContents(prev => {
+                  setDocumentContents((prev) => {
                     const newMap = new Map(prev);
                     newMap.delete(docId);
                     return newMap;
                   });
-                  
+
                   // Reload project data to sync
                   await reloadProjectData();
                 } catch (error) {
@@ -822,9 +896,9 @@ const EditorContainer = ({
               }}
               storedSources={kbStoredSources}
               onOpenStoredSource={openStoredPdf}
-              onDeleteStoredSource={(id, storagePath) => {
+              onDeleteStoredSource={(id) => {
                 if (!projectId) return;
-                deleteProjectSource(projectId, id, storagePath)
+                deleteProjectSource(projectId, id)
                   .then(() => reloadProjectData())
                   .catch(() => undefined);
               }}
@@ -844,7 +918,7 @@ const EditorContainer = ({
 
         {/* Editor Panel (Center) - Fixed width and centered */}
         <div className="absolute left-1/2 transform -translate-x-1/2 top-4 bottom-4 w-[950px] z-20">
-          <div className="w-full h-full bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+          <div className="w-full h-full bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden transition-colors duration-200">
             <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
               <WorkspaceTabs
                 items={openItems}
@@ -853,30 +927,28 @@ const EditorContainer = ({
                 onClose={close}
                 onRename={async (tabId: string, newTitle: string) => {
                   // Find the document ID for this tab
-                  const item = openItems.find(item => item.id === tabId);
+                  const item = openItems.find((item) => item.id === tabId);
                   if (!item || item.kind !== 'editor' || !projectId) return;
-                  
+
                   const editorItem = item as EditorItem;
                   const documentId = editorItem.documentId;
-                  
+
                   if (!documentId) {
                     console.error('No document ID found for tab:', tabId);
                     return;
                   }
-                  
+
                   try {
                     // Update the document title in Firestore
                     await updateProjectDocument(projectId, documentId, { title: newTitle });
-                    
+
                     // Update the tab title in local state
-                    setOpenItems(prev => 
-                      prev.map(openItem => 
-                        openItem.id === tabId 
-                          ? { ...openItem, title: newTitle }
-                          : openItem
-                      )
+                    setOpenItems((prev) =>
+                      prev.map((openItem) =>
+                        openItem.id === tabId ? { ...openItem, title: newTitle } : openItem,
+                      ),
                     );
-                    
+
                     // Reload project data to sync with KnowledgeBase
                     await reloadProjectData();
                   } catch (error) {
@@ -906,12 +978,7 @@ const EditorContainer = ({
 
         {/* Chatbot Panel (Right) */}
         <div className="absolute right-4 top-4 bottom-4 z-10">
-          <CollapsiblePanel
-            title="Chat"
-            position="right"
-            defaultOpen={true}
-            className="h-full"
-          >
+          <CollapsiblePanel title="Chat" position="right" defaultOpen={true} className="h-full">
             <MainChatbot
               documentContent={documentContent}
               selectedSources={selectedSources}

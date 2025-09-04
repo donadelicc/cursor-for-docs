@@ -41,5 +41,5 @@ export interface DeletedItem {
   mimeType: string;
   storagePath: string;
   deletedAt: Date;
-  originalData: any; // Store original metadata for restoration
+  originalData: Record<string, unknown>; // Store original metadata for restoration
 }

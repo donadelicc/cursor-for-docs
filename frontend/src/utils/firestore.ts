@@ -16,9 +16,15 @@ import {
 import { User } from 'firebase/auth';
 import { db, storage } from '@/lib/firebase';
 import { UserProfile, Document, CreateDocumentData, UpdateDocumentData } from '@/types/editor';
-import { Project, ProjectDocumentMeta, ProjectDocumentData, ProjectSource, DeletedItem } from '@/types/projects';
+import {
+  Project,
+  ProjectDocumentMeta,
+  ProjectDocumentData,
+  ProjectSource,
+  DeletedItem,
+} from '@/types/projects';
 import { ref, uploadBytes, deleteObject, getDownloadURL, getBytes } from 'firebase/storage';
-import { doc as fsDoc, getDoc as fsGetDoc } from 'firebase/firestore';
+// Removed unused imports: doc as fsDoc, getDoc as fsGetDoc
 
 // Collection names
 const USERS_COLLECTION = 'users';
@@ -223,14 +229,14 @@ export const deleteProject = async (projectId: string): Promise<void> => {
       if (docData.storagePath) {
         try {
           await deleteObject(ref(storage, docData.storagePath));
-        } catch (error) {
+        } catch {
           // File already deleted or not found - ignore
         }
       }
       // Delete metadata document
       await deleteDoc(
         doc(db, PROJECTS_COLLECTION, projectId, PROJECT_DOCUMENTS_SUBCOLLECTION, docSnap.id),
-    );
+      );
     });
     await Promise.all(docDeletePromises);
 
@@ -246,7 +252,7 @@ export const deleteProject = async (projectId: string): Promise<void> => {
       if (sourceData.storagePath) {
         try {
           await deleteObject(ref(storage, sourceData.storagePath));
-        } catch (error) {
+        } catch {
           // File already deleted or not found - ignore
         }
       }
@@ -286,36 +292,28 @@ export const createProjectDocument = async (
   const htmlContent = data.content || '';
   const filename = `${data.title.replace(/[^a-zA-Z0-9]/g, '_')}.html`;
   const blob = new Blob([htmlContent], { type: 'text/html' });
-  
+
   const storagePath = `${projectId}/documents/${Date.now()}_${filename}`;
   const storageRef = ref(storage, storagePath);
-  
+
   await uploadBytes(storageRef, blob);
-  
+
   // Create metadata in Firestore
   const docId = data.id || crypto.randomUUID();
-    const docRef = doc(
-      db,
-      PROJECTS_COLLECTION,
-      projectId,
-      PROJECT_DOCUMENTS_SUBCOLLECTION,
-    docId,
-    );
-  
-    await setDoc(docRef, {
+  const docRef = doc(db, PROJECTS_COLLECTION, projectId, PROJECT_DOCUMENTS_SUBCOLLECTION, docId);
+
+  await setDoc(docRef, {
     title: data.title,
     size: blob.size,
     mimeType: 'text/html',
     storagePath: storagePath,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-      lastModified: serverTimestamp(),
-    });
-  
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+    lastModified: serverTimestamp(),
+  });
+
   return docId;
 };
-
-
 
 export const getProjectDocuments = async (projectId: string): Promise<ProjectDocumentMeta[]> => {
   const q = query(
@@ -323,7 +321,7 @@ export const getProjectDocuments = async (projectId: string): Promise<ProjectDoc
     orderBy('lastModified', 'desc'),
   );
   const qs = await getDocs(q);
-  
+
   return qs.docs
     .filter((d) => {
       const data = d.data();
@@ -362,18 +360,18 @@ export const getProjectDocument = async (
   }
 
   const data = snap.data();
-  
+
   // Check if document is deleted
   if (data.isDeleted) {
     return null;
   }
-  
+
   // Download content from Firebase Storage
   let content = '';
   if (data.storagePath) {
     // Check if this is a newly created document (size <= 7 bytes means empty content)
     const isNewDocument = (data.size || 0) <= 7;
-    
+
     if (isNewDocument) {
       content = '';
     } else {
@@ -381,11 +379,11 @@ export const getProjectDocument = async (
         // Use Firebase Storage SDK directly to avoid CORS issues
         const storageRef = ref(storage, data.storagePath);
         const bytes = await getBytes(storageRef);
-        
+
         // Convert bytes to string
         const decoder = new TextDecoder('utf-8');
         content = decoder.decode(bytes);
-      } catch (error) {
+      } catch {
         // Gracefully fallback to empty content
         content = '';
       }
@@ -394,7 +392,7 @@ export const getProjectDocument = async (
     // Fallback for old documents that still have content in Firestore
     content = data.content || '';
   }
-  
+
   return {
     title: data.title,
     content: content,
@@ -408,27 +406,27 @@ export const updateProjectDocument = async (
 ): Promise<void> => {
   const dref = doc(db, PROJECTS_COLLECTION, projectId, PROJECT_DOCUMENTS_SUBCOLLECTION, documentId);
   const docSnap = await getDoc(dref);
-  
+
   if (!docSnap.exists()) {
     throw new Error('Document not found');
   }
 
   const data = docSnap.data();
-  const updates: any = {
-      updatedAt: serverTimestamp(),
-      lastModified: serverTimestamp(),
+  const updates: Record<string, unknown> = {
+    updatedAt: serverTimestamp(),
+    lastModified: serverTimestamp(),
   };
-  
+
   // Update title if provided
   if (updateData.title !== undefined) {
     updates.title = updateData.title;
   }
-  
+
   // Update content if provided - upload to Firebase Storage
   if (updateData.content !== undefined) {
     const htmlContent = updateData.content;
     const blob = new Blob([htmlContent], { type: 'text/html' });
-    
+
     // Upload new content to existing storage path or create new one
     let storagePath = data.storagePath;
     if (!storagePath) {
@@ -438,12 +436,12 @@ export const updateProjectDocument = async (
       updates.storagePath = storagePath;
       updates.mimeType = 'text/html';
     }
-    
+
     const storageRef = ref(storage, storagePath);
     await uploadBytes(storageRef, blob);
     updates.size = blob.size;
   }
-  
+
   await updateDoc(dref, updates);
 };
 
@@ -453,28 +451,25 @@ export const deleteProjectDocument = async (
 ): Promise<void> => {
   const dref = doc(db, PROJECTS_COLLECTION, projectId, PROJECT_DOCUMENTS_SUBCOLLECTION, documentId);
   const docSnap = await getDoc(dref);
-  
+
   if (!docSnap.exists()) {
     throw new Error('Document not found');
   }
-  
+
   const data = docSnap.data();
-  
+
   // Store in deleted items for potential restoration
-  await addDoc(
-    collection(db, PROJECTS_COLLECTION, projectId, DELETED_ITEMS_SUBCOLLECTION),
-    {
-      originalId: documentId,
-      name: data.title,
-      type: 'document',
-      size: data.size || 0,
-      mimeType: data.mimeType || 'text/html',
-      storagePath: data.storagePath,
-      deletedAt: serverTimestamp(),
-      originalData: data,
-    },
-  );
-  
+  await addDoc(collection(db, PROJECTS_COLLECTION, projectId, DELETED_ITEMS_SUBCOLLECTION), {
+    originalId: documentId,
+    name: data.title,
+    type: 'document',
+    size: data.size || 0,
+    mimeType: data.mimeType || 'text/html',
+    storagePath: data.storagePath,
+    deletedAt: serverTimestamp(),
+    originalData: data,
+  });
+
   // Soft delete - mark as deleted instead of actually deleting
   await updateDoc(dref, {
     isDeleted: true,
@@ -518,7 +513,7 @@ export const listProjectSources = async (projectId: string): Promise<ProjectSour
     orderBy('createdAt', 'desc'),
   );
   const qs = await getDocs(q);
-  
+
   return qs.docs
     .filter((d) => {
       const data = d.data();
@@ -544,35 +539,28 @@ export const listProjectSources = async (projectId: string): Promise<ProjectSour
     });
 };
 
-export const deleteProjectSource = async (
-  projectId: string,
-  sourceId: string,
-  storagePath: string,
-) => {
+export const deleteProjectSource = async (projectId: string, sourceId: string) => {
   const sourceRef = doc(db, PROJECTS_COLLECTION, projectId, SOURCES_SUBCOLLECTION, sourceId);
   const sourceSnap = await getDoc(sourceRef);
-  
+
   if (!sourceSnap.exists()) {
     throw new Error('Source not found');
   }
-  
+
   const data = sourceSnap.data();
-  
+
   // Store in deleted items for potential restoration
-  await addDoc(
-    collection(db, PROJECTS_COLLECTION, projectId, DELETED_ITEMS_SUBCOLLECTION),
-    {
-      originalId: sourceId,
-      name: data.name,
-      type: 'source',
-      size: data.size,
-      mimeType: data.mimeType,
-      storagePath: data.storagePath,
-      deletedAt: serverTimestamp(),
-      originalData: data,
-    },
-  );
-  
+  await addDoc(collection(db, PROJECTS_COLLECTION, projectId, DELETED_ITEMS_SUBCOLLECTION), {
+    originalId: sourceId,
+    name: data.name,
+    type: 'source',
+    size: data.size,
+    mimeType: data.mimeType,
+    storagePath: data.storagePath,
+    deletedAt: serverTimestamp(),
+    originalData: data,
+  });
+
   // Actually remove from the main sources collection
   await deleteDoc(sourceRef);
 };
@@ -607,19 +595,31 @@ export const restoreDeletedItem = async (
   projectId: string,
   deletedItemId: string,
 ): Promise<void> => {
-  const deletedRef = doc(db, PROJECTS_COLLECTION, projectId, DELETED_ITEMS_SUBCOLLECTION, deletedItemId);
+  const deletedRef = doc(
+    db,
+    PROJECTS_COLLECTION,
+    projectId,
+    DELETED_ITEMS_SUBCOLLECTION,
+    deletedItemId,
+  );
   const deletedSnap = await getDoc(deletedRef);
-  
+
   if (!deletedSnap.exists()) {
     throw new Error('Deleted item not found');
   }
-  
+
   const deletedData = deletedSnap.data();
   const { type, originalData, originalId } = deletedData;
-  
+
   if (type === 'document') {
     // Recreate document in the main documents collection with original ID
-    const docRef = doc(db, PROJECTS_COLLECTION, projectId, PROJECT_DOCUMENTS_SUBCOLLECTION, originalId);
+    const docRef = doc(
+      db,
+      PROJECTS_COLLECTION,
+      projectId,
+      PROJECT_DOCUMENTS_SUBCOLLECTION,
+      originalId,
+    );
     await setDoc(docRef, {
       ...originalData,
       updatedAt: serverTimestamp(), // Update the timestamp to show it was restored
@@ -632,7 +632,7 @@ export const restoreDeletedItem = async (
       updatedAt: serverTimestamp(), // Update the timestamp to show it was restored
     });
   }
-  
+
   // Remove from deleted items
   await deleteDoc(deletedRef);
 };
@@ -641,33 +641,51 @@ export const permanentlyDeleteItem = async (
   projectId: string,
   deletedItemId: string,
 ): Promise<void> => {
-  const deletedRef = doc(db, PROJECTS_COLLECTION, projectId, DELETED_ITEMS_SUBCOLLECTION, deletedItemId);
+  const deletedRef = doc(
+    db,
+    PROJECTS_COLLECTION,
+    projectId,
+    DELETED_ITEMS_SUBCOLLECTION,
+    deletedItemId,
+  );
   const deletedSnap = await getDoc(deletedRef);
-  
+
   if (!deletedSnap.exists()) {
     throw new Error('Deleted item not found');
   }
-  
+
   const deletedData = deletedSnap.data();
-  
+
   // Delete the actual file from Firebase Storage
   if (deletedData.storagePath) {
     await deleteObject(ref(storage, deletedData.storagePath)).catch(() => undefined);
   }
-  
+
   // Remove the original document/source metadata if it still exists
   try {
     if (deletedData.type === 'document') {
-      const docRef = doc(db, PROJECTS_COLLECTION, projectId, PROJECT_DOCUMENTS_SUBCOLLECTION, deletedData.originalId);
+      const docRef = doc(
+        db,
+        PROJECTS_COLLECTION,
+        projectId,
+        PROJECT_DOCUMENTS_SUBCOLLECTION,
+        deletedData.originalId,
+      );
       await deleteDoc(docRef);
     } else if (deletedData.type === 'source') {
-      const sourceRef = doc(db, PROJECTS_COLLECTION, projectId, SOURCES_SUBCOLLECTION, deletedData.originalId);
+      const sourceRef = doc(
+        db,
+        PROJECTS_COLLECTION,
+        projectId,
+        SOURCES_SUBCOLLECTION,
+        deletedData.originalId,
+      );
       await deleteDoc(sourceRef);
     }
-  } catch (error) {
+  } catch {
     // Item might already be deleted, which is fine
   }
-  
+
   // Remove from deleted items
   await deleteDoc(deletedRef);
 };

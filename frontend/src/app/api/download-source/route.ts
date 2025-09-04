@@ -6,10 +6,7 @@ export async function POST(request: NextRequest) {
     const { storagePath, filename } = await request.json();
 
     if (!storagePath || !filename) {
-      return NextResponse.json(
-        { error: 'Missing storagePath or filename' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Missing storagePath or filename' }, { status: 400 });
     }
 
     console.log('🔄 [Download API] Fetching file:', { storagePath, filename });
@@ -20,7 +17,7 @@ export async function POST(request: NextRequest) {
 
     // Fetch the file from Firebase Storage (server-side, no CORS issues)
     const response = await fetch(downloadURL);
-    
+
     if (!response.ok) {
       throw new Error(`Failed to fetch file: ${response.status} ${response.statusText}`);
     }
@@ -45,14 +42,17 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('❌ [Download API] Error:', error);
     return NextResponse.json(
-      { error: 'Failed to download file', details: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 }
+      {
+        error: 'Failed to download file',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      },
+      { status: 500 },
     );
   }
 }
 
 // Handle preflight requests for CORS
-export async function OPTIONS(request: NextRequest) {
+export async function OPTIONS() {
   return new NextResponse(null, {
     status: 200,
     headers: {

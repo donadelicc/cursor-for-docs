@@ -89,13 +89,15 @@ export default function MyProjects() {
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 h-full flex flex-col">
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 h-full flex flex-col transition-colors duration-200">
       {/* Header with New Project Button - Fixed */}
-      <div className="px-6 py-5 border-b border-gray-100 flex-shrink-0">
+      <div className="px-6 py-5 border-b border-gray-100 dark:border-gray-700 flex-shrink-0 transition-colors duration-200">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">My Projects</h2>
-            <p className="text-sm text-gray-600 mt-1 flex items-center">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 transition-colors duration-200">
+              My Projects
+            </h2>
+            <p className="text-sm text-gray-600 dark:text-gray-300 mt-1 flex items-center transition-colors duration-200">
               <svg
                 className="w-4 h-4 mr-1.5 text-gray-400"
                 fill="none"
@@ -115,7 +117,7 @@ export default function MyProjects() {
           <div className="flex items-center gap-3">
             <button
               onClick={handleNewProject}
-              className="inline-flex items-center px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transform hover:scale-[1.02] transition-all duration-200"
+              className="inline-flex items-center px-5 py-2.5 bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transform hover:scale-[1.02] transition-all duration-200"
             >
               <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
@@ -177,12 +179,12 @@ export default function MyProjects() {
           /* List View */
           <div className="h-full flex flex-col">
             {/* Table Header - Sticky */}
-            <div className="bg-gradient-to-r from-gray-50 to-gray-100/50 px-6 py-4 border-b border-gray-200 flex-shrink-0 sticky top-0 z-10">
+            <div className="bg-gradient-to-r from-gray-50 to-gray-100/50 dark:from-gray-700 dark:to-gray-800/50 px-6 py-4 border-b border-gray-200 dark:border-gray-600 flex-shrink-0 sticky top-0 z-10 transition-colors duration-200">
               <div className="grid grid-cols-12 gap-4">
-                <div className="col-span-6 flex items-center text-sm font-bold text-gray-800">
+                <div className="col-span-6 flex items-center text-sm font-bold text-gray-800 dark:text-gray-200 transition-colors duration-200">
                   <div className="w-8 h-8 flex items-center justify-center mr-4">
                     <svg
-                      className="w-4 h-4 text-gray-600"
+                      className="w-4 h-4 text-gray-600 dark:text-gray-400 transition-colors duration-200"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -197,9 +199,9 @@ export default function MyProjects() {
                   </div>
                   <span>Name</span>
                 </div>
-                <div className="col-span-3 flex items-center text-sm font-bold text-gray-800">
+                <div className="col-span-3 flex items-center text-sm font-bold text-gray-800 dark:text-gray-200 transition-colors duration-200">
                   <svg
-                    className="w-4 h-4 mr-2 text-gray-600"
+                    className="w-4 h-4 mr-2 text-gray-600 dark:text-gray-400 transition-colors duration-200"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -213,9 +215,9 @@ export default function MyProjects() {
                   </svg>
                   Updated
                 </div>
-                <div className="col-span-2 flex items-center text-sm font-bold text-gray-800">
+                <div className="col-span-2 flex items-center text-sm font-bold text-gray-800 dark:text-gray-200 transition-colors duration-200">
                   <svg
-                    className="w-4 h-4 mr-2 text-gray-600"
+                    className="w-4 h-4 mr-2 text-gray-600 dark:text-gray-400 transition-colors duration-200"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -313,14 +315,16 @@ export default function MyProjects() {
                             </div>
                           </div>
                           <div className="min-w-0 flex-1">
-                            <p className="text-sm font-semibold text-gray-900 truncate group-hover:text-blue-900 transition-colors">
+                            <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate group-hover:text-blue-900 dark:group-hover:text-blue-300 transition-colors">
                               {project.name}
                             </p>
-                            <p className="text-xs text-gray-500 mt-0.5">Project</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 transition-colors duration-200">
+                              Project
+                            </p>
                           </div>
                         </div>
                         <div className="col-span-3">
-                          <p className="text-sm text-gray-600 font-medium">
+                          <p className="text-sm text-gray-600 dark:text-gray-300 font-medium transition-colors duration-200">
                             {formatDate(project.updatedAt)}
                           </p>
                         </div>
@@ -343,12 +347,14 @@ export default function MyProjects() {
                                 </span>
                               </div>
                             )}
-                            <span className="text-sm text-gray-600 font-medium">me</span>
+                            <span className="text-sm text-gray-600 dark:text-gray-300 font-medium transition-colors duration-200">
+                              me
+                            </span>
                           </div>
                         </div>
                         <div className="col-span-1 flex justify-end relative">
                           <button
-                            className="opacity-0 group-hover:opacity-100 p-2 rounded-lg hover:bg-gray-200 transition-all duration-200"
+                            className="opacity-0 group-hover:opacity-100 p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-all duration-200"
                             onClick={(e) => {
                               e.stopPropagation();
                               setShowOptionsMenu(
@@ -366,7 +372,7 @@ export default function MyProjects() {
                           </button>
 
                           {showOptionsMenu === project.id && (
-                            <div className="absolute right-0 top-full mt-1 w-10 bg-white rounded-lg shadow-lg border border-gray-200 p-1 z-50">
+                            <div className="absolute right-0 top-full mt-1 w-10 bg-white dark:bg-gray-600 rounded-lg shadow-lg border border-gray-200 dark:border-gray-500 p-1 z-50">
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -462,10 +468,10 @@ export default function MyProjects() {
                   <div
                     key={project.id}
                     onClick={() => handleProjectClick(project)}
-                    className="group bg-white border border-gray-200 rounded-lg p-3 hover:shadow-md cursor-pointer transition-all duration-200 hover:border-blue-300"
+                    className="group bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-3 hover:shadow-md cursor-pointer transition-all duration-200 hover:border-blue-300 dark:hover:border-blue-500"
                   >
                     <div className="mb-3">
-                      <h3 className="text-sm font-medium text-gray-900 truncate group-hover:text-blue-700 transition-colors line-clamp-2">
+                      <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate group-hover:text-blue-700 dark:group-hover:text-blue-300 transition-colors line-clamp-2">
                         {project.name}
                       </h3>
                     </div>
@@ -482,7 +488,7 @@ export default function MyProjects() {
                       </div>
 
                       <button
-                        className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 p-1 bg-white rounded shadow-sm hover:bg-gray-50 transition-all duration-200"
+                        className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 p-1 bg-white dark:bg-gray-600 rounded shadow-sm hover:bg-gray-50 dark:hover:bg-gray-500 transition-all duration-200"
                         onClick={(e) => {
                           e.stopPropagation();
                           setShowOptionsMenu(showOptionsMenu === project.id ? null : project.id!);
@@ -498,7 +504,7 @@ export default function MyProjects() {
                       </button>
 
                       {showOptionsMenu === project.id && (
-                        <div className="absolute top-8 right-1 w-8 bg-white rounded shadow-lg border border-gray-200 p-1 z-50">
+                        <div className="absolute top-8 right-1 w-8 bg-white dark:bg-gray-600 rounded shadow-lg border border-gray-200 dark:border-gray-500 p-1 z-50">
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
@@ -525,7 +531,7 @@ export default function MyProjects() {
                       )}
                     </div>
 
-                    <div className="flex items-center justify-between text-xs text-gray-500">
+                    <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 transition-colors duration-200">
                       <span>{formatDate(project.updatedAt)}</span>
                       <div className="flex items-center">
                         {currentUser?.photoURL ? (

@@ -14,7 +14,7 @@ export default function Home() {
   // Show different home page based on authentication status
   if (!currentUser) {
     return (
-      <div className="min-h-screen bg-white">
+      <div className="min-h-screen bg-white dark:bg-gray-900 transition-colors duration-200">
         <HeaderHome />
         <HeroSection />
         <FeaturesSection />
@@ -24,7 +24,7 @@ export default function Home() {
 
   // Logged-in user's home page
   return (
-    <div className="h-screen bg-gray-50 flex flex-col overflow-hidden">
+    <div className="h-screen bg-gray-50 dark:bg-gray-900 flex flex-col overflow-hidden transition-colors duration-200">
       {/* Header - Fixed */}
       <HeaderLoggedIn />
 

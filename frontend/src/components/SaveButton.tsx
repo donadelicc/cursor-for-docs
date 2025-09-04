@@ -115,10 +115,17 @@ export const SaveModal: React.FC<SaveModalProps> = ({
 
   return (
     <div className="fixed top-0 left-0 right-0 bottom-0 bg-black bg-opacity-50 flex items-center justify-center z-[1000] animate-[fadeIn_0.2s_ease]">
-      <div className="bg-white rounded-xl shadow-[0_20px_40px_rgba(0,0,0,0.2)] w-[90%] max-w-md animate-[slideIn_0.2s_ease]" ref={modalRef}>
+      <div
+        className="bg-white rounded-xl shadow-[0_20px_40px_rgba(0,0,0,0.2)] w-[90%] max-w-md animate-[slideIn_0.2s_ease]"
+        ref={modalRef}
+      >
         <div className="flex justify-between items-center px-6 pt-5 pb-0 border-b border-gray-100 mb-5">
           <h3 className="m-0 text-lg font-semibold text-gray-800">Save Document</h3>
-          <button className="bg-none border-none text-2xl text-gray-400 cursor-pointer p-0 w-8 h-8 flex items-center justify-center rounded-full transition-all duration-200 hover:bg-gray-100 hover:text-gray-800" onClick={onClose} aria-label="Close">
+          <button
+            className="bg-none border-none text-2xl text-gray-400 cursor-pointer p-0 w-8 h-8 flex items-center justify-center rounded-full transition-all duration-200 hover:bg-gray-100 hover:text-gray-800"
+            onClick={onClose}
+            aria-label="Close"
+          >
             ×
           </button>
         </div>
@@ -173,7 +180,12 @@ export const SaveModal: React.FC<SaveModalProps> = ({
 
           {saveMode === 'cloud' ? (
             <div className="mb-5">
-              <label htmlFor="documentTitle" className="block mb-2 font-medium text-gray-800 text-sm">Document Title:</label>
+              <label
+                htmlFor="documentTitle"
+                className="block mb-2 font-medium text-gray-800 text-sm"
+              >
+                Document Title:
+              </label>
               <input
                 ref={inputRef}
                 type="text"
@@ -188,7 +200,9 @@ export const SaveModal: React.FC<SaveModalProps> = ({
           ) : (
             <>
               <div className="mb-5">
-                <label htmlFor="filename" className="block mb-2 font-medium text-gray-800 text-sm">File Name:</label>
+                <label htmlFor="filename" className="block mb-2 font-medium text-gray-800 text-sm">
+                  File Name:
+                </label>
                 <div className="flex items-center border-2 border-gray-200 rounded-lg overflow-hidden transition-colors duration-200 focus-within:border-indigo-600 focus-within:ring-4 focus-within:ring-indigo-600/10">
                   <input
                     ref={inputRef}
@@ -200,12 +214,16 @@ export const SaveModal: React.FC<SaveModalProps> = ({
                     placeholder="Enter filename"
                     required
                   />
-                  <span className="py-3 px-4 bg-gray-50 text-gray-600 text-sm font-medium border-l border-gray-200">{getFileExtension()}</span>
+                  <span className="py-3 px-4 bg-gray-50 text-gray-600 text-sm font-medium border-l border-gray-200">
+                    {getFileExtension()}
+                  </span>
                 </div>
               </div>
 
               <div className="mb-5">
-                <label htmlFor="format" className="block mb-2 font-medium text-gray-800 text-sm">Format:</label>
+                <label htmlFor="format" className="block mb-2 font-medium text-gray-800 text-sm">
+                  Format:
+                </label>
                 <select
                   id="format"
                   value={format}
@@ -221,7 +239,11 @@ export const SaveModal: React.FC<SaveModalProps> = ({
           )}
 
           <div className="flex gap-3 justify-end mt-6">
-            <button type="button" onClick={onClose} className="py-2.5 px-5 border-2 border-gray-200 bg-white text-gray-600 rounded-lg text-sm font-medium cursor-pointer transition-all duration-200 hover:border-gray-300 hover:bg-gray-50">
+            <button
+              type="button"
+              onClick={onClose}
+              className="py-2.5 px-5 border-2 border-gray-200 bg-white text-gray-600 rounded-lg text-sm font-medium cursor-pointer transition-all duration-200 hover:border-gray-300 hover:bg-gray-50"
+            >
               Cancel
             </button>
             <button
