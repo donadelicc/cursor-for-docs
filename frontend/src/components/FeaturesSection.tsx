@@ -1,20 +1,14 @@
-"use client";
+'use client';
 
-import Link from "next/link";
+import Link from 'next/link';
 
 export default function FeaturesSection() {
   const features = [
     {
-      title: "Inline AI Editing",
-      description:
-        "Get real-time AI suggestions and edits directly within your text as you write.",
+      title: 'Inline AI Editing',
+      description: 'Get real-time AI suggestions and edits directly within your text as you write.',
       icon: (
-        <svg
-          className="w-8 h-8"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
+        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -25,16 +19,11 @@ export default function FeaturesSection() {
       ),
     },
     {
-      title: "Research Assistant",
+      title: 'Research Assistant',
       description:
-        "AI-powered research capabilities to help you find relevant information and sources.",
+        'AI-powered research capabilities to help you find relevant information and sources.',
       icon: (
-        <svg
-          className="w-8 h-8"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
+        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -45,16 +34,11 @@ export default function FeaturesSection() {
       ),
     },
     {
-      title: "Connect and Manage Sources",
+      title: 'Connect and Manage Sources',
       description:
-        "Seamlessly integrate and organize multiple data sources for comprehensive research.",
+        'Seamlessly integrate and organize multiple data sources for comprehensive research.',
       icon: (
-        <svg
-          className="w-8 h-8"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
+        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -65,16 +49,11 @@ export default function FeaturesSection() {
       ),
     },
     {
-      title: "Customize Chatbot Knowledge",
+      title: 'Customize Chatbot Knowledge',
       description:
-        "Tailor your AI assistant with specific knowledge bases and custom training data.",
+        'Tailor your AI assistant with specific knowledge bases and custom training data.',
       icon: (
-        <svg
-          className="w-8 h-8"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
+        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -85,16 +64,10 @@ export default function FeaturesSection() {
       ),
     },
     {
-      title: "Import Documents",
-      description:
-        "Easily import and work with documents from various formats and platforms.",
+      title: 'Import Documents',
+      description: 'Easily import and work with documents from various formats and platforms.',
       icon: (
-        <svg
-          className="w-8 h-8"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
+        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -105,16 +78,10 @@ export default function FeaturesSection() {
       ),
     },
     {
-      title: "Export or Save in Cloud",
-      description:
-        "Save your work to various cloud platforms or export in multiple file formats.",
+      title: 'Export or Save in Cloud',
+      description: 'Save your work to various cloud platforms or export in multiple file formats.',
       icon: (
-        <svg
-          className="w-8 h-8"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
+        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -153,12 +120,8 @@ export default function FeaturesSection() {
                   {feature.icon}
                 </div>
               </div>
-              <h3 className="text-xl font-semibold text-white mb-4">
-                {feature.title}
-              </h3>
-              <p className="text-gray-300 leading-relaxed">
-                {feature.description}
-              </p>
+              <h3 className="text-xl font-semibold text-gray-900 mb-4">{feature.title}</h3>
+              <p className="text-gray-600 leading-relaxed">{feature.description}</p>
             </div>
           ))}
         </div>
@@ -166,12 +129,10 @@ export default function FeaturesSection() {
         {/* CTA Section */}
         <div className="text-center mt-16">
           <div className="p-8">
-            <h3 className="text-2xl font-bold mb-4 bg-gradient-to-r from-teal-400 via-blue-500 to-purple-600 bg-clip-text text-transparent">
-              Start writing for free
-            </h3>
-            <p className="text-gray-300 mb-6">
-              Stop wasting time navigating between different tools. Write
-              seamlessly with your sources.{" "}
+            <h3 className="text-2xl font-bold text-gray-900 mb-4">Start writing for free</h3>
+            <p className="text-gray-600 mb-6">
+              Stop wasting time navigating between different tools. Write seamlessly with your
+              sources.{' '}
             </p>
             <Link
               href="/login"

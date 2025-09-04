@@ -1,6 +1,6 @@
-import { useEffect, useRef, useCallback, useState } from "react";
-import { useAuth } from "@/contexts/AuthContext";
-import { createDocument, updateDocument } from "@/utils/firestore";
+import { useEffect, useRef, useCallback, useState } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { createDocument, updateDocument } from '@/utils/firestore';
 
 // Generate a unique client-side ID for new documents
 const generateClientId = () => {
@@ -8,7 +8,7 @@ const generateClientId = () => {
 };
 
 export interface AutoSaveStatus {
-  status: "idle" | "saving" | "saved" | "error";
+  status: 'idle' | 'saving' | 'saved' | 'error';
   lastSaved?: Date;
   error?: string;
 }
@@ -31,7 +31,7 @@ export const useAutoSave = ({
   content,
   title,
   documentId,
-  initialContent = "",
+  initialContent = '',
   options = {},
 }: UseAutoSaveParams) => {
   const {
@@ -42,7 +42,7 @@ export const useAutoSave = ({
 
   const { currentUser } = useAuth();
   const [autoSaveStatus, setAutoSaveStatus] = useState<AutoSaveStatus>({
-    status: "idle",
+    status: 'idle',
   });
 
   // Use refs to store the latest values without causing effect re-runs
@@ -52,7 +52,7 @@ export const useAutoSave = ({
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Track last saved content to avoid unnecessary saves
-  const lastSavedContentRef = useRef<string>("");
+  const lastSavedContentRef = useRef<string>('');
 
   // Track whether document exists in database (vs just having a client-generated ID)
   const documentExistsInDbRef = useRef<boolean>(false);
@@ -83,7 +83,7 @@ export const useAutoSave = ({
     if (!currentUser || !enabled) return;
 
     const currentContent = contentRef.current;
-    const currentTitle = titleRef.current || "Untitled Document";
+    const currentTitle = titleRef.current || 'Untitled Document';
     const currentDocumentId = documentIdRef.current;
 
     // Don't save if content is empty
@@ -94,7 +94,7 @@ export const useAutoSave = ({
       return;
     }
 
-    setAutoSaveStatus({ status: "saving" });
+    setAutoSaveStatus({ status: 'saving' });
 
     try {
       let savedDocumentId = currentDocumentId;
@@ -126,7 +126,7 @@ export const useAutoSave = ({
       lastSavedContentRef.current = currentContent;
 
       setAutoSaveStatus({
-        status: "saved",
+        status: 'saved',
         lastSaved: new Date(),
       });
 
@@ -137,18 +137,18 @@ export const useAutoSave = ({
 
       // Reset to idle after 2 seconds
       setTimeout(() => {
-        setAutoSaveStatus((prev) => ({ ...prev, status: "idle" }));
+        setAutoSaveStatus((prev) => ({ ...prev, status: 'idle' }));
       }, 2000);
     } catch (error) {
-      console.error("Auto-save failed:", error);
+      console.error('Auto-save failed:', error);
       setAutoSaveStatus({
-        status: "error",
-        error: "Failed to auto-save document",
+        status: 'error',
+        error: 'Failed to auto-save document',
       });
 
       // Reset to idle after showing error for 5 seconds
       setTimeout(() => {
-        setAutoSaveStatus((prev) => ({ ...prev, status: "idle" }));
+        setAutoSaveStatus((prev) => ({ ...prev, status: 'idle' }));
       }, 5000);
     }
   }, [currentUser, enabled, onAutoSave]);
@@ -197,6 +197,6 @@ export const useAutoSave = ({
   return {
     autoSaveStatus,
     saveNow,
-    isAutoSaving: autoSaveStatus.status === "saving",
+    isAutoSaving: autoSaveStatus.status === 'saving',
   };
 };

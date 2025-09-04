@@ -1,12 +1,12 @@
-import { AzureChatOpenAI } from "@langchain/openai";
-import { AzureOpenAIEmbeddings } from "@langchain/openai";
-import { WebPDFLoader } from "@langchain/community/document_loaders/web/pdf";
-import { MemoryVectorStore } from "langchain/vectorstores/memory";
-import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
-import { Document } from "langchain/document";
+import { AzureChatOpenAI } from '@langchain/openai';
+import { AzureOpenAIEmbeddings } from '@langchain/openai';
+import { WebPDFLoader } from '@langchain/community/document_loaders/web/pdf';
+import { MemoryVectorStore } from 'langchain/vectorstores/memory';
+import { RecursiveCharacterTextSplitter } from '@langchain/textsplitters';
+import { Document } from 'langchain/document';
 
-import { SystemMessage, HumanMessage } from "@langchain/core/messages";
-import { NextResponse } from "next/server";
+import { SystemMessage, HumanMessage } from '@langchain/core/messages';
+import { NextResponse } from 'next/server';
 
 const model = new AzureChatOpenAI({
   azureOpenAIEndpoint: process.env.AZURE_OPENAI_ENDPOINT,
@@ -17,7 +17,7 @@ const model = new AzureChatOpenAI({
 });
 
 const embeddings = new AzureOpenAIEmbeddings({
-  azureOpenAIApiEmbeddingsDeploymentName: "text-embedding-ada-002",
+  azureOpenAIApiEmbeddingsDeploymentName: 'text-embedding-ada-002',
   azureOpenAIApiInstanceName: process.env.AZURE_OPENAI_INSTANCE_NAME,
   azureOpenAIApiKey: process.env.AZURE_OPENAI_API_KEY,
 });
@@ -38,7 +38,7 @@ async function preprocessPDF(file: File): Promise<Document[]> {
       const metadata = {
         ...(doc.metadata || {}),
         source: file.name,
-        fileType: "pdf",
+        fileType: 'pdf',
       };
       return new Document({
         pageContent: doc.pageContent,
@@ -47,32 +47,31 @@ async function preprocessPDF(file: File): Promise<Document[]> {
     });
 
     // Split documents into chunks, preserving Document[] type
-    const allSplits: Document[] =
-      await textSplitter.splitDocuments(docsWithMetadata);
+    const allSplits: Document[] = await textSplitter.splitDocuments(docsWithMetadata);
     return allSplits;
   } catch (error) {
-    console.error("Error extracting PDF text:", error);
-    throw new Error("Failed to extract text from PDF file");
+    console.error('Error extracting PDF text:', error);
+    throw new Error('Failed to extract text from PDF file');
   }
 }
 
 export async function POST(req: Request) {
   try {
-    const contentType = req.headers.get("content-type") || "";
+    const contentType = req.headers.get('content-type') || '';
     let query: string;
     const vectorStore = new MemoryVectorStore(embeddings);
 
-    if (contentType.includes("multipart/form-data")) {
+    if (contentType.includes('multipart/form-data')) {
       // Handle file uploads with FormData
       const formData = await req.formData();
 
-      query = formData.get("query") as string;
+      query = formData.get('query') as string;
 
       // Process uploaded PDF files
-      const files = formData.getAll("files") as File[];
+      const files = formData.getAll('files') as File[];
 
       for (const file of files) {
-        if (file.type === "application/pdf") {
+        if (file.type === 'application/pdf') {
           try {
             const allSplits = await preprocessPDF(file);
             await vectorStore.addDocuments(allSplits);
@@ -86,24 +85,19 @@ export async function POST(req: Request) {
       return NextResponse.json(
         {
           error:
-            "This endpoint requires uploaded PDF files. Please use multipart/form-data with files.",
+            'This endpoint requires uploaded PDF files. Please use multipart/form-data with files.',
         },
         { status: 400 },
       );
     }
 
     if (!query) {
-      return NextResponse.json(
-        { error: "Missing query in request body" },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: 'Missing query in request body' }, { status: 400 });
     }
 
     const results = await vectorStore.similaritySearch(query);
-    const resultsText = results.map((result) => result.pageContent).join("\n");
-    console.log(
-      `Vector search returned ${results.length} results for query: "${query}"`,
-    );
+    const resultsText = results.map((result) => result.pageContent).join('\n');
+    console.log(`Vector search returned ${results.length} results for query: "${query}"`);
     console.log(resultsText);
 
     // Ensure we have meaningful content
@@ -111,7 +105,7 @@ export async function POST(req: Request) {
       return NextResponse.json(
         {
           error:
-            "No relevant content found in the uploaded documents. Please ensure the PDFs contain readable text.",
+            'No relevant content found in the uploaded documents. Please ensure the PDFs contain readable text.',
         },
         { status: 404 },
       );
@@ -157,16 +151,13 @@ ${query}
 
 Please provide a comprehensive response based exclusively on the uploaded sources above. Focus your analysis on the content within these source materials and clearly attribute information to specific source files when referencing them.`;
 
-    const messages = [
-      new SystemMessage(systemMessage),
-      new HumanMessage(humanMessage),
-    ];
+    const messages = [new SystemMessage(systemMessage), new HumanMessage(humanMessage)];
 
     const response = await model.invoke(messages);
     const answer = response.content;
 
-    if (typeof answer !== "string") {
-      throw new Error("AI response was not in the expected string format.");
+    if (typeof answer !== 'string') {
+      throw new Error('AI response was not in the expected string format.');
     }
 
     return NextResponse.json({
@@ -175,12 +166,11 @@ Please provide a comprehensive response based exclusively on the uploaded source
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error("Error in AI sources API:", error);
-    const errorMessage =
-      error instanceof Error ? error.message : "An unknown error occurred.";
+    console.error('Error in AI sources API:', error);
+    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
     return NextResponse.json(
       {
-        error: "Failed to get a response from the AI research assistant.",
+        error: 'Failed to get a response from the AI research assistant.',
         details: errorMessage,
       },
       { status: 500 },

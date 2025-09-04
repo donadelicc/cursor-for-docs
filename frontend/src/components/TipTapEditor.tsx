@@ -1,10 +1,8 @@
-import styles from "./TipTapEditor.module.css";
-
-import { useEditor, EditorContent, type Editor } from "@tiptap/react";
-import React, { useRef } from "react";
+import { useEditor, EditorContent, type Editor } from '@tiptap/react';
+import React, { useRef } from 'react';
 
 // Custom hooks
-import { useTipTapExtensions } from "@/hooks/useTipTapExtensions";
+import { useTipTapExtensions } from '@/hooks/useTipTapExtensions';
 
 interface TiptapEditorProps {
   onContentChange?: (content: string) => void;
@@ -18,16 +16,17 @@ export const TiptapEditor = ({
   onEditorReady,
 }: TiptapEditorProps) => {
   const editorContainerRef = useRef<HTMLDivElement>(null);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Custom hooks
   const extensions = useTipTapExtensions();
 
   const editor = useEditor({
     extensions,
-    content: initialContent || "",
+    content: initialContent || '',
     editorProps: {
       attributes: {
-        class: styles.tiptap,
+        class: 'tiptap-editor-content',
       },
     },
     onCreate: ({ editor }) => {
@@ -41,14 +40,23 @@ export const TiptapEditor = ({
       onEditorReady?.(editor);
 
       // Auto-focus the editor and scroll to top when created
-      setTimeout(() => {
-        const editorElement = editor.view.dom;
-        if (editorElement) {
-          editorElement.scrollTop = 0;
-          // Focus the editor to make cursor active
-          editor.commands.focus();
+      timeoutRef.current = setTimeout(() => {
+        try {
+          if (editor && !editor.isDestroyed && editor.view?.dom) {
+            const editorElement = editor.view.dom;
+            // Only manipulate DOM if properly mounted
+            if (editorElement && editorElement.isConnected && editorElement.parentElement) {
+              editorElement.scrollTop = 0;
+              // Focus the editor to make cursor active
+              if (editor.commands && typeof editor.commands.focus === 'function') {
+                editor.commands.focus();
+              }
+            }
+          }
+        } catch (error) {
+          console.warn('TipTap focus error (safe to ignore):', error);
         }
-      }, 100);
+      }, 200);
     },
     onUpdate: ({ editor }) => {
       // Update content when editor content changes
@@ -59,30 +67,63 @@ export const TiptapEditor = ({
     },
   });
 
-  // Scroll to top and focus when initial content changes (when loading a document)
+  // Update editor content when initialContent changes
   React.useEffect(() => {
-    if (editor && initialContent) {
-      setTimeout(() => {
-        const editorElement = editor.view.dom;
-        const editorContainer = editorContainerRef.current;
-
-        if (editorElement) {
-          editorElement.scrollTop = 0;
-        }
-        if (editorContainer) {
-          editorContainer.scrollTop = 0;
-        }
-
-        // Focus the editor to make cursor active when document loads
-        editor.commands.focus();
-      }, 150);
+    if (editor && initialContent && editor.getHTML() !== initialContent) {
+      // Only update if content is different to avoid infinite loops
+      editor.commands.setContent(initialContent, false);
     }
   }, [editor, initialContent]);
 
+  // Scroll to top and focus when initial content changes (when loading a document)
+  React.useEffect(() => {
+    if (editor && initialContent) {
+      const timeout = setTimeout(() => {
+        try {
+          if (editor && !editor.isDestroyed && editor.view?.dom) {
+            const editorElement = editor.view.dom;
+            const editorContainer = editorContainerRef.current;
+
+            // Only manipulate DOM if properly mounted
+            if (editorElement && editorElement.isConnected && editorElement.parentElement) {
+              editorElement.scrollTop = 0;
+            }
+            if (editorContainer && editorContainer.isConnected) {
+              editorContainer.scrollTop = 0;
+            }
+
+            // Focus the editor to make cursor active when document loads
+            if (editor.commands && typeof editor.commands.focus === 'function') {
+              editor.commands.focus();
+            }
+          }
+        } catch (error) {
+          console.warn('TipTap content load focus error (safe to ignore):', error);
+        }
+      }, 300);
+
+      return () => clearTimeout(timeout);
+    }
+  }, [editor, initialContent]);
+
+  // Cleanup timeouts on unmount
+  React.useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
+
   return (
-    <div className={styles.editorWrapper}>
-      <div className={styles.tiptapEditor} ref={editorContainerRef}>
-        <EditorContent editor={editor} />
+    <div className="flex flex-col w-full max-w-full items-stretch gap-0 mt-0 h-full">
+      <div
+        className="flex flex-col w-full max-w-full h-full bg-white dark:bg-gray-900 rounded-bl-lg rounded-br-lg border border-gray-300 dark:border-gray-700 border-t-0 shadow-lg overflow-x-hidden overflow-y-auto relative mt-0 transition-colors duration-200"
+        ref={editorContainerRef}
+      >
+        <div className="prose prose-lg dark:prose-invert max-w-none p-6 focus:outline-none prose-headings:text-gray-900 dark:prose-headings:text-gray-100 prose-p:text-gray-800 dark:prose-p:text-gray-200 prose-li:text-gray-800 dark:prose-li:text-gray-200 prose-strong:text-gray-900 dark:prose-strong:text-gray-100 prose-em:text-gray-800 dark:prose-em:text-gray-200">
+          <EditorContent editor={editor} />
+        </div>
       </div>
     </div>
   );

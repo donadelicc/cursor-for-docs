@@ -2,7 +2,7 @@
  * Modern platform detection utility that avoids deprecated navigator.platform
  */
 export const isMacOS = (): boolean => {
-  if (typeof navigator === "undefined") return false;
+  if (typeof navigator === 'undefined') return false;
 
   // Use userAgent detection (reliable and well-supported)
   return /Mac|iPhone|iPad|iPod/.test(navigator.userAgent);

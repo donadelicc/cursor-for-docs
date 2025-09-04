@@ -1,29 +1,29 @@
-"use client";
+'use client';
 
-import { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
-import Image from "next/image";
-import { useAuth } from "@/contexts/AuthContext";
-import { getUserDocuments, deleteDocument } from "@/utils/firestore";
-import { Document } from "@/types/editor";
+import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
+import Image from 'next/image';
+import { useAuth } from '@/contexts/AuthContext';
+import { getUserProjects, createProject, deleteProject } from '@/utils/firestore';
+import { Project } from '@/types/projects';
 
-export default function MyDocuments() {
+export default function MyProjects() {
   const { currentUser } = useAuth();
   const router = useRouter();
-  const [viewMode, setViewMode] = useState<"list" | "grid">("list");
-  const [documents, setDocuments] = useState<Document[]>([]);
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
+  const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [showOptionsMenu, setShowOptionsMenu] = useState<string | null>(null);
 
-  const loadDocuments = useCallback(async () => {
+  const loadProjects = useCallback(async () => {
     if (!currentUser) return;
 
     try {
       setLoading(true);
-      const userDocs = await getUserDocuments(currentUser.uid);
-      setDocuments(userDocs);
+      const userProjects = await getUserProjects(currentUser.uid);
+      setProjects(userProjects);
     } catch (error) {
-      console.error("Error loading documents:", error);
+      console.error('Error loading projects:', error);
     } finally {
       setLoading(false);
     }
@@ -31,35 +31,40 @@ export default function MyDocuments() {
 
   useEffect(() => {
     if (currentUser) {
-      loadDocuments();
+      loadProjects();
     }
-  }, [currentUser, loadDocuments]);
+  }, [currentUser, loadProjects]);
 
-  const handleDocumentClick = (doc: Document) => {
-    router.push(`/document?id=${doc.id}`);
+  const handleProjectClick = (project: Project) => {
+    router.push(`/project?id=${project.id}`);
   };
 
-  const handleNewDocument = () => {
-    router.push("/document");
+  const handleNewProject = async () => {
+    if (!currentUser) return;
+    setLoading(true);
+    try {
+      const id = await createProject(currentUser.uid, 'My Project');
+      await loadProjects();
+      router.push(`/project?id=${id}`);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleDeleteDocument = async (
-    documentId: string,
-    documentTitle: string,
-  ) => {
+  const handleDeleteProject = async (projectId: string, projectName: string) => {
     const confirmDelete = window.confirm(
-      `Are you sure you want to delete "${documentTitle}"? This action cannot be undone.`,
+      `Are you sure you want to delete project "${projectName}"? This action cannot be undone.`,
     );
 
     if (!confirmDelete) return;
 
     try {
-      await deleteDocument(documentId);
-      setDocuments(documents.filter((doc) => doc.id !== documentId));
+      await deleteProject(projectId);
+      setProjects(projects.filter((p) => p.id !== projectId));
       setShowOptionsMenu(null);
     } catch (error) {
-      console.error("Error deleting document:", error);
-      alert("Error deleting document. Please try again.");
+      console.error('Error deleting project:', error);
+      alert('Error deleting project. Please try again.');
     }
   };
 
@@ -70,42 +75,29 @@ export default function MyDocuments() {
     const diffHours = Math.floor(diffTime / (1000 * 60 * 60));
     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
-    // Less than 2 minutes ago
-    if (diffMinutes < 2) return "Now";
-
-    // Less than 60 minutes ago
+    if (diffMinutes < 2) return 'Now';
     if (diffMinutes < 60) return `${diffMinutes} minutes ago`;
-
-    // Less than 24 hours ago
-    if (diffHours < 24)
-      return `${diffHours} hour${diffHours === 1 ? "" : "s"} ago`;
-
-    // Exactly 1 day ago
-    if (diffDays === 1) return "Yesterday";
-
-    // Less than 7 days ago
+    if (diffHours < 24) return `${diffHours} hour${diffHours === 1 ? '' : 's'} ago`;
+    if (diffDays === 1) return 'Yesterday';
     if (diffDays < 7) return `${diffDays} days ago`;
 
-    // More than 7 days ago - show exact date
-    return date.toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
     });
   };
 
-  // Remove unused function since we now use inline icons
-
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 h-full flex flex-col">
-      {/* Header with New Document Button - Fixed */}
-      <div className="px-6 py-5 border-b border-gray-100 flex-shrink-0">
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 h-full flex flex-col transition-colors duration-200">
+      {/* Header with New Project Button - Fixed */}
+      <div className="px-6 py-5 border-b border-gray-100 dark:border-gray-700 flex-shrink-0 transition-colors duration-200">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">
-              Recent Documents
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 transition-colors duration-200">
+              My Projects
             </h2>
-            <p className="text-sm text-gray-600 mt-1 flex items-center">
+            <p className="text-sm text-gray-600 dark:text-gray-300 mt-1 flex items-center transition-colors duration-200">
               <svg
                 className="w-4 h-4 mr-1.5 text-gray-400"
                 fill="none"
@@ -119,21 +111,15 @@ export default function MyDocuments() {
                   d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                 />
               </svg>
-              {documents.length}{" "}
-              {documents.length === 1 ? "document" : "documents"}
+              {projects.length} {projects.length === 1 ? 'project' : 'projects'}
             </p>
           </div>
           <div className="flex items-center gap-3">
             <button
-              onClick={handleNewDocument}
-              className="inline-flex items-center px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transform hover:scale-[1.02] transition-all duration-200"
+              onClick={handleNewProject}
+              className="inline-flex items-center px-5 py-2.5 bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transform hover:scale-[1.02] transition-all duration-200"
             >
-              <svg
-                className="w-4 h-4 mr-2"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -141,26 +127,21 @@ export default function MyDocuments() {
                   d="M12 4v16m8-8H4"
                 />
               </svg>
-              New
+              New Project
             </button>
 
             {/* View Toggle */}
             <div className="flex bg-gray-100 rounded-lg p-1">
               <button
-                onClick={() => setViewMode("list")}
+                onClick={() => setViewMode('list')}
                 className={`p-2 rounded-md transition-all duration-200 ${
-                  viewMode === "list"
-                    ? "bg-white text-blue-600 shadow-sm"
-                    : "text-gray-500 hover:text-gray-700 hover:bg-gray-200"
+                  viewMode === 'list'
+                    ? 'bg-white text-blue-600 shadow-sm'
+                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200'
                 }`}
                 title="List view"
               >
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -170,20 +151,15 @@ export default function MyDocuments() {
                 </svg>
               </button>
               <button
-                onClick={() => setViewMode("grid")}
+                onClick={() => setViewMode('grid')}
                 className={`p-2 rounded-md transition-all duration-200 ${
-                  viewMode === "grid"
-                    ? "bg-white text-blue-600 shadow-sm"
-                    : "text-gray-500 hover:text-gray-700 hover:bg-gray-200"
+                  viewMode === 'grid'
+                    ? 'bg-white text-blue-600 shadow-sm'
+                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200'
                 }`}
                 title="Grid view"
               >
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -197,18 +173,18 @@ export default function MyDocuments() {
         </div>
       </div>
 
-      {/* Documents Content - Scrollable */}
+      {/* Projects Content - Scrollable */}
       <div className="flex-1 overflow-hidden">
-        {viewMode === "list" ? (
+        {viewMode === 'list' ? (
           /* List View */
           <div className="h-full flex flex-col">
             {/* Table Header - Sticky */}
-            <div className="bg-gradient-to-r from-gray-50 to-gray-100/50 px-6 py-4 border-b border-gray-200 flex-shrink-0 sticky top-0 z-10">
+            <div className="bg-gradient-to-r from-gray-50 to-gray-100/50 dark:from-gray-700 dark:to-gray-800/50 px-6 py-4 border-b border-gray-200 dark:border-gray-600 flex-shrink-0 sticky top-0 z-10 transition-colors duration-200">
               <div className="grid grid-cols-12 gap-4">
-                <div className="col-span-6 flex items-center text-sm font-bold text-gray-800">
+                <div className="col-span-6 flex items-center text-sm font-bold text-gray-800 dark:text-gray-200 transition-colors duration-200">
                   <div className="w-8 h-8 flex items-center justify-center mr-4">
                     <svg
-                      className="w-4 h-4 text-gray-600"
+                      className="w-4 h-4 text-gray-600 dark:text-gray-400 transition-colors duration-200"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -223,9 +199,9 @@ export default function MyDocuments() {
                   </div>
                   <span>Name</span>
                 </div>
-                <div className="col-span-3 flex items-center text-sm font-bold text-gray-800">
+                <div className="col-span-3 flex items-center text-sm font-bold text-gray-800 dark:text-gray-200 transition-colors duration-200">
                   <svg
-                    className="w-4 h-4 mr-2 text-gray-600"
+                    className="w-4 h-4 mr-2 text-gray-600 dark:text-gray-400 transition-colors duration-200"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -237,11 +213,11 @@ export default function MyDocuments() {
                       d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
                     />
                   </svg>
-                  Last Modified
+                  Updated
                 </div>
-                <div className="col-span-2 flex items-center text-sm font-bold text-gray-800">
+                <div className="col-span-2 flex items-center text-sm font-bold text-gray-800 dark:text-gray-200 transition-colors duration-200">
                   <svg
-                    className="w-4 h-4 mr-2 text-gray-600"
+                    className="w-4 h-4 mr-2 text-gray-600 dark:text-gray-400 transition-colors duration-200"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -259,7 +235,7 @@ export default function MyDocuments() {
               </div>
             </div>
 
-            {/* Documents List - Scrollable */}
+            {/* Projects List - Scrollable */}
             <div className="flex-1 overflow-y-auto">
               <div className="divide-y divide-gray-100">
                 {loading ? (
@@ -270,14 +246,12 @@ export default function MyDocuments() {
                         <div className="absolute inset-0 rounded-full h-10 w-10 border-3 border-transparent border-l-blue-600 animate-pulse"></div>
                       </div>
                       <p className="text-sm font-medium text-gray-600 mt-4">
-                        Loading your documents...
+                        Loading your projects...
                       </p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        This should only take a moment
-                      </p>
+                      <p className="text-xs text-gray-500 mt-1">This should only take a moment</p>
                     </div>
                   </div>
-                ) : documents.length === 0 ? (
+                ) : projects.length === 0 ? (
                   <div className="text-center py-16 px-6">
                     <div className="max-w-sm mx-auto">
                       <div className="w-20 h-20 bg-gradient-to-br from-blue-100 to-blue-200 rounded-2xl flex items-center justify-center mx-auto mb-6">
@@ -295,16 +269,12 @@ export default function MyDocuments() {
                           />
                         </svg>
                       </div>
-                      <h3 className="text-lg font-bold text-gray-900 mb-2">
-                        No documents yet
-                      </h3>
+                      <h3 className="text-lg font-bold text-gray-900 mb-2">No projects yet</h3>
                       <p className="text-sm text-gray-600 mb-8 leading-relaxed">
-                        Start your writing journey by creating your first
-                        document. All your work will be automatically saved and
-                        appear here.
+                        Create your first project to start organizing documents and sources.
                       </p>
                       <button
-                        onClick={handleNewDocument}
+                        onClick={handleNewProject}
                         className="inline-flex items-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transform hover:scale-[1.02] transition-all duration-200"
                       >
                         <svg
@@ -320,15 +290,15 @@ export default function MyDocuments() {
                             d="M12 4v16m8-8H4"
                           />
                         </svg>
-                        Create your first document
+                        Create your first project
                       </button>
                     </div>
                   </div>
                 ) : (
-                  documents.map((doc) => (
+                  projects.map((project) => (
                     <div
-                      key={doc.id}
-                      onClick={() => handleDocumentClick(doc)}
+                      key={project.id}
+                      onClick={() => handleProjectClick(project)}
                       className="group px-6 py-4 hover:bg-blue-50/50 cursor-pointer transition-all duration-200 hover:shadow-sm"
                     >
                       <div className="grid grid-cols-12 gap-4 items-center">
@@ -345,17 +315,17 @@ export default function MyDocuments() {
                             </div>
                           </div>
                           <div className="min-w-0 flex-1">
-                            <p className="text-sm font-semibold text-gray-900 truncate group-hover:text-blue-900 transition-colors">
-                              {doc.title}
+                            <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate group-hover:text-blue-900 dark:group-hover:text-blue-300 transition-colors">
+                              {project.name}
                             </p>
-                            <p className="text-xs text-gray-500 mt-0.5">
-                              Document
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 transition-colors duration-200">
+                              Project
                             </p>
                           </div>
                         </div>
                         <div className="col-span-3">
-                          <p className="text-sm text-gray-600 font-medium">
-                            {formatDate(doc.lastModified)}
+                          <p className="text-sm text-gray-600 dark:text-gray-300 font-medium transition-colors duration-200">
+                            {formatDate(project.updatedAt)}
                           </p>
                         </div>
                         <div className="col-span-2">
@@ -363,7 +333,7 @@ export default function MyDocuments() {
                             {currentUser?.photoURL ? (
                               <Image
                                 src={currentUser.photoURL}
-                                alt={currentUser.displayName || "User"}
+                                alt={currentUser.displayName || 'User'}
                                 width={24}
                                 height={24}
                                 className="w-6 h-6 rounded-full mr-2"
@@ -373,22 +343,22 @@ export default function MyDocuments() {
                                 <span className="text-xs font-semibold text-white">
                                   {currentUser?.displayName?.charAt(0) ||
                                     currentUser?.email?.charAt(0) ||
-                                    "U"}
+                                    'U'}
                                 </span>
                               </div>
                             )}
-                            <span className="text-sm text-gray-600 font-medium">
+                            <span className="text-sm text-gray-600 dark:text-gray-300 font-medium transition-colors duration-200">
                               me
                             </span>
                           </div>
                         </div>
                         <div className="col-span-1 flex justify-end relative">
                           <button
-                            className="opacity-0 group-hover:opacity-100 p-2 rounded-lg hover:bg-gray-200 transition-all duration-200"
+                            className="opacity-0 group-hover:opacity-100 p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-all duration-200"
                             onClick={(e) => {
                               e.stopPropagation();
                               setShowOptionsMenu(
-                                showOptionsMenu === doc.id ? null : doc.id!,
+                                showOptionsMenu === project.id ? null : project.id!,
                               );
                             }}
                           >
@@ -401,16 +371,15 @@ export default function MyDocuments() {
                             </svg>
                           </button>
 
-                          {/* Options Dropdown */}
-                          {showOptionsMenu === doc.id && (
-                            <div className="absolute right-0 top-full mt-1 w-10 bg-white rounded-lg shadow-lg border border-gray-200 p-1 z-50">
+                          {showOptionsMenu === project.id && (
+                            <div className="absolute right-0 top-full mt-1 w-10 bg-white dark:bg-gray-600 rounded-lg shadow-lg border border-gray-200 dark:border-gray-500 p-1 z-50">
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  handleDeleteDocument(doc.id!, doc.title);
+                                  handleDeleteProject(project.id!, project.name);
                                 }}
                                 className="flex items-center justify-center w-8 h-8 text-red-600 hover:bg-red-50 rounded transition-colors"
-                                title="Delete document"
+                                title="Delete project"
                               >
                                 <svg
                                   className="w-4 h-4"
@@ -446,15 +415,11 @@ export default function MyDocuments() {
                     <div className="animate-spin rounded-full h-10 w-10 border-3 border-gray-200 border-t-blue-600"></div>
                     <div className="absolute inset-0 rounded-full h-10 w-10 border-3 border-transparent border-l-blue-600 animate-pulse"></div>
                   </div>
-                  <p className="text-sm font-medium text-gray-600 mt-4">
-                    Loading your documents...
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    This should only take a moment
-                  </p>
+                  <p className="text-sm font-medium text-gray-600 mt-4">Loading your projects...</p>
+                  <p className="text-xs text-gray-500 mt-1">This should only take a moment</p>
                 </div>
               </div>
-            ) : documents.length === 0 ? (
+            ) : projects.length === 0 ? (
               <div className="text-center py-16 px-6">
                 <div className="max-w-sm mx-auto">
                   <div className="w-20 h-20 bg-gradient-to-br from-blue-100 to-blue-200 rounded-2xl flex items-center justify-center mx-auto mb-6">
@@ -472,15 +437,12 @@ export default function MyDocuments() {
                       />
                     </svg>
                   </div>
-                  <h3 className="text-lg font-bold text-gray-900 mb-2">
-                    No documents yet
-                  </h3>
+                  <h3 className="text-lg font-bold text-gray-900 mb-2">No projects yet</h3>
                   <p className="text-sm text-gray-600 mb-8 leading-relaxed">
-                    Start your writing journey by creating your first document.
-                    All your work will be automatically saved and appear here.
+                    Create your first project to start organizing documents and sources.
                   </p>
                   <button
-                    onClick={handleNewDocument}
+                    onClick={handleNewProject}
                     className="inline-flex items-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transform hover:scale-[1.02] transition-all duration-200"
                   >
                     <svg
@@ -496,27 +458,25 @@ export default function MyDocuments() {
                         d="M12 4v16m8-8H4"
                       />
                     </svg>
-                    Create your first document
+                    Create your first project
                   </button>
                 </div>
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                {documents.map((doc) => (
+                {projects.map((project) => (
                   <div
-                    key={doc.id}
-                    onClick={() => handleDocumentClick(doc)}
-                    className="group bg-white border border-gray-200 rounded-lg p-3 hover:shadow-md cursor-pointer transition-all duration-200 hover:border-blue-300"
+                    key={project.id}
+                    onClick={() => handleProjectClick(project)}
+                    className="group bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-3 hover:shadow-md cursor-pointer transition-all duration-200 hover:border-blue-300 dark:hover:border-blue-500"
                   >
-                    {/* Document Name - Top */}
                     <div className="mb-3">
-                      <h3 className="text-sm font-medium text-gray-900 truncate group-hover:text-blue-700 transition-colors line-clamp-2">
-                        {doc.title}
+                      <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate group-hover:text-blue-700 dark:group-hover:text-blue-300 transition-colors line-clamp-2">
+                        {project.name}
                       </h3>
                     </div>
 
                     <div className="relative">
-                      {/* Document Preview */}
                       <div className="w-full aspect-[4/3] bg-gradient-to-br from-blue-50 to-blue-100 rounded border border-gray-200 flex items-center justify-center mb-3 group-hover:from-blue-100 group-hover:to-blue-200 transition-all duration-200">
                         <svg
                           className="w-8 h-8 text-blue-600"
@@ -527,14 +487,11 @@ export default function MyDocuments() {
                         </svg>
                       </div>
 
-                      {/* Options Button */}
                       <button
-                        className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 p-1 bg-white rounded shadow-sm hover:bg-gray-50 transition-all duration-200"
+                        className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 p-1 bg-white dark:bg-gray-600 rounded shadow-sm hover:bg-gray-50 dark:hover:bg-gray-500 transition-all duration-200"
                         onClick={(e) => {
                           e.stopPropagation();
-                          setShowOptionsMenu(
-                            showOptionsMenu === doc.id ? null : doc.id!,
-                          );
+                          setShowOptionsMenu(showOptionsMenu === project.id ? null : project.id!);
                         }}
                       >
                         <svg
@@ -546,16 +503,15 @@ export default function MyDocuments() {
                         </svg>
                       </button>
 
-                      {/* Options Dropdown */}
-                      {showOptionsMenu === doc.id && (
-                        <div className="absolute top-8 right-1 w-8 bg-white rounded shadow-lg border border-gray-200 p-1 z-50">
+                      {showOptionsMenu === project.id && (
+                        <div className="absolute top-8 right-1 w-8 bg-white dark:bg-gray-600 rounded shadow-lg border border-gray-200 dark:border-gray-500 p-1 z-50">
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleDeleteDocument(doc.id!, doc.title);
+                              handleDeleteProject(project.id!, project.name);
                             }}
                             className="flex items-center justify-center w-6 h-6 text-red-600 hover:bg-red-50 rounded transition-colors"
-                            title="Delete document"
+                            title="Delete project"
                           >
                             <svg
                               className="w-3 h-3"
@@ -575,14 +531,13 @@ export default function MyDocuments() {
                       )}
                     </div>
 
-                    {/* Bottom Info */}
-                    <div className="flex items-center justify-between text-xs text-gray-500">
-                      <span>{formatDate(doc.lastModified)}</span>
+                    <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 transition-colors duration-200">
+                      <span>{formatDate(project.updatedAt)}</span>
                       <div className="flex items-center">
                         {currentUser?.photoURL ? (
                           <Image
                             src={currentUser.photoURL}
-                            alt={currentUser.displayName || "User"}
+                            alt={currentUser.displayName || 'User'}
                             width={16}
                             height={16}
                             className="w-4 h-4 rounded-full"
@@ -592,7 +547,7 @@ export default function MyDocuments() {
                             <span className="text-[8px] font-semibold text-white">
                               {currentUser?.displayName?.charAt(0) ||
                                 currentUser?.email?.charAt(0) ||
-                                "U"}
+                                'U'}
                             </span>
                           </div>
                         )}
@@ -606,12 +561,8 @@ export default function MyDocuments() {
         )}
       </div>
 
-      {/* Click outside to close options menu */}
       {showOptionsMenu && (
-        <div
-          className="fixed inset-0 z-40"
-          onClick={() => setShowOptionsMenu(null)}
-        />
+        <div className="fixed inset-0 z-40" onClick={() => setShowOptionsMenu(null)} />
       )}
     </div>
   );

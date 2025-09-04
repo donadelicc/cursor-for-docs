@@ -1,0 +1,141 @@
+/* TipTap Editor Custom Styles */
+/* These styles are applied globally to TipTap editor content */
+
+.tiptap-editor-content > *:first-child {
+  margin-top: 0;
+}
+
+.tiptap-editor-content ul,
+.tiptap-editor-content ol {
+  padding: 0 1rem;
+  margin: 1.25rem 1rem 1.25rem 0.4rem;
+}
+
+.tiptap-editor-content ul {
+  list-style-type: disc;
+}
+
+.tiptap-editor-content ol {
+  list-style-type: decimal;
+}
+
+.tiptap-editor-content ul li p,
+.tiptap-editor-content ol li p {
+  margin-top: 0.25em;
+  margin-bottom: 0.25em;
+}
+
+.tiptap-editor-content h1,
+.tiptap-editor-content h2,
+.tiptap-editor-content h3,
+.tiptap-editor-content h4,
+.tiptap-editor-content h5,
+.tiptap-editor-content h6 {
+  line-height: 1.1;
+  margin-top: 2.5rem;
+  text-wrap: pretty;
+  color: #000;
+}
+
+.tiptap-editor-content h1,
+.tiptap-editor-content h2 {
+  margin-top: 3.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.tiptap-editor-content h1 {
+  font-size: 1.4rem;
+}
+
+.tiptap-editor-content h2 {
+  font-size: 1.2rem;
+}
+
+.tiptap-editor-content h3 {
+  font-size: 1.1rem;
+  margin-bottom: 0.5rem;
+}
+
+.tiptap-editor-content h4,
+.tiptap-editor-content h5,
+.tiptap-editor-content h6 {
+  font-size: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.tiptap-editor-content p {
+  margin-top: 0.75rem;
+  margin-bottom: 0.75rem;
+  line-height: 1.5;
+}
+
+.tiptap-editor-content blockquote {
+  border-left: 4px solid #d1d5db;
+  padding-left: 1rem;
+  margin: 1.5rem 0;
+  font-style: italic;
+  color: #6b7280;
+}
+
+.tiptap-editor-content pre {
+  background-color: #f3f4f6;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  margin: 1rem 0;
+  overflow-x: auto;
+  font-family: 'Courier New', monospace;
+}
+
+.tiptap-editor-content code {
+  background-color: #f3f4f6;
+  padding: 0.125rem 0.25rem;
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
+  font-family: 'Courier New', monospace;
+}
+
+.tiptap-editor-content mark {
+  background-color: #fef08a;
+  padding: 0 0.25rem;
+  border-radius: 0.25rem;
+}
+
+/* TipTap-specific suggestion and original text styles */
+.tiptap-editor-content span[data-original-text] {
+  color: #6b7280;
+  background-color: #f3f4f6;
+  opacity: 0.8;
+  border-radius: 0.1875rem;
+  padding: 0 0.125rem;
+}
+
+.tiptap-editor-content span[data-suggestion] {
+  background-color: #dbeafe;
+  color: #1e40af;
+  border-radius: 0.1875rem;
+  padding: 0 0.125rem;
+}
+
+.tiptap-editor-content span[data-suggestion]:hover {
+  background-color: #bfdbfe;
+}
+
+/* Focus styles */
+.tiptap-editor-content:focus {
+  outline: none;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .tiptap-editor-content {
+    padding: 1.5rem 1rem;
+  }
+
+  .tiptap-editor-content h1 {
+    font-size: 1.25rem;
+  }
+
+  .tiptap-editor-content h2 {
+    font-size: 1.125rem;
+  }
+}

@@ -1,8 +1,8 @@
-import { AzureChatOpenAI } from "@langchain/openai";
-import { SystemMessage, HumanMessage } from "@langchain/core/messages";
-import { NextResponse } from "next/server";
-import { z } from "zod";
-import { JsonOutputParser } from "@langchain/core/output_parsers";
+import { AzureChatOpenAI } from '@langchain/openai';
+import { SystemMessage, HumanMessage } from '@langchain/core/messages';
+import { NextResponse } from 'next/server';
+import { z } from 'zod';
+import { JsonOutputParser } from '@langchain/core/output_parsers';
 
 const model = new AzureChatOpenAI({
   azureOpenAIEndpoint: process.env.AZURE_OPENAI_ENDPOINT,
@@ -14,7 +14,7 @@ const model = new AzureChatOpenAI({
 
 // Schema for intent analysis response
 const intentSchema = z.object({
-  intent: z.enum(["replace", "add_after", "add_before"]),
+  intent: z.enum(['replace', 'add_after', 'add_before']),
   reasoning: z.string(),
 });
 
@@ -22,7 +22,7 @@ const intentSchema = z.object({
 async function analyzeIntent(
   query: string,
   selectedText: string,
-): Promise<"replace" | "add_after" | "add_before"> {
+): Promise<'replace' | 'add_after' | 'add_before'> {
   const parser = new JsonOutputParser();
 
   const intentAnalysisMessages = [
@@ -69,19 +69,15 @@ Analyze the editing intent and respond with JSON.`),
   try {
     const response = await model.invoke(intentAnalysisMessages);
     const rawContent =
-      typeof response.content === "string"
-        ? response.content
-        : JSON.stringify(response.content);
+      typeof response.content === 'string' ? response.content : JSON.stringify(response.content);
     const parsed = await parser.parse(rawContent);
     const validated = intentSchema.parse(parsed);
 
-    console.log(
-      `Intent analysis: ${validated.intent} - ${validated.reasoning}`,
-    );
+    console.log(`Intent analysis: ${validated.intent} - ${validated.reasoning}`);
     return validated.intent;
   } catch (error) {
-    console.error("Error analyzing intent, falling back to replace:", error);
-    return "replace"; // Safe fallback
+    console.error('Error analyzing intent, falling back to replace:', error);
+    return 'replace'; // Safe fallback
   }
 }
 
@@ -90,71 +86,67 @@ export async function POST(req: Request) {
     const { query, selectedText } = await req.json();
 
     if (!query) {
-      return NextResponse.json(
-        { error: "Missing query in request body" },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: 'Missing query in request body' }, { status: 400 });
     }
 
     // Handle empty selectedText by providing a default placeholder
-    const textToProcess =
-      selectedText || "[Empty document - create new content]";
+    const textToProcess = selectedText || '[Empty document - create new content]';
 
     // Analyze the user's intent
     const intent = await analyzeIntent(query, textToProcess);
 
     // Adjust system message based on intent
-    let systemMessage = "";
+    let systemMessage = '';
     const baseFormatting =
-      "Use markdown formatting in your response. " +
-      "Available formatting options:\n" +
-      "- **bold text** for emphasis\n" +
-      "- *italic text* for emphasis\n" +
-      "- ~~strikethrough text~~ for crossed out text\n" +
-      "- `inline code` for code snippets\n" +
-      "- ```code blocks``` for multi-line code\n" +
-      "- # Heading 1, ## Heading 2, ### Heading 3 for headers\n" +
-      "- > blockquotes for quoted text\n" +
-      "- ==highlighted text== for highlighting\n" +
-      "- --- for horizontal rules/dividers\n" +
-      "- - bullet lists or 1. numbered lists\n" +
-      "- [link text](url) for links\n" +
-      "Return only the formatted content without explanations or conversational filler.";
+      'Use markdown formatting in your response. ' +
+      'Available formatting options:\n' +
+      '- **bold text** for emphasis\n' +
+      '- *italic text* for emphasis\n' +
+      '- ~~strikethrough text~~ for crossed out text\n' +
+      '- `inline code` for code snippets\n' +
+      '- ```code blocks``` for multi-line code\n' +
+      '- # Heading 1, ## Heading 2, ### Heading 3 for headers\n' +
+      '- > blockquotes for quoted text\n' +
+      '- ==highlighted text== for highlighting\n' +
+      '- --- for horizontal rules/dividers\n' +
+      '- - bullet lists or 1. numbered lists\n' +
+      '- [link text](url) for links\n' +
+      'Return only the formatted content without explanations or conversational filler.';
 
-    if (intent === "replace") {
+    if (intent === 'replace') {
       systemMessage =
         "You are an expert writing assistant. Your task is to revise and improve the user's selected text based on their query. " +
-        "\n\nCRITICAL: When the user asks for formatting changes (like making words bold, italic, etc.), you MUST return the COMPLETE original text with ONLY the requested formatting applied. " +
-        "Do not return just the words that were formatted - return the entire text with the formatting changes integrated. " +
-        "\n\nFor structured additions (titles, headers for each element):" +
+        '\n\nCRITICAL: When the user asks for formatting changes (like making words bold, italic, etc.), you MUST return the COMPLETE original text with ONLY the requested formatting applied. ' +
+        'Do not return just the words that were formatted - return the entire text with the formatting changes integrated. ' +
+        '\n\nFor structured additions (titles, headers for each element):' +
         "\n- If asked to 'create titles for each paragraph', return: # Title1\\n\\nParagraph1\\n\\n# Title2\\n\\nParagraph2" +
         "\n- If asked to 'add headers for each section', return: ## Header1\\n\\nSection1\\n\\n## Header2\\n\\nSection2" +
-        "\n- Structure the response so each new element (title/header) appears immediately before its corresponding content" +
-        "\n\nFor other formatting:" +
+        '\n- Structure the response so each new element (title/header) appears immediately before its corresponding content' +
+        '\n\nFor other formatting:' +
         "\n- If asked to 'make capitalized words bold' in a paragraph, return the ENTIRE paragraph with all capitalized words formatted as **bold**" +
         "\n- If asked to 'make the first sentence italic', return the ENTIRE text with only the first sentence in *italics*" +
-        "\n- Always preserve the complete structure and content of the original text" +
-        "\n\n" +
+        '\n- Always preserve the complete structure and content of the original text' +
+        '\n\n' +
         baseFormatting;
-    } else if (intent === "add_after") {
+    } else if (intent === 'add_after') {
       systemMessage =
-        "You are an expert writing assistant. The user wants you to create new content that will be added after their selected text. " +
+        'You are an expert writing assistant. The user wants you to create new content that will be added after their selected text. ' +
         "\n\nIMPORTANT: If the selected text contains multiple elements (paragraphs, sections, etc.) and the user asks to add something 'for each' or 'to each', structure your response so each addition is placed after its corresponding element." +
-        "\n\nFor example:" +
+        '\n\nFor example:' +
         "\n- If asked to 'add a summary after each paragraph', return: Paragraph1 + Summary1 + Paragraph2 + Summary2" +
         "\n- If asked to 'add examples after each section', place each example immediately after its corresponding section" +
-        "\n\nCreate new content based on their query that complements or continues from the selected text. " +
+        '\n\nCreate new content based on their query that complements or continues from the selected text. ' +
         baseFormatting;
     } else {
       // add_before
       systemMessage =
-        "You are an expert writing assistant. The user wants you to create new content that will be added before their selected text. " +
+        'You are an expert writing assistant. The user wants you to create new content that will be added before their selected text. ' +
         "\n\nYou should ONLY return the NEW content you're creating, NOT the original text. The original text will remain in place automatically." +
-        "\n\nFor example:" +
+        '\n\nFor example:' +
         "\n- If asked to 'create a title for this document', return ONLY the title" +
         "\n- If asked to 'add an introduction', return ONLY the introduction text" +
         "\n- If asked to 'write a preface', return ONLY the preface content" +
-        "\n\nCreate new content based on their query that introduces or leads into the selected text. " +
+        '\n\nCreate new content based on their query that introduces or leads into the selected text. ' +
         baseFormatting;
     }
 
@@ -169,18 +161,17 @@ export async function POST(req: Request) {
     const response = await model.invoke(messages);
     const suggestion = response.content;
 
-    if (typeof suggestion !== "string") {
-      throw new Error("AI response was not in the expected string format.");
+    if (typeof suggestion !== 'string') {
+      throw new Error('AI response was not in the expected string format.');
     }
 
     return NextResponse.json({ suggestion, intent });
   } catch (error) {
-    console.error("Error in AI suggestion API:", error);
-    const errorMessage =
-      error instanceof Error ? error.message : "An unknown error occurred.";
+    console.error('Error in AI suggestion API:', error);
+    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
     return NextResponse.json(
       {
-        error: "Failed to get a suggestion from the AI assistant.",
+        error: 'Failed to get a suggestion from the AI assistant.',
         details: errorMessage,
       },
       { status: 500 },

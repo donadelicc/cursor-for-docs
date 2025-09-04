@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import React from "react";
-import { useAuth } from "@/contexts/AuthContext";
-import LoginButton from "./LoginButton";
+import React from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import LoginButton from './LoginButton';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -31,12 +31,9 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
                 />
               </svg>
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">
-              Authentication Required
-            </h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Authentication Required</h2>
             <p className="text-gray-600 mb-6">
-              Please sign in with your Google account to access the document
-              editor.
+              Please sign in with your Google account to access the document editor.
             </p>
             <LoginButton />
           </div>

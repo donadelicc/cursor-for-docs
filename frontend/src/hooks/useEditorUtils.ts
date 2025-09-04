@@ -1,7 +1,7 @@
-import { useCallback } from "react";
-import { useEditor } from "@tiptap/react";
-import { findSuggestionRanges } from "@/utils/suggestionUtils";
-import { OriginalContent, Position } from "@/types/editor";
+import { useCallback } from 'react';
+import { useEditor } from '@tiptap/react';
+import { findSuggestionRanges } from '@/utils/suggestionUtils';
+import { OriginalContent, Position } from '@/types/editor';
 
 interface UseEditorUtilsProps {
   editor: ReturnType<typeof useEditor>;
@@ -35,7 +35,7 @@ export const useEditorUtils = ({
     if (hasOriginalMark && hasSuggestionMark) {
       // Both marks exist - we're in suggestion state
       if (!suggestionToolbarVisible) {
-        console.log("🎯 Showing suggestion toolbar");
+        console.log('🎯 Showing suggestion toolbar');
         setSuggestionToolbarVisible(true);
 
         // Calculate toolbar position with multiple attempts for reliability
@@ -64,10 +64,7 @@ export const useEditorUtils = ({
 
         // Restore original content info if we don't have it
         if (!originalContent) {
-          const originalText = editor.state.doc.textBetween(
-            originalRange.from,
-            originalRange.to,
-          );
+          const originalText = editor.state.doc.textBetween(originalRange.from, originalRange.to);
           setOriginalContent({
             text: originalText,
             from: originalRange.from,
@@ -78,7 +75,7 @@ export const useEditorUtils = ({
     } else if (!hasOriginalMark && !hasSuggestionMark) {
       // No marks exist - we're not in suggestion state
       if (suggestionToolbarVisible) {
-        console.log("🎯 Hiding suggestion toolbar");
+        console.log('🎯 Hiding suggestion toolbar');
         resetSuggestionState();
       }
     }
@@ -95,7 +92,7 @@ export const useEditorUtils = ({
 
   // Function to get selected text for AI processing
   const getSelectedText = useCallback(() => {
-    if (!editor) return "";
+    if (!editor) return '';
 
     const { from, to, empty } = editor.state.selection;
 

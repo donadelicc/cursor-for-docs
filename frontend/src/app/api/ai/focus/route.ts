@@ -1,6 +1,6 @@
-import { AzureChatOpenAI } from "@langchain/openai";
-import { SystemMessage, HumanMessage } from "@langchain/core/messages";
-import { NextResponse } from "next/server";
+import { AzureChatOpenAI } from '@langchain/openai';
+import { SystemMessage, HumanMessage } from '@langchain/core/messages';
+import { NextResponse } from 'next/server';
 
 const model = new AzureChatOpenAI({
   azureOpenAIEndpoint: process.env.AZURE_OPENAI_ENDPOINT,
@@ -15,14 +15,11 @@ export async function POST(req: Request) {
     const { query, documentContent } = await req.json();
 
     if (!query) {
-      return NextResponse.json(
-        { error: "Missing query in request body" },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: 'Missing query in request body' }, { status: 400 });
     }
 
     // Handle empty document content
-    const textToAnalyze = documentContent || "[Empty document]";
+    const textToAnalyze = documentContent || '[Empty document]';
 
     // System message for document research assistant
     const systemMessage = `You are an expert document research assistant. Your role is to help users understand and analyze their documents by answering questions about the content.
@@ -80,14 +77,15 @@ Always base your responses on the actual document content provided to you.`;
           // Close the stream when done
           controller.close();
         } catch (error) {
-          console.error("Error in streaming AI response:", error);
-          const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
+          console.error('Error in streaming AI response:', error);
+          const errorMessage =
+            error instanceof Error ? error.message : 'An unknown error occurred.';
           const errorText = `Error: ${errorMessage}`;
           const encoded = new TextEncoder().encode(errorText);
           controller.enqueue(encoded);
           controller.close();
         }
-      }
+      },
     });
 
     // Return a Response with the stream and appropriate headers
@@ -97,12 +95,11 @@ Always base your responses on the actual document content provided to you.`;
       },
     });
   } catch (error) {
-    console.error("Error in AI main chatbot API:", error);
-    const errorMessage =
-      error instanceof Error ? error.message : "An unknown error occurred.";
+    console.error('Error in AI main chatbot API:', error);
+    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
     return NextResponse.json(
       {
-        error: "Failed to get a response from the AI research assistant.",
+        error: 'Failed to get a response from the AI research assistant.',
         details: errorMessage,
       },
       { status: 500 },

@@ -1,41 +1,31 @@
-import { useState, useEffect, useCallback } from "react";
-import { isModifierPressed } from "@/utils/platformDetection";
+import { useState, useEffect, useCallback } from 'react';
+import { isModifierPressed } from '@/utils/platformDetection';
 
 export interface Message {
   id: string;
   content: string;
-  role: "user" | "assistant";
+  role: 'user' | 'assistant';
   timestamp: Date;
 }
 
-interface UseChatbotStateProps {
-  documentContent: string;
-  uploadedFiles?: File[];
-  mode: "general" | "sources" | "focused";
-}
-
-export const useChatbotState = ({
-  documentContent,
-  uploadedFiles = [],
-  mode,
-}: UseChatbotStateProps) => {
+export const useChatbotState = () => {
   const [messages, setMessages] = useState<Message[]>([
     {
-      id: "welcome",
+      id: 'welcome',
       content:
         "Hello! I'm your AI assistant. Switch between modes to ask general questions, analyze your documents, or explore your uploaded sources!",
-      role: "assistant",
+      role: 'assistant',
       timestamp: new Date(),
     },
   ]);
-  const [inputValue, setInputValue] = useState("");
+  const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isActive, setIsActive] = useState(false);
 
   // Keyboard shortcut for Ctrl+L (Windows) / Cmd+L (Mac) to activate/focus chatbot
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (isModifierPressed(e) && e.key === "l") {
+      if (isModifierPressed(e) && e.key === 'l') {
         e.preventDefault();
         setIsActive(true);
 
@@ -51,12 +41,12 @@ export const useChatbotState = ({
       }
     };
 
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
   }, []);
 
   // Simplified: no API logic, only state utilities
-  type AddMessageInput = { role: "user" | "assistant"; content: string };
+  type AddMessageInput = { role: 'user' | 'assistant'; content: string };
 
   const addMessage = useCallback((message: AddMessageInput) => {
     const newMessage: Message = {
@@ -84,10 +74,10 @@ export const useChatbotState = ({
   const clearChat = useCallback(() => {
     setMessages([
       {
-        id: "welcome",
+        id: 'welcome',
         content:
           "Hello! I'm your AI assistant. Switch between modes to ask general questions, analyze your documents, or explore your uploaded sources!",
-        role: "assistant",
+        role: 'assistant',
         timestamp: new Date(),
       },
     ]);

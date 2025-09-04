@@ -1,27 +1,26 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import Image from "next/image";
-import { useAuth } from "@/contexts/AuthContext";
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import Image from 'next/image';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function LoginPage() {
-  const { signInWithGoogle, signInWithEmail, signUpWithEmail, resetPassword } =
-    useAuth();
+  const { signInWithGoogle, signInWithEmail, signUpWithEmail, resetPassword } = useAuth();
   const router = useRouter();
   const [isSignUp, setIsSignUp] = useState(false);
   const [isForgotPassword, setIsForgotPassword] = useState(false);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
   const [resetEmailSent, setResetEmailSent] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError("");
+    setError('');
 
     if (isSignUp && password !== confirmPassword) {
       setError("Passwords don't match");
@@ -35,12 +34,10 @@ export default function LoginPage() {
       } else {
         await signInWithEmail(email, password);
       }
-      router.push("/");
+      router.push('/');
     } catch (error: unknown) {
       setError(
-        error instanceof Error
-          ? error.message
-          : `Failed to ${isSignUp ? "sign up" : "sign in"}`,
+        error instanceof Error ? error.message : `Failed to ${isSignUp ? 'sign up' : 'sign in'}`,
       );
     } finally {
       setLoading(false);
@@ -49,17 +46,13 @@ export default function LoginPage() {
 
   const handleGoogleLogin = async () => {
     setLoading(true);
-    setError("");
+    setError('');
 
     try {
       await signInWithGoogle();
-      router.push("/");
+      router.push('/');
     } catch (error: unknown) {
-      setError(
-        error instanceof Error
-          ? error.message
-          : "Failed to sign in with Google",
-      );
+      setError(error instanceof Error ? error.message : 'Failed to sign in with Google');
     } finally {
       setLoading(false);
     }
@@ -68,15 +61,13 @@ export default function LoginPage() {
   const handlePasswordReset = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError("");
+    setError('');
 
     try {
       await resetPassword(email);
       setResetEmailSent(true);
     } catch (error: unknown) {
-      setError(
-        error instanceof Error ? error.message : "Failed to send reset email",
-      );
+      setError(error instanceof Error ? error.message : 'Failed to send reset email');
     } finally {
       setLoading(false);
     }
@@ -86,7 +77,7 @@ export default function LoginPage() {
     setIsForgotPassword(false);
     setIsSignUp(false);
     setResetEmailSent(false);
-    setError("");
+    setError('');
   };
 
   return (
@@ -124,12 +115,12 @@ export default function LoginPage() {
 
           <div className="text-center mb-8">
             <h2 className="text-3xl font-bold text-white mb-2">
-              {isSignUp ? "Create an account" : "Welcome to Useful"}
+              {isSignUp ? 'Create an account' : 'Welcome to Useful'}
             </h2>
             <p className="text-blue-100">
               {isSignUp ? (
                 <>
-                  Already have an account?{" "}
+                  Already have an account?{' '}
                   <button
                     type="button"
                     onClick={() => setIsSignUp(false)}
@@ -140,7 +131,7 @@ export default function LoginPage() {
                 </>
               ) : (
                 <>
-                  Don&apos;t have an account?{" "}
+                  Don&apos;t have an account?{' '}
                   <button
                     type="button"
                     onClick={() => setIsSignUp(true)}
@@ -161,9 +152,7 @@ export default function LoginPage() {
 
           {resetEmailSent && (
             <div className="mb-6 p-4 bg-green-100 border border-green-300 rounded-lg">
-              <p className="text-sm text-green-800">
-                Password reset email sent! Check your inbox.
-              </p>
+              <p className="text-sm text-green-800">Password reset email sent! Check your inbox.</p>
             </div>
           )}
 
@@ -171,10 +160,7 @@ export default function LoginPage() {
             /* Password Recovery Form */
             <form onSubmit={handlePasswordReset} className="space-y-6">
               <div>
-                <label
-                  htmlFor="email"
-                  className="block text-sm font-medium text-white mb-2"
-                >
+                <label htmlFor="email" className="block text-sm font-medium text-white mb-2">
                   Email
                 </label>
                 <input
@@ -199,9 +185,9 @@ export default function LoginPage() {
                     Sending...
                   </div>
                 ) : resetEmailSent ? (
-                  "Email Sent"
+                  'Email Sent'
                 ) : (
-                  "Reset Password"
+                  'Reset Password'
                 )}
               </button>
 
@@ -255,7 +241,7 @@ export default function LoginPage() {
                     d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                   />
                 </svg>
-                {isSignUp ? "Sign up" : "Continue"} with Google
+                {isSignUp ? 'Sign up' : 'Continue'} with Google
               </button>
 
               {/* Divider */}
@@ -266,7 +252,7 @@ export default function LoginPage() {
                   </div>
                   <div className="relative flex justify-center text-sm">
                     <span className="px-2 bg-blue-700 text-white">
-                      Or {isSignUp ? "sign up" : "continue"} with email
+                      Or {isSignUp ? 'sign up' : 'continue'} with email
                     </span>
                   </div>
                 </div>
@@ -275,10 +261,7 @@ export default function LoginPage() {
               {/* Email Form - Now at the bottom */}
               <form onSubmit={handleSubmit} className="space-y-6 mt-6">
                 <div>
-                  <label
-                    htmlFor="email"
-                    className="block text-sm font-medium text-white mb-2"
-                  >
+                  <label htmlFor="email" className="block text-sm font-medium text-white mb-2">
                     Email
                   </label>
                   <input
@@ -293,10 +276,7 @@ export default function LoginPage() {
                 </div>
 
                 <div>
-                  <label
-                    htmlFor="password"
-                    className="block text-sm font-medium text-white mb-2"
-                  >
+                  <label htmlFor="password" className="block text-sm font-medium text-white mb-2">
                     Password
                   </label>
                   <input
@@ -338,10 +318,7 @@ export default function LoginPage() {
                         type="checkbox"
                         className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                       />
-                      <label
-                        htmlFor="remember-me"
-                        className="ml-2 block text-sm text-white"
-                      >
+                      <label htmlFor="remember-me" className="ml-2 block text-sm text-white">
                         Remember me
                       </label>
                     </div>
@@ -364,12 +341,12 @@ export default function LoginPage() {
                   {loading ? (
                     <div className="flex items-center">
                       <div className="animate-spin rounded-full h-4 w-4 border-2 border-gray-700 border-t-transparent mr-2"></div>
-                      {isSignUp ? "Creating account..." : "Signing in..."}
+                      {isSignUp ? 'Creating account...' : 'Signing in...'}
                     </div>
                   ) : isSignUp ? (
-                    "Create account"
+                    'Create account'
                   ) : (
-                    "Sign in"
+                    'Sign in'
                   )}
                 </button>
               </form>

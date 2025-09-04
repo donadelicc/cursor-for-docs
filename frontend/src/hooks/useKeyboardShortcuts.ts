@@ -1,7 +1,7 @@
-import { useEffect } from "react";
-import { useEditor } from "@tiptap/react";
-import { Position } from "@/types/editor";
-import { isModifierPressed } from "@/utils/platformDetection";
+import { useEffect } from 'react';
+import { useEditor } from '@tiptap/react';
+import { Position } from '@/types/editor';
+import { isModifierPressed } from '@/utils/platformDetection';
 
 interface UseKeyboardShortcutsProps {
   editor: ReturnType<typeof useEditor>;
@@ -27,7 +27,7 @@ export const useKeyboardShortcuts = ({
   // Open chatbot on keydown
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (isModifierPressed(e) && e.key === "k") {
+      if (isModifierPressed(e) && e.key === 'k') {
         e.preventDefault();
 
         if (!editor || suggestionToolbarVisible) return;
@@ -48,8 +48,7 @@ export const useKeyboardShortcuts = ({
           }
         } else {
           // No selection - position chatbot in center of editor
-          const editorRect =
-            editorContainerRef.current?.getBoundingClientRect();
+          const editorRect = editorContainerRef.current?.getBoundingClientRect();
           if (editorRect) {
             const position = {
               x: editorRect.width / 2,
@@ -61,22 +60,16 @@ export const useKeyboardShortcuts = ({
       }
     };
 
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [
-    editor,
-    suggestionToolbarVisible,
-    calculatePosition,
-    editorContainerRef,
-    showChatbot,
-  ]);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [editor, suggestionToolbarVisible, calculatePosition, editorContainerRef, showChatbot]);
 
   // Handle closing popups with Escape key
   useEffect(() => {
     if (!chatbotVisible && !suggestionToolbarVisible) return;
 
     const handleEscapeKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
+      if (event.key === 'Escape') {
         if (suggestionToolbarVisible) {
           handleRejectSuggestion();
         } else {
@@ -85,12 +78,7 @@ export const useKeyboardShortcuts = ({
       }
     };
 
-    document.addEventListener("keydown", handleEscapeKey);
-    return () => document.removeEventListener("keydown", handleEscapeKey);
-  }, [
-    chatbotVisible,
-    suggestionToolbarVisible,
-    handleRejectSuggestion,
-    resetChatbotState,
-  ]);
+    document.addEventListener('keydown', handleEscapeKey);
+    return () => document.removeEventListener('keydown', handleEscapeKey);
+  }, [chatbotVisible, suggestionToolbarVisible, handleRejectSuggestion, resetChatbotState]);
 };

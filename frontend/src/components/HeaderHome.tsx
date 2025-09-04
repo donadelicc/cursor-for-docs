@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import Image from "next/image";
-import Link from "next/link";
-import LoginButton from "./LoginButton";
+import Image from 'next/image';
+import Link from 'next/link';
+import LoginButton from './LoginButton';
 
 export default function HeaderHome() {
   return (

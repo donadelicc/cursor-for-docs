@@ -1,8 +1,7 @@
-import React, { useRef, useEffect, useState } from "react";
-import ReactMarkdown from "react-markdown";
-import styles from "./MainChatbot.module.css";
-import { useChatbotState } from "@/hooks/useChatbotState";
-import apiClient from "@/utils/apiClient";
+import React, { useRef, useEffect, useState } from 'react';
+import ReactMarkdown from 'react-markdown';
+import { useChatbotState } from '@/hooks/useChatbotState';
+// apiClient removed; no longer sending files to /documents
 
 interface MainChatbotProps {
   documentContent: string;
@@ -23,9 +22,7 @@ const MainChatbot = ({
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const chatbotContainerRef = useRef<HTMLDivElement>(null);
-  const [mode, setMode] = useState<"general" | "sources" | "focused">(
-    "general",
-  );
+  const [mode, setMode] = useState<'general' | 'sources' | 'focused'>('general');
   const [showModeDropdown, setShowModeDropdown] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [isUploadingFiles, setIsUploadingFiles] = useState(false);
@@ -36,17 +33,16 @@ const MainChatbot = ({
   // Remove duplicates based on file name and size to avoid conflicts
   const allUploadedFiles = [...selectedSources, ...uploadedFiles].filter(
     (file, index, self) =>
-      index ===
-      self.findIndex((f) => f.name === file.name && f.size === file.size),
+      index === self.findIndex((f) => f.name === file.name && f.size === file.size),
   );
 
   // Auto-switch to Sources mode when files are available
   useEffect(() => {
-    if (allUploadedFiles.length > 0 && mode !== "sources") {
-      setMode("sources");
-    } else if (allUploadedFiles.length === 0 && mode === "sources") {
+    if (allUploadedFiles.length > 0 && mode !== 'sources') {
+      setMode('sources');
+    } else if (allUploadedFiles.length === 0 && mode === 'sources') {
       // Switch back to General mode when no files remain
-      setMode("general");
+      setMode('general');
     }
   }, [allUploadedFiles.length, mode]);
 
@@ -60,14 +56,10 @@ const MainChatbot = ({
     addMessage,
     updateLastMessage,
     clearChat,
-  } = useChatbotState({
-    documentContent,
-    uploadedFiles: allUploadedFiles,
-    mode,
-  });
+  } = useChatbotState();
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
   useEffect(() => {
@@ -88,15 +80,14 @@ const MainChatbot = ({
         return;
       }
       const target = event.target as Element;
-      if (!target.closest(`.${styles.modeSelector}`)) {
+      if (!target.closest('[data-mode-selector]')) {
         setShowModeDropdown(false);
       }
     };
 
     if (showModeDropdown) {
-      document.addEventListener("mousedown", handleClickOutside);
-      return () =>
-        document.removeEventListener("mousedown", handleClickOutside);
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
     }
   }, [showModeDropdown]);
 
@@ -113,8 +104,8 @@ const MainChatbot = ({
       autoResizeTextarea();
     };
 
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -124,23 +115,31 @@ const MainChatbot = ({
 
     // Add the user's message to the state immediately for a responsive UI
     addMessage({ role: 'user', content: query });
-    setInputValue("");
+    setInputValue('');
     setIsLoading(true);
 
     try {
       let response: Response;
 
-      if (mode === "sources") {
+      if (mode === 'sources') {
         const formData = new FormData();
-        formData.append("query", query);
-        console.log(`[chat] → POST /sources`, { query });
-        response = await apiClient.post("/sources", formData);
-      } else if (mode === "general") {
-        console.log(`[chat] → POST /general`, { query });
-        response = await fetch("http://localhost:8000/general", {
-          method: "POST",
+        formData.append('query', query);
+        // Attach currently available uploaded/selected PDF files for analysis
+        allUploadedFiles.forEach((file) => formData.append('files', file));
+        console.log(`[chat] → POST /api/ai/sources`, { query });
+        response = await fetch('/api/ai/sources', {
+          method: 'POST',
+          body: formData,
+        });
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+      } else if (mode === 'general') {
+        console.log(`[chat] → POST /api/ai/general`, { query });
+        response = await fetch('/api/ai/general', {
+          method: 'POST',
           headers: {
-            "Content-Type": "application/json",
+            'Content-Type': 'application/json',
           },
           body: JSON.stringify({ query }),
         });
@@ -150,10 +149,10 @@ const MainChatbot = ({
       } else {
         // focused
         console.log(`[chat] → POST /api/ai/focus`, { query });
-        response = await fetch("/api/ai/focus", {
-          method: "POST",
+        response = await fetch('/api/ai/focus', {
+          method: 'POST',
           headers: {
-            "Content-Type": "application/json",
+            'Content-Type': 'application/json',
           },
           body: JSON.stringify({ query, documentContent }),
         });
@@ -161,17 +160,17 @@ const MainChatbot = ({
           throw new Error(`HTTP ${response.status}`);
         }
       }
-      
-      if (!response.body) throw new Error("Response body is empty.");
-      
+
+      if (!response.body) throw new Error('Response body is empty.');
+
       // Add an empty placeholder message for the assistant
-      addMessage({ role: 'assistant', content: "" });
-      
+      addMessage({ role: 'assistant', content: '' });
+
       // Handle the streaming response
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       console.log(`[chat] ← streaming response started`);
-      
+
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
@@ -182,23 +181,22 @@ const MainChatbot = ({
         console.log(`[chat] ← chunk`, { bytes: value?.byteLength ?? 0 });
       }
       console.log(`[chat] ← streaming response completed`);
-
     } catch (error) {
-      console.error("Error fetching chat response:", error);
-      addMessage({ role: 'assistant', content: "Sorry, an error occurred. Please try again." });
+      console.error('Error fetching chat response:', error);
+      addMessage({ role: 'assistant', content: 'Sorry, an error occurred. Please try again.' });
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
+    if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSubmit(e);
     }
   };
 
-  const handleModeChange = (newMode: "general" | "sources" | "focused") => {
+  const handleModeChange = (newMode: 'general' | 'sources' | 'focused') => {
     setMode(newMode);
     setShowModeDropdown(false);
   };
@@ -207,44 +205,10 @@ const MainChatbot = ({
     fileInputRef.current?.click();
   };
 
-  // NEW: The actual API call for ingestion
-  const handleIngestFiles = async (filesToUpload: File[]) => {
-    if (filesToUpload.length === 0) return;
-
-    // 1. Show a spinner
-    setUploadingFiles(prev => new Set([...prev, ...filesToUpload.map(f => f.name)]));
-
-    try {
-      const formData = new FormData();
-      filesToUpload.forEach(file => {
-        formData.append("files", file);
-      });
-    // 2. Start the REAL backend upload and WAIT for it to finish
-      console.log(`[upload] → POST /documents`, { files: filesToUpload.map(f => ({ name: f.name, size: f.size })) });
-      const response = await apiClient.post("/documents", formData);
-      console.log(`[upload] ← /documents ${response.status}`);
-    
-      // 3. If it succeeds, we're done! The spinner will be hidden in the 'finally' block.
-      //setTimeout(() => setNotification(null), 3000);
-
-    } catch (error) {
-      console.error("Error ingesting files:", error);
-      setNotification(`Error: Could not upload files. Please try again.`);
-      setTimeout(() => setNotification(null), 5000);
-      
-      // If upload fails, remove the files from the UI state
-      setUploadedFiles(prev => prev.filter(f => !filesToUpload.some(fu => fu.name === f.name)));
-
-    } finally {
-      // Remove files from the "uploading" state after completion
-      setUploadingFiles(prev => {
-        const newSet = new Set(prev);
-        filesToUpload.forEach(f => newSet.delete(f.name));
-        return newSet;
-      });
-      // Re-enable upload button
-      setIsUploadingFiles(false);
-    }
+  // File ingestion to backend has been removed; keep UI state only
+  const handleIngestFiles = async () => {
+    setIsUploadingFiles(false);
+    setUploadingFiles(new Set());
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -256,7 +220,7 @@ const MainChatbot = ({
 
     // Clear the input so the same file can be selected again
     if (e.target) {
-      e.target.value = "";
+      e.target.value = '';
     }
   };
 
@@ -264,40 +228,24 @@ const MainChatbot = ({
     const fileToRemove = allUploadedFiles[index];
     if (!fileToRemove) return;
 
-    try {
-      const endpoint = `/documents/${encodeURIComponent(fileToRemove.name)}`;
-      console.log(`[upload] → DELETE ${endpoint}`);
-      const resp = await apiClient.delete(endpoint);
-      console.log(`[upload] ← DELETE ${endpoint} ${resp.status}`);
-    
-      // --- If API call is successful, then update the local state ---
-      // Check if file is from selectedSources (Knowledge Base)
-      const isFromSelectedSources = selectedSources.some(
-        (f) => f.name === fileToRemove.name && f.size === fileToRemove.size,
+    // Update local state only; no backend deletion
+    const isFromSelectedSources = selectedSources.some(
+      (f) => f.name === fileToRemove.name && f.size === fileToRemove.size,
+    );
+
+    const isFromUploadedFiles = uploadedFiles.some(
+      (f) => f.name === fileToRemove.name && f.size === fileToRemove.size,
+    );
+
+    if (isFromSelectedSources) {
+      onFileRemove?.(fileToRemove);
+    }
+
+    if (isFromUploadedFiles) {
+      setUploadedFiles((prev) =>
+        prev.filter((f) => !(f.name === fileToRemove.name && f.size === fileToRemove.size)),
       );
-
-      // Check if file is from directly uploaded files
-      const isFromUploadedFiles = uploadedFiles.some(
-        (f) => f.name === fileToRemove.name && f.size === fileToRemove.size,
-      );
-
-      // Remove from Knowledge Base selection if present
-      if (isFromSelectedSources) {
-        onFileRemove?.(fileToRemove);
-      }
-
-      // Remove from directly uploaded files if present
-      if (isFromUploadedFiles) {
-        setUploadedFiles((prev) =>
-          prev.filter(
-            (f) =>
-              !(f.name === fileToRemove.name && f.size === fileToRemove.size),
-          ),
-        );
-        onChatbotFileRemove?.(fileToRemove);
-      }
-    } catch (error) {
-      console.error("Failed to remove source:", error);
+      onChatbotFileRemove?.(fileToRemove);
     }
   };
 
@@ -310,9 +258,7 @@ const MainChatbot = ({
   // Process files with validation
   const processFiles = (files: FileList | File[]) => {
     const fileArray = Array.from(files);
-    const pdfFiles = fileArray.filter(
-      (file) => file.type === "application/pdf",
-    );
+    const pdfFiles = fileArray.filter((file) => file.type === 'application/pdf');
     const validFiles: File[] = [];
     const duplicateFiles: string[] = [];
     const errors: string[] = [];
@@ -322,7 +268,7 @@ const MainChatbot = ({
     const maxAttachedFiles = 3;
 
     if (currentAttachedCount >= maxAttachedFiles) {
-      setNotification("Maximum documents 3");
+      setNotification('Maximum documents 3');
       // Auto-hide notification after 5 seconds
       setTimeout(() => {
         setNotification(null);
@@ -339,8 +285,7 @@ const MainChatbot = ({
 
       // Check for duplicates against all uploaded files (including selected sources)
       const isDuplicate = allUploadedFiles.some(
-        (existingFile) =>
-          existingFile.name === file.name && existingFile.size === file.size,
+        (existingFile) => existingFile.name === file.name && existingFile.size === file.size,
       );
 
       if (isDuplicate) {
@@ -362,12 +307,12 @@ const MainChatbot = ({
     if (currentAttachedCount + validFiles.length > maxAttachedFiles) {
       const filesToAdd = maxAttachedFiles - currentAttachedCount;
       validFiles.splice(filesToAdd); // Keep only files that fit within the limit
-      errors.push("Maximum documents 3");
+      errors.push('Maximum documents 3');
     }
 
     // Collect all error messages
     if (fileArray.length !== pdfFiles.length) {
-      errors.push("Only PDF files are supported");
+      errors.push('Only PDF files are supported');
     }
 
     if (duplicateFiles.length > 0) {
@@ -375,7 +320,7 @@ const MainChatbot = ({
     }
 
     if (errors.length > 0) {
-      const fullMessage = errors.join(" | ");
+      const fullMessage = errors.join(' | ');
       setNotification(fullMessage);
 
       // Auto-hide notification after 5 seconds
@@ -395,7 +340,8 @@ const MainChatbot = ({
       // Notify parent (EditorContainer) about new files to sync with KnowledgeBase
       onFileUpload?.(validFiles);
 
-      handleIngestFiles(validFiles);
+      // No backend ingestion; clear any uploading UI state
+      handleIngestFiles();
     } else {
       // No valid files to upload; ensure button is re-enabled
       setIsUploadingFiles(false);
@@ -426,7 +372,7 @@ const MainChatbot = ({
     if (!textarea || !container) return;
 
     // Reset height to get accurate scrollHeight measurement
-    textarea.style.height = "auto";
+    textarea.style.height = 'auto';
 
     // Calculate max height (30% of chatbot container) with minimum
     const containerHeight = container.offsetHeight;
@@ -440,22 +386,24 @@ const MainChatbot = ({
     textarea.style.height = `${newHeight}px`;
 
     // Enable/disable scrolling based on whether we've reached max height
-    textarea.style.overflowY = contentHeight > maxHeight ? "auto" : "hidden";
+    textarea.style.overflowY = contentHeight > maxHeight ? 'auto' : 'hidden';
   };
 
   return (
     <div
       ref={chatbotContainerRef}
-      className={styles.chatbotContainer}
+      className="flex flex-col w-full h-full bg-white dark:bg-gray-900 font-sans relative transition-colors duration-200"
       onDragOver={handleDragOver}
       onDrop={handleDrop}
     >
       {/* Notification */}
       {notification && (
-        <div className={styles.notification}>
-          <span className={styles.notificationText}>{notification}</span>
+        <div className="absolute top-2 left-2 right-2 bg-yellow-50 dark:bg-yellow-900 border border-yellow-400 dark:border-yellow-600 rounded-lg p-3 flex items-center justify-between z-50 shadow-lg">
+          <span className="text-sm text-yellow-800 dark:text-yellow-200 flex-1 mr-2">
+            {notification}
+          </span>
           <button
-            className={styles.notificationClose}
+            className="bg-none border-none text-yellow-800 dark:text-yellow-200 cursor-pointer text-xl leading-none p-0 w-6 h-6 flex items-center justify-center rounded transition-colors duration-200 hover:bg-yellow-100 dark:hover:bg-yellow-800"
             onClick={() => setNotification(null)}
           >
             ×
@@ -464,19 +412,14 @@ const MainChatbot = ({
       )}
 
       {/* Header */}
-      <div className={styles.header}>
-        <div className={styles.headerContent}>
+      <div className="flex items-center justify-between px-4 py-3 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 shrink-0 transition-colors duration-200">
+        <div className="flex items-center gap-3">
           <button
-            className={styles.newChatButton}
+            className="flex items-center justify-center w-8 h-8 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors duration-200"
             title="New Chat"
             onClick={clearChat}
           >
-            <svg
-              className={styles.buttonIcon}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -489,41 +432,47 @@ const MainChatbot = ({
       </div>
 
       {/* Messages */}
-      <div className={styles.messagesContainer}>
-        <div className={styles.messagesList}>
+      <div className="flex-1 overflow-y-auto px-4 py-4">
+        <div className="space-y-4">
           {messages.map((message) => (
             <div
               key={message.id}
-              className={`${styles.messageWrapper} ${
-                message.role === "user"
-                  ? styles.userMessage
-                  : styles.assistantMessage
-              }`}
+              className={`flex w-full ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
             >
-              <div className={styles.messageContent}>
-                <div className={styles.messageText}>
-                  {message.role === "assistant" ? (
-                    <div className="prose prose-sm max-w-none prose-gray prose-headings:font-semibold prose-headings:text-gray-900 prose-p:text-gray-700 prose-li:text-gray-700 prose-strong:text-gray-900">
+              <div
+                className={`max-w-[80%] ${
+                  message.role === 'user'
+                    ? 'bg-blue-600 dark:bg-blue-700 text-white rounded-lg rounded-br-sm'
+                    : 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-lg rounded-bl-sm'
+                }`}
+              >
+                <div className="px-4 py-3">
+                  {message.role === 'assistant' ? (
+                    <div className="prose prose-sm max-w-none prose-gray dark:prose-invert prose-headings:font-semibold prose-headings:text-gray-900 dark:prose-headings:text-gray-100 prose-p:text-gray-700 dark:prose-p:text-gray-300 prose-li:text-gray-700 dark:prose-li:text-gray-300 prose-strong:text-gray-900 dark:prose-strong:text-gray-100">
                       <ReactMarkdown>{message.content}</ReactMarkdown>
                     </div>
                   ) : (
-                    <div className={styles.messageBody}>{message.content}</div>
+                    <div className="text-sm leading-relaxed">{message.content}</div>
                   )}
                 </div>
               </div>
             </div>
           ))}
           {isLoading && (
-            <div
-              className={`${styles.messageWrapper} ${styles.assistantMessage}`}
-            >
-              <div className={styles.messageContent}>
-                <div className={styles.messageText}>
-                  <div className={styles.loadingIndicator}>
-                    <div className={styles.loadingDots}>
-                      <div></div>
-                      <div></div>
-                      <div></div>
+            <div className="flex justify-start">
+              <div className="max-w-[80%] bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-lg rounded-bl-sm">
+                <div className="px-4 py-3">
+                  <div className="flex items-center space-x-1">
+                    <div className="flex space-x-1">
+                      <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce"></div>
+                      <div
+                        className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce"
+                        style={{ animationDelay: '0.1s' }}
+                      ></div>
+                      <div
+                        className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce"
+                        style={{ animationDelay: '0.2s' }}
+                      ></div>
                     </div>
                   </div>
                 </div>
@@ -535,26 +484,29 @@ const MainChatbot = ({
       </div>
 
       {/* Input */}
-      <div className={styles.inputContainer}>
+      <div className="border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4 shrink-0 transition-colors duration-200">
         {/* Individual Source Files - Above Input */}
         {allUploadedFiles.length > 0 && (
-          <div className={styles.sourceFilesContainer}>
+          <div className="mb-4 flex flex-wrap gap-2">
             {allUploadedFiles.map((file, index) => {
               const isUploading = uploadingFiles.has(file.name);
               return (
-                <div key={index} className={styles.sourceFileItem}>
-                  <div className={styles.sourceFileInfo}>
-                    <div className={styles.sourceFileIcon}>
+                <div
+                  key={index}
+                  className="flex items-center gap-2 bg-gray-100 dark:bg-gray-800 rounded-lg p-2 text-sm"
+                >
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 flex items-center justify-center">
                       {isUploading ? (
-                        <div className={styles.loadingSpinner}>
+                        <div className="relative">
                           <svg
-                            className={styles.spinnerIcon}
+                            className="w-4 h-4 text-blue-600 dark:text-blue-400 animate-spin"
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
                           >
                             <circle
-                              className={styles.spinnerCircle}
+                              className="opacity-25"
                               cx="12"
                               cy="12"
                               r="10"
@@ -570,12 +522,10 @@ const MainChatbot = ({
                         <div
                           onClick={() => removeUploadedFile(index)}
                           title="Remove source"
-                          style={{
-                            cursor: "pointer",
-                          }}
+                          className="cursor-pointer relative group"
                         >
                           <svg
-                            className={styles.pdfIcon}
+                            className="w-4 h-4 text-red-600"
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
@@ -589,7 +539,7 @@ const MainChatbot = ({
                           </svg>
                           {/* Show remove icon for all files */}
                           <svg
-                            className={styles.removeIcon}
+                            className="absolute top-0 right-0 w-3 h-3 text-red-600 opacity-0 group-hover:opacity-100 transition-opacity duration-200 transform translate-x-1 -translate-y-1"
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
@@ -604,8 +554,10 @@ const MainChatbot = ({
                         </div>
                       )}
                     </div>
-                    <div className={styles.sourceFileDetails}>
-                      <span className={styles.sourceFileName}>{file.name}</span>
+                    <div className="flex-1 min-w-0">
+                      <span className="text-gray-700 dark:text-gray-300 text-sm font-medium truncate block">
+                        {file.name}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -614,9 +566,9 @@ const MainChatbot = ({
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className={styles.inputForm}>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-3">
           {/* Text Input with Embedded Buttons */}
-          <div className={styles.textInputWrapper}>
+          <div className="relative flex items-end bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl p-3 focus-within:border-blue-500 dark:focus-within:border-blue-400 focus-within:bg-white dark:focus-within:bg-gray-700 transition-all duration-200">
             <textarea
               ref={inputRef}
               value={inputValue}
@@ -626,37 +578,33 @@ const MainChatbot = ({
               }}
               onKeyDown={handleKeyDown}
               placeholder={
-                mode === "general"
+                mode === 'general'
                   ? `Ask me anything...`
-                  : mode === "sources"
+                  : mode === 'sources'
                     ? `Ask questions about your uploaded sources...`
                     : `Ask questions about your document...`
               }
-              className={styles.textInput}
+              className="flex-1 resize-none border-none bg-transparent outline-none text-gray-900 dark:text-gray-100 text-sm leading-relaxed min-h-[20px] max-h-32"
               rows={1}
               disabled={isLoading}
               data-chatbot-input="true"
             />
 
             {/* Embedded Buttons */}
-            <div className={styles.embeddedButtons}>
+            <div className="flex items-end gap-2 ml-2">
               {/* Mode Selector - Bottom Left */}
-              <div className={styles.modeSelector}>
+              <div className="relative" data-mode-selector>
                 <button
                   type="button"
-                  className={styles.modeButton}
+                  className="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors duration-200"
                   onClick={() => setShowModeDropdown(!showModeDropdown)}
                 >
-                  <span className={styles.modeButtonText}>
-                    {mode === "general"
-                      ? "General"
-                      : mode === "sources"
-                        ? "Sources"
-                        : "Focused"}
+                  <span className="font-medium">
+                    {mode === 'general' ? 'General' : mode === 'sources' ? 'Sources' : 'Focused'}
                   </span>
                   <svg
-                    className={`${styles.chevronIcon} ${
-                      showModeDropdown ? styles.chevronUp : styles.chevronDown
+                    className={`w-4 h-4 transition-transform duration-200 ${
+                      showModeDropdown ? 'rotate-180' : ''
                     }`}
                     fill="none"
                     stroke="currentColor"
@@ -672,31 +620,37 @@ const MainChatbot = ({
                 </button>
 
                 {showModeDropdown && (
-                  <div className={styles.modeDropdown}>
+                  <div className="absolute bottom-full left-0 mb-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg py-1 min-w-[120px] z-50">
                     <button
                       type="button"
-                      className={`${styles.modeOption} ${
-                        mode === "general" ? styles.modeOptionActive : ""
+                      className={`w-full text-left px-3 py-2 text-sm transition-colors duration-200 hover:bg-gray-50 dark:hover:bg-gray-700 ${
+                        mode === 'general'
+                          ? 'bg-blue-50 dark:bg-blue-900 text-blue-700 dark:text-blue-300 font-medium'
+                          : 'text-gray-700 dark:text-gray-300'
                       }`}
-                      onClick={() => handleModeChange("general")}
+                      onClick={() => handleModeChange('general')}
                     >
                       General
                     </button>
                     <button
                       type="button"
-                      className={`${styles.modeOption} ${
-                        mode === "sources" ? styles.modeOptionActive : ""
+                      className={`w-full text-left px-3 py-2 text-sm transition-colors duration-200 hover:bg-gray-50 dark:hover:bg-gray-700 ${
+                        mode === 'sources'
+                          ? 'bg-blue-50 dark:bg-blue-900 text-blue-700 dark:text-blue-300 font-medium'
+                          : 'text-gray-700 dark:text-gray-300'
                       }`}
-                      onClick={() => handleModeChange("sources")}
+                      onClick={() => handleModeChange('sources')}
                     >
                       Sources
                     </button>
                     <button
                       type="button"
-                      className={`${styles.modeOption} ${
-                        mode === "focused" ? styles.modeOptionActive : ""
+                      className={`w-full text-left px-3 py-2 text-sm transition-colors duration-200 hover:bg-gray-50 dark:hover:bg-gray-700 ${
+                        mode === 'focused'
+                          ? 'bg-blue-50 dark:bg-blue-900 text-blue-700 dark:text-blue-300 font-medium'
+                          : 'text-gray-700 dark:text-gray-300'
                       }`}
-                      onClick={() => handleModeChange("focused")}
+                      onClick={() => handleModeChange('focused')}
                     >
                       Focused
                     </button>
@@ -705,21 +659,16 @@ const MainChatbot = ({
               </div>
 
               {/* Right Side Buttons */}
-              <div className={styles.rightButtons}>
+              <div className="flex items-center gap-2">
                 {/* Upload Button */}
                 <button
                   type="button"
                   onClick={handleFileUpload}
                   disabled={isLoading || isUploadingFiles}
-                  className={styles.uploadButton}
+                  className="flex items-center justify-center w-8 h-8 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 hover:text-gray-800 dark:hover:text-gray-300 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                   title="Upload PDF files"
                 >
-                  <svg
-                    className={styles.uploadIcon}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -733,14 +682,9 @@ const MainChatbot = ({
                 <button
                   type="submit"
                   disabled={!inputValue.trim() || isLoading}
-                  className={styles.sendButton}
+                  className="flex items-center justify-center w-8 h-8 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <svg
-                    className={styles.sendIcon}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -761,7 +705,7 @@ const MainChatbot = ({
           accept=".pdf"
           multiple
           onChange={handleFileChange}
-          style={{ display: "none" }}
+          style={{ display: 'none' }}
         />
       </div>
     </div>

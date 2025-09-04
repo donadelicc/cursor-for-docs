@@ -1,3 +1,6 @@
+/* TipTap Editor Styles */
+@import '../styles/tiptap.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -30,11 +33,11 @@
 body {
   background: var(--anti-flash-white);
   color: var(--foreground);
-  font-family: "Poppins", sans-serif;
+  font-family: 'Poppins', sans-serif;
 }
 
 .footer {
   background: var(--deep-sea);
   color: var(--anti-flash-white);
-  font-family: "Poppins", sans-serif;
+  font-family: 'Poppins', sans-serif;
 }

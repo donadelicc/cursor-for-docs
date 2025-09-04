@@ -6,7 +6,7 @@ export type OriginalContent = {
 };
 
 // Type for suggestion intent
-export type SuggestionIntent = "replace" | "add_after" | "add_before";
+export type SuggestionIntent = 'replace' | 'add_after' | 'add_before';
 
 // Type for position coordinates
 export type Position = {

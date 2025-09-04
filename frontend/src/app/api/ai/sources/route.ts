@@ -1,8 +1,8 @@
-import { AzureChatOpenAI } from "@langchain/openai";
-import { WebPDFLoader } from "@langchain/community/document_loaders/web/pdf";
+import { AzureChatOpenAI } from '@langchain/openai';
+import { WebPDFLoader } from '@langchain/community/document_loaders/web/pdf';
 
-import { SystemMessage, HumanMessage } from "@langchain/core/messages";
-import { NextResponse } from "next/server";
+import { SystemMessage, HumanMessage } from '@langchain/core/messages';
+import { NextResponse } from 'next/server';
 
 const model = new AzureChatOpenAI({
   azureOpenAIEndpoint: process.env.AZURE_OPENAI_ENDPOINT,
@@ -19,36 +19,34 @@ async function extractTextFromPDF(file: File): Promise<string> {
     const docs = await loader.load();
 
     // Combine all pages into a single text string
-    const fullText = docs.map((doc) => doc.pageContent).join("\n\n");
+    const fullText = docs.map((doc) => doc.pageContent).join('\n\n');
     return fullText;
   } catch (error) {
-    console.error("Error extracting PDF text:", error);
-    throw new Error("Failed to extract text from PDF file");
+    console.error('Error extracting PDF text:', error);
+    throw new Error('Failed to extract text from PDF file');
   }
 }
 
 export async function POST(req: Request) {
   try {
-    const contentType = req.headers.get("content-type") || "";
+    const contentType = req.headers.get('content-type') || '';
     let query: string;
     const uploadedSources: string[] = [];
 
-    if (contentType.includes("multipart/form-data")) {
+    if (contentType.includes('multipart/form-data')) {
       // Handle file uploads with FormData
       const formData = await req.formData();
 
-      query = formData.get("query") as string;
+      query = formData.get('query') as string;
 
       // Process uploaded PDF files
-      const files = formData.getAll("files") as File[];
+      const files = formData.getAll('files') as File[];
 
       for (const file of files) {
-        if (file.type === "application/pdf") {
+        if (file.type === 'application/pdf') {
           try {
             const extractedText = await extractTextFromPDF(file);
-            uploadedSources.push(
-              `=== Source: ${file.name} ===\n${extractedText}\n`,
-            );
+            uploadedSources.push(`=== Source: ${file.name} ===\n${extractedText}\n`);
           } catch (error) {
             console.error(`Error processing file ${file.name}:`, error);
             // Continue processing other files even if one fails
@@ -63,25 +61,21 @@ export async function POST(req: Request) {
       return NextResponse.json(
         {
           error:
-            "This endpoint requires uploaded PDF files. Please use multipart/form-data with files.",
+            'This endpoint requires uploaded PDF files. Please use multipart/form-data with files.',
         },
         { status: 400 },
       );
     }
 
     if (!query) {
-      return NextResponse.json(
-        { error: "Missing query in request body" },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: 'Missing query in request body' }, { status: 400 });
     }
 
     // Validate that we have uploaded sources
     if (uploadedSources.length === 0) {
       return NextResponse.json(
         {
-          error:
-            "No sources uploaded. Please upload PDF files to use this endpoint.",
+          error: 'No sources uploaded. Please upload PDF files to use this endpoint.',
         },
         { status: 400 },
       );
@@ -120,17 +114,14 @@ Markdown formatting guidelines:
     const humanMessage = `Here are the uploaded source materials for analysis:
 
 --- UPLOADED SOURCES ---
-${uploadedSources.join("\n")}
+${uploadedSources.join('\n')}
 
 --- USER QUESTION ---
 ${query}
 
 Please provide a comprehensive response based exclusively on the uploaded sources above. Focus your analysis on the content within these source materials and clearly attribute information to specific source files when referencing them.`;
 
-    const messages = [
-      new SystemMessage(systemMessage),
-      new HumanMessage(humanMessage),
-    ];
+    const messages = [new SystemMessage(systemMessage), new HumanMessage(humanMessage)];
 
     // Create a ReadableStream for streaming the response
     const stream = new ReadableStream({
@@ -152,14 +143,15 @@ Please provide a comprehensive response based exclusively on the uploaded source
           // Close the stream when done
           controller.close();
         } catch (error) {
-          console.error("Error in streaming AI response:", error);
-          const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
+          console.error('Error in streaming AI response:', error);
+          const errorMessage =
+            error instanceof Error ? error.message : 'An unknown error occurred.';
           const errorText = `Error: ${errorMessage}`;
           const encoded = new TextEncoder().encode(errorText);
           controller.enqueue(encoded);
           controller.close();
         }
-      }
+      },
     });
 
     // Return a Response with the stream and appropriate headers
@@ -169,12 +161,11 @@ Please provide a comprehensive response based exclusively on the uploaded source
       },
     });
   } catch (error) {
-    console.error("Error in AI sources API:", error);
-    const errorMessage =
-      error instanceof Error ? error.message : "An unknown error occurred.";
+    console.error('Error in AI sources API:', error);
+    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
     return NextResponse.json(
       {
-        error: "Failed to get a response from the AI research assistant.",
+        error: 'Failed to get a response from the AI research assistant.',
         details: errorMessage,
       },
       { status: 500 },

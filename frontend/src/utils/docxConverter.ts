@@ -1,5 +1,5 @@
-import { Document, Packer, Paragraph, TextRun, HeadingLevel } from "docx";
-import { saveAs } from "file-saver";
+import { Document, Packer, Paragraph, TextRun, HeadingLevel } from 'docx';
+import { saveAs } from 'file-saver';
 
 /**
  * Converts HTML from TipTap editor to DOCX and downloads it
@@ -8,7 +8,7 @@ import { saveAs } from "file-saver";
  */
 export async function downloadAsDocx(
   html: string,
-  filename: string = "document.docx",
+  filename: string = 'document.docx',
 ): Promise<void> {
   try {
     // Parse HTML and convert to docx elements
@@ -29,13 +29,13 @@ export async function downloadAsDocx(
 
     // Create blob and download
     const blob = new Blob([buffer], {
-      type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     });
 
     saveAs(blob, filename);
   } catch (error) {
-    console.error("Error converting to DOCX:", error);
-    throw new Error("Failed to convert document to DOCX format");
+    console.error('Error converting to DOCX:', error);
+    throw new Error('Failed to convert document to DOCX format');
   }
 }
 
@@ -48,7 +48,7 @@ function parseHtmlToDocx(html: string): Paragraph[] {
   if (!html) return [new Paragraph({})];
 
   // Create a temporary DOM element to parse the HTML
-  const tempDiv = document.createElement("div");
+  const tempDiv = document.createElement('div');
   tempDiv.innerHTML = html;
 
   const paragraphs: Paragraph[] = [];
@@ -84,67 +84,67 @@ function processElement(element: Element): Paragraph[] {
   const paragraphs: Paragraph[] = [];
 
   switch (tagName) {
-    case "h1":
+    case 'h1':
       paragraphs.push(
         new Paragraph({
-          text: element.textContent || "",
+          text: element.textContent || '',
           heading: HeadingLevel.HEADING_1,
         }),
       );
       break;
 
-    case "h2":
+    case 'h2':
       paragraphs.push(
         new Paragraph({
-          text: element.textContent || "",
+          text: element.textContent || '',
           heading: HeadingLevel.HEADING_2,
         }),
       );
       break;
 
-    case "h3":
+    case 'h3':
       paragraphs.push(
         new Paragraph({
-          text: element.textContent || "",
+          text: element.textContent || '',
           heading: HeadingLevel.HEADING_3,
         }),
       );
       break;
 
-    case "h4":
+    case 'h4':
       paragraphs.push(
         new Paragraph({
-          text: element.textContent || "",
+          text: element.textContent || '',
           heading: HeadingLevel.HEADING_4,
         }),
       );
       break;
 
-    case "h5":
+    case 'h5':
       paragraphs.push(
         new Paragraph({
-          text: element.textContent || "",
+          text: element.textContent || '',
           heading: HeadingLevel.HEADING_5,
         }),
       );
       break;
 
-    case "h6":
+    case 'h6':
       paragraphs.push(
         new Paragraph({
-          text: element.textContent || "",
+          text: element.textContent || '',
           heading: HeadingLevel.HEADING_6,
         }),
       );
       break;
 
-    case "p":
+    case 'p':
       const runs = processInlineElements(element);
       if (runs.length === 0) {
         // Empty paragraph - still add it to preserve spacing
         paragraphs.push(
           new Paragraph({
-            children: [new TextRun({ text: "" })],
+            children: [new TextRun({ text: '' })],
           }),
         );
       } else {
@@ -156,9 +156,9 @@ function processElement(element: Element): Paragraph[] {
       }
       break;
 
-    case "ul":
-    case "ol":
-      const listItems = element.querySelectorAll("li");
+    case 'ul':
+    case 'ol':
+      const listItems = element.querySelectorAll('li');
       for (let i = 0; i < listItems.length; i++) {
         const listItem = listItems[i];
         const runs = processInlineElements(listItem);
@@ -171,7 +171,7 @@ function processElement(element: Element): Paragraph[] {
       }
       break;
 
-    case "blockquote":
+    case 'blockquote':
       const quoteRuns = processInlineElements(element);
       paragraphs.push(
         new Paragraph({
@@ -181,14 +181,14 @@ function processElement(element: Element): Paragraph[] {
       );
       break;
 
-    case "hr":
+    case 'hr':
       // Handle page breaks
-      if (element.getAttribute("data-type") === "pagebreak") {
+      if (element.getAttribute('data-type') === 'pagebreak') {
         paragraphs.push(
           new Paragraph({
             children: [
               new TextRun({
-                text: "",
+                text: '',
                 break: 1,
               }),
             ],
@@ -201,7 +201,7 @@ function processElement(element: Element): Paragraph[] {
           new Paragraph({
             children: [
               new TextRun({
-                text: "_______________________________________________",
+                text: '_______________________________________________',
               }),
             ],
           }),
@@ -209,13 +209,13 @@ function processElement(element: Element): Paragraph[] {
       }
       break;
 
-    case "pre":
+    case 'pre':
       paragraphs.push(
         new Paragraph({
           children: [
             new TextRun({
-              text: element.textContent || "",
-              font: "Courier New",
+              text: element.textContent || '',
+              font: 'Courier New',
             }),
           ],
         }),
@@ -250,12 +250,9 @@ function processElement(element: Element): Paragraph[] {
 function processInlineElements(element: Element): TextRun[] {
   const runs: TextRun[] = [];
 
-  function processNode(
-    node: Node,
-    inheritedFormatting: Record<string, unknown> = {},
-  ): void {
+  function processNode(node: Node, inheritedFormatting: Record<string, unknown> = {}): void {
     if (node.nodeType === Node.TEXT_NODE) {
-      const text = node.textContent || "";
+      const text = node.textContent || '';
       if (text) {
         runs.push(
           new TextRun({
@@ -272,31 +269,31 @@ function processInlineElements(element: Element): TextRun[] {
 
       // Apply formatting based on tag
       switch (tagName) {
-        case "strong":
-        case "b":
+        case 'strong':
+        case 'b':
           formatting.bold = true;
           break;
-        case "em":
-        case "i":
+        case 'em':
+        case 'i':
           formatting.italics = true;
           break;
-        case "u":
+        case 'u':
           formatting.underline = {};
           break;
-        case "s":
-        case "strike":
+        case 's':
+        case 'strike':
           formatting.strike = true;
           break;
-        case "mark":
-          formatting.highlight = "yellow";
+        case 'mark':
+          formatting.highlight = 'yellow';
           break;
-        case "code":
-          formatting.font = "Courier New";
+        case 'code':
+          formatting.font = 'Courier New';
           break;
-        case "br":
+        case 'br':
           runs.push(
             new TextRun({
-              text: "",
+              text: '',
               break: 1,
               ...inheritedFormatting,
             }),
@@ -332,5 +329,5 @@ function processInlineElements(element: Element): TextRun[] {
  * Gets the current date in YYYY-MM-DD format for filename generation
  */
 export function getCurrentDateString(): string {
-  return new Date().toISOString().split("T")[0];
+  return new Date().toISOString().split('T')[0];
 }

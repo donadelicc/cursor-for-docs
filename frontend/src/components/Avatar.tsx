@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import Image from "next/image";
+import React, { useState } from 'react';
+import Image from 'next/image';
 
 interface AvatarProps {
   src?: string | null;
@@ -11,9 +11,9 @@ interface AvatarProps {
 
 export const Avatar: React.FC<AvatarProps> = ({
   src,
-  alt = "User avatar",
+  alt = 'User avatar',
   size = 32,
-  className = "",
+  className = '',
   fallbackText,
 }) => {
   const [imageError, setImageError] = useState(false);
@@ -22,14 +22,14 @@ export const Avatar: React.FC<AvatarProps> = ({
   // Generate fallback initials from alt text or fallbackText
   const getInitials = (text: string) => {
     return text
-      .split(" ")
+      .split(' ')
       .map((word) => word[0])
-      .join("")
+      .join('')
       .toUpperCase()
       .slice(0, 2);
   };
 
-  const fallbackInitials = getInitials(alt || fallbackText || "U");
+  const fallbackInitials = getInitials(alt || fallbackText || 'U');
 
   const handleImageError = () => {
     setImageError(true);

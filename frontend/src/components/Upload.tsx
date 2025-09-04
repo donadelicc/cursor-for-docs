@@ -1,15 +1,11 @@
-import React, { useRef } from "react";
-import styles from "./Upload.module.css";
+import React, { useRef } from 'react';
 
 interface UploadProps {
   onUpload: (file: File) => Promise<void>;
   disabled?: boolean;
 }
 
-export const Upload: React.FC<UploadProps> = ({
-  onUpload,
-  disabled = false,
-}) => {
+export const Upload: React.FC<UploadProps> = ({ onUpload, disabled = false }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleUploadClick = () => {
@@ -18,28 +14,26 @@ export const Upload: React.FC<UploadProps> = ({
     }
   };
 
-  const handleFileChange = async (
-    event: React.ChangeEvent<HTMLInputElement>,
-  ) => {
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    if (!file.name.toLowerCase().endsWith(".docx")) {
-      alert("Please select a DOCX file");
+    if (!file.name.toLowerCase().endsWith('.docx')) {
+      alert('Please select a DOCX file');
       return;
     }
 
     try {
       await onUpload(file);
       // Reset the input so the same file can be selected again if needed
-      event.target.value = "";
+      event.target.value = '';
     } catch (error) {
-      console.error("Error uploading file:", error);
+      console.error('Error uploading file:', error);
       alert(
-        `Error importing document: ${error instanceof Error ? error.message : "Unknown error"}`,
+        `Error importing document: ${error instanceof Error ? error.message : 'Unknown error'}`,
       );
       // Reset the input on error too
-      event.target.value = "";
+      event.target.value = '';
     }
   };
 
@@ -50,11 +44,11 @@ export const Upload: React.FC<UploadProps> = ({
         type="file"
         accept=".docx"
         onChange={handleFileChange}
-        style={{ display: "none" }}
+        style={{ display: 'none' }}
         aria-label="Upload DOCX file"
       />
       <button
-        className={styles.uploadButton}
+        className="flex items-center justify-center p-0 bg-white text-gray-800 border border-gray-300 rounded-md cursor-pointer transition-all duration-200 w-9 h-9 hover:bg-gray-50 hover:border-gray-400 hover:-translate-y-px hover:shadow-lg active:translate-y-0 active:shadow-sm disabled:bg-gray-100 disabled:text-gray-400 disabled:border-gray-200 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none lg:w-8 lg:h-8 md:w-7 md:h-7"
         onClick={handleUploadClick}
         disabled={disabled}
         title="Import DOCX document"
@@ -63,6 +57,7 @@ export const Upload: React.FC<UploadProps> = ({
         <svg
           width="20"
           height="20"
+          className="shrink-0 transition-transform duration-200 hover:-translate-y-px lg:w-4 lg:h-4 md:w-3.5 md:h-3.5"
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"

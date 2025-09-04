@@ -1,6 +1,6 @@
-import { AzureChatOpenAI } from "@langchain/openai";
-import { SystemMessage, HumanMessage } from "@langchain/core/messages";
-import { NextResponse } from "next/server";
+import { AzureChatOpenAI } from '@langchain/openai';
+import { SystemMessage, HumanMessage } from '@langchain/core/messages';
+import { NextResponse } from 'next/server';
 
 // Initialize the Azure OpenAI model with credentials from environment variables.
 // This setup is done once and reused for all requests.
@@ -22,21 +22,15 @@ export async function POST(req: Request) {
 
     // Validate that the query exists.
     if (!query) {
-      return NextResponse.json(
-        { error: "Missing query in request body" },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: 'Missing query in request body' }, { status: 400 });
     }
 
     // Define a concise system prompt for the AI assistant.
     const systemMessage =
-      "You are an AI assistant. Answer the user in a professional, concise manner.";
+      'You are an AI assistant. Answer the user in a professional, concise manner.';
 
     // Construct the message payload for the AI model.
-    const messages = [
-      new SystemMessage(systemMessage),
-      new HumanMessage(query),
-    ];
+    const messages = [new SystemMessage(systemMessage), new HumanMessage(query)];
 
     // Create a ReadableStream for streaming the response
     const stream = new ReadableStream({
@@ -58,14 +52,15 @@ export async function POST(req: Request) {
           // Close the stream when done
           controller.close();
         } catch (error) {
-          console.error("Error in streaming AI response:", error);
-          const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
+          console.error('Error in streaming AI response:', error);
+          const errorMessage =
+            error instanceof Error ? error.message : 'An unknown error occurred.';
           const errorText = `Error: ${errorMessage}`;
           const encoded = new TextEncoder().encode(errorText);
           controller.enqueue(encoded);
           controller.close();
         }
-      }
+      },
     });
 
     // Return a Response with the stream and appropriate headers
@@ -76,15 +71,14 @@ export async function POST(req: Request) {
     });
   } catch (error) {
     // Log the error for debugging purposes.
-    console.error("Error in AI chatbot API:", error);
+    console.error('Error in AI chatbot API:', error);
 
     // Return a generic error message to the client.
-    const errorMessage =
-      error instanceof Error ? error.message : "An unknown error occurred.";
+    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
 
     return NextResponse.json(
       {
-        error: "Failed to get a response from the AI assistant.",
+        error: 'Failed to get a response from the AI assistant.',
         details: errorMessage,
       },
       { status: 500 },
