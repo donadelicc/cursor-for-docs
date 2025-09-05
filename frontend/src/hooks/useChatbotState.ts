@@ -11,7 +11,7 @@ export interface Message {
 interface UseChatbotStateProps {
   documentContent: string;
   uploadedFiles?: File[];
-  mode: "general" | "sources" | "focused";
+  mode: 'general' | 'sources' | 'focused';
 }
 
 export const useChatbotState = ({

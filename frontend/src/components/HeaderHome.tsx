@@ -1,8 +1,8 @@
 'use client';
 
-import Image from "next/image";
-import Link from "next/link";
-import WaitlistLoginButton from "./WaitlistLoginButton";
+import Image from 'next/image';
+import Link from 'next/link';
+import WaitlistLoginButton from './WaitlistLoginButton';
 
 export default function HeaderHome() {
   return (

@@ -45,3 +45,21 @@ export interface UpdateDocumentData {
   content?: string;
   lastModified: Date;
 }
+
+// Pilot testing types
+export interface PilotUser {
+  id: string;
+  email: string;
+  displayName?: string;
+  addedAt: Date;
+  addedBy: string; // Admin who added this user
+  isActive: boolean;
+  notes?: string; // Optional notes about this pilot user
+}
+
+export interface CreatePilotUserData {
+  email: string;
+  displayName?: string;
+  addedBy: string;
+  notes?: string;
+}

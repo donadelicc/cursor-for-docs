@@ -15,8 +15,15 @@ import {
   FieldValue,
 } from 'firebase/firestore';
 import { User } from 'firebase/auth';
-import { db, storage } from '@/lib/firebase';
-import { UserProfile, Document, CreateDocumentData, UpdateDocumentData } from '@/types/editor';
+import { db, storage, auth } from '@/lib/firebase';
+import {
+  UserProfile,
+  Document,
+  CreateDocumentData,
+  UpdateDocumentData,
+  PilotUser,
+  CreatePilotUserData,
+} from '@/types/editor';
 import {
   Project,
   ProjectDocumentMeta,
@@ -34,25 +41,31 @@ const DOCUMENTS_COLLECTION = 'documents'; // legacy
 const SOURCES_SUBCOLLECTION = 'sources';
 const PROJECT_DOCUMENTS_SUBCOLLECTION = 'documents';
 const DELETED_ITEMS_SUBCOLLECTION = 'deleted_items';
+const PILOT_USERS_COLLECTION = 'pilotUsers';
 
 // User operations
 export const createUserProfile = async (user: User): Promise<void> => {
-  const userRef = doc(db, USERS_COLLECTION, user.uid);
-  const userDoc = await getDoc(userRef);
+  try {
+    const userRef = doc(db, USERS_COLLECTION, user.uid);
+    const userDoc = await getDoc(userRef);
 
-  if (!userDoc.exists()) {
-    const userProfile: Omit<UserProfile, 'createdAt' | 'updatedAt'> = {
-      uid: user.uid,
-      email: user.email || '',
-      displayName: user.displayName,
-      photoURL: user.photoURL,
-    };
+    if (!userDoc.exists()) {
+      const userProfile: Omit<UserProfile, 'createdAt' | 'updatedAt'> = {
+        uid: user.uid,
+        email: user.email || '',
+        displayName: user.displayName,
+        photoURL: user.photoURL,
+      };
 
-    await setDoc(userRef, {
-      ...userProfile,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    });
+      await setDoc(userRef, {
+        ...userProfile,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+    }
+  } catch (error) {
+    console.error('Error creating user profile:', error);
+    // Don't throw the error - we want pilot users to be able to continue even if user profile creation fails
   }
 };
 
@@ -174,13 +187,22 @@ export const generateDocumentTitle = (content: string): string => {
 
 // New: Projects API
 export const createProject = async (userId: string, name: string): Promise<string> => {
-  const projectRef = await addDoc(collection(db, PROJECTS_COLLECTION), {
-    userId,
-    name,
-    createdAt: serverTimestamp(),
-    updatedAt: serverTimestamp(),
-  });
-  return projectRef.id;
+  console.log('🔧 createProject called with:', { userId, name });
+
+  try {
+    const projectRef = await addDoc(collection(db, PROJECTS_COLLECTION), {
+      userId,
+      name,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+
+    console.log('✅ Project created successfully with ID:', projectRef.id);
+    return projectRef.id;
+  } catch (error) {
+    console.error('❌ Error in createProject:', error);
+    throw error;
+  }
 };
 
 export const getUserProjects = async (userId: string): Promise<Project[]> => {
@@ -483,29 +505,73 @@ export const uploadProjectSource = async (
   projectId: string,
   file: File,
 ): Promise<ProjectSource> => {
-  const path = `${projectId}/sources/${Date.now()}_${file.name}`;
-  const storageRef = ref(storage, path);
-  await uploadBytes(storageRef, file);
-  const metaRef = await addDoc(
-    collection(db, PROJECTS_COLLECTION, projectId, SOURCES_SUBCOLLECTION),
-    {
+  try {
+    console.log('🔧 [Storage] Starting upload for project:', projectId, 'file:', file.name);
+
+    // Validate inputs
+    if (!projectId || !file) {
+      throw new Error('Project ID and file are required');
+    }
+
+    // Check if user is authenticated
+    if (!auth.currentUser) {
+      throw new Error('User must be authenticated to upload files');
+    }
+
+    console.log('🔧 [Storage] User authenticated:', auth.currentUser.uid);
+
+    const path = `${projectId}/sources/${Date.now()}_${file.name}`;
+    console.log('🔧 [Storage] Upload path:', path);
+
+    const storageRef = ref(storage, path);
+
+    console.log('🔧 [Storage] Uploading to Firebase Storage...');
+    await uploadBytes(storageRef, file);
+    console.log('✅ [Storage] File uploaded successfully');
+
+    console.log('🔧 [Storage] Creating metadata document...');
+    const metaRef = await addDoc(
+      collection(db, PROJECTS_COLLECTION, projectId, SOURCES_SUBCOLLECTION),
+      {
+        name: file.name,
+        size: file.size,
+        mimeType: file.type,
+        storagePath: path,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      },
+    );
+    console.log('✅ [Storage] Metadata document created:', metaRef.id);
+
+    return {
+      id: metaRef.id,
       name: file.name,
       size: file.size,
       mimeType: file.type,
       storagePath: path,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    },
-  );
-  return {
-    id: metaRef.id,
-    name: file.name,
-    size: file.size,
-    mimeType: file.type,
-    storagePath: path,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  };
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+  } catch (error) {
+    console.error('❌ [Storage] Upload failed:', error);
+    console.error('❌ [Storage] Project ID:', projectId);
+    console.error('❌ [Storage] File:', { name: file?.name, size: file?.size, type: file?.type });
+    console.error('❌ [Storage] User:', auth.currentUser?.uid || 'Not authenticated');
+
+    // Provide more specific error messages
+    if (error instanceof Error) {
+      if (error.message.includes('permission-denied') || error.message.includes('unauthorized')) {
+        throw new Error(
+          `Permission denied: Make sure you own this project and your Firebase Storage rules are configured correctly. Project: ${projectId}`,
+        );
+      }
+      if (error.message.includes('unauthenticated')) {
+        throw new Error('Authentication required: Please log in again');
+      }
+    }
+
+    throw error;
+  }
 };
 
 export const listProjectSources = async (projectId: string): Promise<ProjectSource[]> => {
@@ -689,4 +755,115 @@ export const permanentlyDeleteItem = async (
 
   // Remove from deleted items
   await deleteDoc(deletedRef);
+};
+
+// Pilot Users Management
+export const checkPilotAccess = async (email: string): Promise<boolean> => {
+  try {
+    const q = query(
+      collection(db, PILOT_USERS_COLLECTION),
+      where('email', '==', email.toLowerCase()),
+      where('isActive', '==', true),
+    );
+    const querySnapshot = await getDocs(q);
+    return !querySnapshot.empty;
+  } catch (error) {
+    console.error('Error checking pilot access:', error);
+    return false;
+  }
+};
+
+export const getPilotUser = async (email: string): Promise<PilotUser | null> => {
+  try {
+    const q = query(
+      collection(db, PILOT_USERS_COLLECTION),
+      where('email', '==', email.toLowerCase()),
+    );
+    const querySnapshot = await getDocs(q);
+
+    if (querySnapshot.empty) {
+      return null;
+    }
+
+    const doc = querySnapshot.docs[0];
+    const data = doc.data();
+    return {
+      id: doc.id,
+      email: data.email,
+      displayName: data.displayName,
+      addedAt: (data.addedAt as Timestamp).toDate(),
+      addedBy: data.addedBy,
+      isActive: data.isActive,
+      notes: data.notes,
+    } as PilotUser;
+  } catch (error) {
+    console.error('Error getting pilot user:', error);
+    return null;
+  }
+};
+
+export const getAllPilotUsers = async (): Promise<PilotUser[]> => {
+  try {
+    const q = query(collection(db, PILOT_USERS_COLLECTION), orderBy('addedAt', 'desc'));
+    const querySnapshot = await getDocs(q);
+
+    return querySnapshot.docs.map((doc) => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        email: data.email,
+        displayName: data.displayName,
+        addedAt: (data.addedAt as Timestamp).toDate(),
+        addedBy: data.addedBy,
+        isActive: data.isActive,
+        notes: data.notes,
+      } as PilotUser;
+    });
+  } catch (error) {
+    console.error('Error getting all pilot users:', error);
+    return [];
+  }
+};
+
+export const addPilotUser = async (pilotUserData: CreatePilotUserData): Promise<string> => {
+  try {
+    const docRef = await addDoc(collection(db, PILOT_USERS_COLLECTION), {
+      email: pilotUserData.email.toLowerCase(),
+      displayName: pilotUserData.displayName,
+      addedBy: pilotUserData.addedBy,
+      notes: pilotUserData.notes,
+      isActive: true,
+      addedAt: serverTimestamp(),
+    });
+    return docRef.id;
+  } catch (error) {
+    console.error('Error adding pilot user:', error);
+    throw error;
+  }
+};
+
+export const updatePilotUser = async (
+  pilotUserId: string,
+  updates: Partial<Pick<PilotUser, 'isActive' | 'notes' | 'displayName'>>,
+): Promise<void> => {
+  try {
+    const pilotUserRef = doc(db, PILOT_USERS_COLLECTION, pilotUserId);
+    await updateDoc(pilotUserRef, {
+      ...updates,
+      updatedAt: serverTimestamp(),
+    });
+  } catch (error) {
+    console.error('Error updating pilot user:', error);
+    throw error;
+  }
+};
+
+export const removePilotUser = async (pilotUserId: string): Promise<void> => {
+  try {
+    const pilotUserRef = doc(db, PILOT_USERS_COLLECTION, pilotUserId);
+    await deleteDoc(pilotUserRef);
+  } catch (error) {
+    console.error('Error removing pilot user:', error);
+    throw error;
+  }
 };

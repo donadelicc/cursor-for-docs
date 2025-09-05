@@ -15,8 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Hello Boston!',
-  description: 'Blazing fast papers',
+  title: 'Useful',
+  description: 'Elevate your writing',
   icons: {
     icon: '/favicon.ico',
     shortcut: '/favicon.ico',

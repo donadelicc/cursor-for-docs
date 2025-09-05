@@ -1,7 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { useChatbotState } from '@/hooks/useChatbotState';
-// apiClient removed; no longer sending files to /documents
 
 interface MainChatbotProps {
   documentContent: string;
@@ -15,7 +14,7 @@ const MainChatbot = ({
   documentContent,
   selectedSources = [],
   onFileUpload,
-  onFileRemove,
+  onFileRemove: _onFileRemove, // eslint-disable-line @typescript-eslint/no-unused-vars
   onChatbotFileRemove,
 }: MainChatbotProps) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -56,7 +55,11 @@ const MainChatbot = ({
     addMessage,
     updateLastMessage,
     clearChat,
-  } = useChatbotState();
+  } = useChatbotState({
+    documentContent,
+    uploadedFiles: allUploadedFiles,
+    mode,
+  });
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -114,8 +117,8 @@ const MainChatbot = ({
     if (!query || isLoading) return;
 
     // Add the user's message to the state immediately for a responsive UI
-    addMessage({ role: "user", content: query });
-    setInputValue("");
+    addMessage({ role: 'user', content: query });
+    setInputValue('');
     setIsLoading(true);
 
     try {
@@ -161,10 +164,10 @@ const MainChatbot = ({
         }
       }
 
-      if (!response.body) throw new Error("Response body is empty.");
+      if (!response.body) throw new Error('Response body is empty.');
 
       // Add an empty placeholder message for the assistant
-      addMessage({ role: "assistant", content: "" });
+      addMessage({ role: 'assistant', content: '' });
 
       // Handle the streaming response
       const reader = response.body.getReader();
@@ -182,10 +185,10 @@ const MainChatbot = ({
       }
       console.log(`[chat] ← streaming response completed`);
     } catch (error) {
-      console.error("Error fetching chat response:", error);
+      console.error('Error fetching chat response:', error);
       addMessage({
-        role: "assistant",
-        content: "Sorry, an error occurred. Please try again.",
+        role: 'assistant',
+        content: 'Sorry, an error occurred. Please try again.',
       });
     } finally {
       setIsLoading(false);
@@ -208,35 +211,28 @@ const MainChatbot = ({
     fileInputRef.current?.click();
   };
 
-  // NEW: The actual API call for ingestion
+  // Handle file ingestion by adding them to the uploaded files list
+  // Files will be processed by the AI when queries are made in 'sources' mode
   const handleIngestFiles = async (filesToUpload: File[]) => {
     if (filesToUpload.length === 0) return;
 
-    // 1. Show a spinner
-    setUploadingFiles(
-      (prev) => new Set([...prev, ...filesToUpload.map((f) => f.name)]),
-    );
+    // Show upload state
+    setUploadingFiles((prev) => new Set([...prev, ...filesToUpload.map((f) => f.name)]));
 
     try {
-      const formData = new FormData();
-      filesToUpload.forEach((file) => {
-        formData.append("files", file);
-      });
-      // 2. Start the REAL backend upload and WAIT for it to finish
-      console.log(`[upload] → POST /documents`, {
+      // Add files to the uploaded files list for AI processing
+      console.log(`[upload] Adding files for AI processing:`, {
         files: filesToUpload.map((f) => ({ name: f.name, size: f.size })),
       });
-      const response = await apiClient.post("/documents", formData);
-      console.log(`[upload] ← /documents ${response.status}`);
 
-      // 3. If it succeeds, we're done! The spinner will be hidden in the 'finally' block.
-      //setTimeout(() => setNotification(null), 3000);
+      // Files are now handled directly by the AI endpoints when queries are made
+      // No need for separate document upload endpoint
     } catch (error) {
-      console.error("Error ingesting files:", error);
-      setNotification(`Error: Could not upload files. Please try again.`);
+      console.error('Error processing files:', error);
+      setNotification(`Error: Could not process files. Please try again.`);
       setTimeout(() => setNotification(null), 5000);
 
-      // If upload fails, remove the files from the UI state
+      // If processing fails, remove the files from the UI state
       setUploadedFiles((prev) =>
         prev.filter((f) => !filesToUpload.some((fu) => fu.name === f.name)),
       );
@@ -270,17 +266,13 @@ const MainChatbot = ({
     if (!fileToRemove) return;
 
     try {
-      const endpoint = `/documents/${encodeURIComponent(fileToRemove.name)}`;
-      console.log(`[upload] → DELETE ${endpoint}`);
-      const resp = await apiClient.delete(endpoint);
-      console.log(`[upload] ← DELETE ${endpoint} ${resp.status}`);
+      console.log(`[upload] → Removing file from chat:`, fileToRemove.name);
 
-      // --- If API call is successful, then update the local state ---
-      // Check if file is from selectedSources (Knowledge Base)
-      const isFromSelectedSources = selectedSources.some(
-        (f) => f.name === fileToRemove.name && f.size === fileToRemove.size,
-      );
+      // Remove file from local state - no backend call needed
+      // Files are processed directly by AI endpoints when queries are made
       onChatbotFileRemove?.(fileToRemove);
+    } catch (error) {
+      console.error('Error removing file:', error);
     }
   };
 
@@ -375,8 +367,8 @@ const MainChatbot = ({
       // Notify parent (EditorContainer) about new files to sync with KnowledgeBase
       onFileUpload?.(validFiles);
 
-      // No backend ingestion; clear any uploading UI state
-      handleIngestFiles();
+      // Process files for AI usage
+      handleIngestFiles(validFiles);
     } else {
       // No valid files to upload; ensure button is re-enabled
       setIsUploadingFiles(false);

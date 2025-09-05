@@ -6,7 +6,7 @@ import os
 from dotenv import load_dotenv
 import logging
 from langchain_core.messages import SystemMessage, HumanMessage
-from .auth import get_current_user # Import your new dependency
+from .auth import get_current_user, get_current_pilot_user # Import your new dependency
 
 
 # Import our service functions
@@ -41,7 +41,7 @@ class ChatResponse(BaseModel):
 @router.post("/documents")
 async def upload_documents_endpoint(
     files: list[UploadFile] = File(...),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_pilot_user)
 ):
     """
     Endpoint to upload and ingest documents for a specific user.
@@ -71,7 +71,7 @@ async def upload_documents_endpoint(
 @router.delete("/documents/{document_name}")
 async def delete_document_endpoint(
     document_name: str,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_pilot_user)
 ):
     user_id = current_user["uid"]
     
@@ -95,7 +95,7 @@ async def delete_document_endpoint(
 @router.post("/sources", response_model=ChatResponse)
 async def sources_vector_endpoint(
     query: str = Form(...),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_pilot_user)
 ):
     # Extract the user_id securely from the verified token
     user_id = current_user["uid"]

@@ -49,29 +49,43 @@ export default function ProjectPage() {
 
   // Functions for FormattingToolbar (moved from TipTapEditor)
   const handleSave = async (format: SaveFormat, customFilename: string) => {
-    if (!editor) return;
+    console.log('💾 [Project Page] Save requested:', { format, customFilename });
+
+    if (!editor) {
+      console.log('❌ [Project Page] No editor available');
+      return;
+    }
 
     const html = editor.getHTML();
+    console.log('💾 [Project Page] HTML content length:', html.length);
 
     try {
+      console.log('💾 [Project Page] Importing converters...');
       const { downloadAsDocx } = await import('@/utils/docxConverter');
       const { downloadAsPdf } = await import('@/utils/pdfConverter');
       const { htmlToMarkdown, downloadMarkdown } = await import('@/utils/markdownConverter');
 
+      console.log('💾 [Project Page] Converters imported successfully');
+
       if (format === 'docx') {
         const filename = `${customFilename}.docx`;
+        console.log('💾 [Project Page] Converting to DOCX...');
         await downloadAsDocx(html, filename);
       } else if (format === 'pdf') {
         const filename = `${customFilename}.pdf`;
+        console.log('💾 [Project Page] Converting to PDF...');
         await downloadAsPdf(html, filename);
       } else {
         // Default to markdown
+        console.log('💾 [Project Page] Converting to Markdown...');
         const markdown = htmlToMarkdown(html);
         const filename = `${customFilename}.md`;
         downloadMarkdown(markdown, filename);
       }
+
+      console.log('✅ [Project Page] Save completed successfully');
     } catch (error) {
-      console.error('Error saving document:', error);
+      console.error('❌ [Project Page] Error saving document:', error);
       alert('Error saving document: ' + (error as Error).message);
     }
   };

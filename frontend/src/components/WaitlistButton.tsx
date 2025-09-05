@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import React, { useState } from "react";
-import WaitlistSignup from "./WaitlistSignup";
+import React, { useState } from 'react';
+import WaitlistSignup from './WaitlistSignup';
 
 interface WaitlistButtonProps {
   children: React.ReactNode;
@@ -36,10 +36,7 @@ const WaitlistButton: React.FC<WaitlistButtonProps> = ({
         {children}
       </button>
 
-      <WaitlistSignup
-        isOpen={isWaitlistOpen}
-        onOpenChange={setIsWaitlistOpen}
-      />
+      <WaitlistSignup isOpen={isWaitlistOpen} onOpenChange={setIsWaitlistOpen} />
     </>
   );
 };

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -7,46 +7,43 @@ import {
   DialogDescription,
   DialogFooter,
   DialogClose,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
-import { addToWaitlist } from "@/lib/waitlistService";
-import { CheckCircle } from "lucide-react";
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
+import { addToWaitlist } from '@/lib/waitlistService';
+import { CheckCircle } from 'lucide-react';
 
 interface WaitlistSignupProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
 }
 
-const WaitlistSignup: React.FC<WaitlistSignupProps> = ({
-  isOpen,
-  onOpenChange,
-}) => {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
+const WaitlistSignup: React.FC<WaitlistSignupProps> = ({ isOpen, onOpenChange }) => {
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
   const [isSuccess, setIsSuccess] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    setError("");
+    setError('');
 
     try {
       await addToWaitlist(name, email);
       setIsSuccess(true);
-      setName("");
-      setEmail("");
+      setName('');
+      setEmail('');
       // Auto-close after 3 seconds
       setTimeout(() => {
         setIsSuccess(false);
         onOpenChange(false);
       }, 3000);
     } catch (error) {
-      console.error("Error submitting waitlist signup:", error);
-      setError("Failed to join waitlist. Please try again.");
+      console.error('Error submitting waitlist signup:', error);
+      setError('Failed to join waitlist. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -54,9 +51,9 @@ const WaitlistSignup: React.FC<WaitlistSignupProps> = ({
 
   const handleClose = () => {
     setIsSuccess(false);
-    setError("");
-    setName("");
-    setEmail("");
+    setError('');
+    setName('');
+    setEmail('');
     onOpenChange(false);
   };
 
@@ -64,7 +61,7 @@ const WaitlistSignup: React.FC<WaitlistSignupProps> = ({
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent
         className="sm:max-w-[480px] backdrop-blur-md border border-gray-700/30 shadow-2xl text-white"
-        style={{ backgroundColor: "rgba(255, 255, 255, 0.05)" }}
+        style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)' }}
       >
         {!isSuccess ? (
           <>
@@ -83,10 +80,7 @@ const WaitlistSignup: React.FC<WaitlistSignupProps> = ({
                 </div>
               )}
               <div className="grid gap-3">
-                <Label
-                  htmlFor="waitlist-name"
-                  className="text-gray-300 font-medium"
-                >
+                <Label htmlFor="waitlist-name" className="text-gray-300 font-medium">
                   Name
                 </Label>
                 <Input
@@ -100,10 +94,7 @@ const WaitlistSignup: React.FC<WaitlistSignupProps> = ({
                 />
               </div>
               <div className="grid gap-3">
-                <Label
-                  htmlFor="waitlist-email"
-                  className="text-gray-300 font-medium"
-                >
+                <Label htmlFor="waitlist-email" className="text-gray-300 font-medium">
                   Email
                 </Label>
                 <Input
@@ -132,25 +123,21 @@ const WaitlistSignup: React.FC<WaitlistSignupProps> = ({
                   type="submit"
                   className="backdrop-blur-md border border-white/20 hover:border-white/40 hover:scale-105 px-6 py-2 rounded-md font-semibold transition-all duration-300 shadow-lg hover:shadow-xl"
                   style={{
-                    backgroundColor: "rgba(41,167,172,0.15)",
-                    boxShadow: "0 4px 16px rgba(41,167,172,0.15)",
-                    color: "white",
+                    backgroundColor: 'rgba(41,167,172,0.15)',
+                    boxShadow: '0 4px 16px rgba(41,167,172,0.15)',
+                    color: 'white',
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor =
-                      "rgba(41,167,172,0.25)";
-                    e.currentTarget.style.boxShadow =
-                      "0 6px 20px rgba(41,167,172,0.2)";
+                    e.currentTarget.style.backgroundColor = 'rgba(41,167,172,0.25)';
+                    e.currentTarget.style.boxShadow = '0 6px 20px rgba(41,167,172,0.2)';
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor =
-                      "rgba(41,167,172,0.15)";
-                    e.currentTarget.style.boxShadow =
-                      "0 4px 16px rgba(41,167,172,0.15)";
+                    e.currentTarget.style.backgroundColor = 'rgba(41,167,172,0.15)';
+                    e.currentTarget.style.boxShadow = '0 4px 16px rgba(41,167,172,0.15)';
                   }}
                   disabled={isSubmitting}
                 >
-                  {isSubmitting ? "Joining..." : "Join Waitlist"}
+                  {isSubmitting ? 'Joining...' : 'Join Waitlist'}
                 </Button>
               </DialogFooter>
             </form>
@@ -165,8 +152,7 @@ const WaitlistSignup: React.FC<WaitlistSignupProps> = ({
                 You&apos;re on the list!
               </h3>
               <p className="text-gray-300">
-                Thanks for joining our waitlist. We&apos;ll notify you as soon
-                as we launch.
+                Thanks for joining our waitlist. We&apos;ll notify you as soon as we launch.
               </p>
             </div>
             <div className="flex items-center justify-center gap-2 text-sm text-gray-400">
@@ -174,15 +160,15 @@ const WaitlistSignup: React.FC<WaitlistSignupProps> = ({
               <div className="flex gap-1">
                 <div
                   className="w-1 h-1 bg-teal-400 rounded-full animate-bounce"
-                  style={{ animationDelay: "0ms" }}
+                  style={{ animationDelay: '0ms' }}
                 ></div>
                 <div
                   className="w-1 h-1 bg-teal-400 rounded-full animate-bounce"
-                  style={{ animationDelay: "150ms" }}
+                  style={{ animationDelay: '150ms' }}
                 ></div>
                 <div
                   className="w-1 h-1 bg-teal-400 rounded-full animate-bounce"
-                  style={{ animationDelay: "300ms" }}
+                  style={{ animationDelay: '300ms' }}
                 ></div>
               </div>
             </div>

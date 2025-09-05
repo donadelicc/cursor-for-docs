@@ -23,16 +23,12 @@ const apiClient = {
     const token = await user.getIdToken();
 
     // 2. Make the request with the 'Authorization' header.
-    const baseUrl = "http://localhost:8000";
-    const url = endpoint.startsWith("/")
-      ? `${baseUrl}${endpoint}`
-      : `${baseUrl}/${endpoint}`;
+    const baseUrl = 'http://localhost:8000';
+    const url = endpoint.startsWith('/') ? `${baseUrl}${endpoint}` : `${baseUrl}/${endpoint}`;
     const start = performance.now();
     console.log(
       `[api] POST ${url} → sending`,
-      body instanceof FormData
-        ? { formDataKeys: Array.from((body as FormData).keys()) }
-        : body,
+      body instanceof FormData ? { formDataKeys: Array.from((body as FormData).keys()) } : body,
     );
     const response = await fetch(url, {
       method: 'POST',
@@ -48,10 +44,8 @@ const apiClient = {
       // Attempt to parse error details from the backend for better debugging.
       const errorData = await response
         .json()
-        .catch(() => ({ detail: "An unknown API error occurred." }));
-      throw new Error(
-        errorData.detail || `HTTP error! Status: ${response.status}`,
-      );
+        .catch(() => ({ detail: 'An unknown API error occurred.' }));
+      throw new Error(errorData.detail || `HTTP error! Status: ${response.status}`);
     }
 
     return response;
@@ -67,14 +61,12 @@ const apiClient = {
 
     const token = await user.getIdToken();
 
-    const baseUrl = "http://localhost:8000";
-    const url = endpoint.startsWith("/")
-      ? `${baseUrl}${endpoint}`
-      : `${baseUrl}/${endpoint}`;
+    const baseUrl = 'http://localhost:8000';
+    const url = endpoint.startsWith('/') ? `${baseUrl}${endpoint}` : `${baseUrl}/${endpoint}`;
     const start = performance.now();
     console.log(`[api] DELETE ${url} → sending`);
     const response = await fetch(url, {
-      method: "DELETE",
+      method: 'DELETE',
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -85,10 +77,8 @@ const apiClient = {
     if (!response.ok) {
       const errorData = await response
         .json()
-        .catch(() => ({ detail: "An unknown API error occurred." }));
-      throw new Error(
-        errorData.detail || `HTTP error! Status: ${response.status}`,
-      );
+        .catch(() => ({ detail: 'An unknown API error occurred.' }));
+      throw new Error(errorData.detail || `HTTP error! Status: ${response.status}`);
     }
 
     return response;

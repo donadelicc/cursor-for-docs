@@ -1,12 +1,22 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
+import PilotAccessDenied from '@/components/PilotAccessDenied';
 
 export default function LoginPage() {
-  const { signInWithGoogle, signInWithEmail, signUpWithEmail, resetPassword } = useAuth();
+  const {
+    signInWithGoogle,
+    signInWithEmail,
+    signUpWithEmail,
+    resetPassword,
+    currentUser,
+    hasPilotAccess,
+    pilotAccessLoading,
+    logout,
+  } = useAuth();
   const router = useRouter();
   const [isSignUp, setIsSignUp] = useState(false);
   const [isForgotPassword, setIsForgotPassword] = useState(false);
@@ -16,6 +26,25 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [resetEmailSent, setResetEmailSent] = useState(false);
+
+  // Check if user is authenticated but doesn't have pilot access
+  useEffect(() => {
+    console.log('🔍 Login Page State:', {
+      currentUser: currentUser?.email || 'No user',
+      pilotAccessLoading,
+      hasPilotAccess,
+    });
+
+    if (currentUser && !pilotAccessLoading && !hasPilotAccess) {
+      // User is signed in but doesn't have pilot access
+      console.log('🚫 User signed in but no pilot access - showing access denied');
+      // The PilotAccessDenied component will be shown
+    } else if (currentUser && hasPilotAccess) {
+      // User has pilot access, redirect to home
+      console.log('✅ User has pilot access - redirecting to home');
+      router.push('/');
+    }
+  }, [currentUser, hasPilotAccess, pilotAccessLoading, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,7 +63,7 @@ export default function LoginPage() {
       } else {
         await signInWithEmail(email, password);
       }
-      router.push('/');
+      // Don't redirect here - let the useEffect handle it after pilot access check
     } catch (error: unknown) {
       setError(
         error instanceof Error ? error.message : `Failed to ${isSignUp ? 'sign up' : 'sign in'}`,
@@ -50,7 +79,7 @@ export default function LoginPage() {
 
     try {
       await signInWithGoogle();
-      router.push('/');
+      // Don't redirect here - let the useEffect handle it after pilot access check
     } catch (error: unknown) {
       setError(error instanceof Error ? error.message : 'Failed to sign in with Google');
     } finally {
@@ -79,6 +108,25 @@ export default function LoginPage() {
     setResetEmailSent(false);
     setError('');
   };
+
+  // Show pilot access denied if user is authenticated but doesn't have access
+  if (currentUser && !pilotAccessLoading && !hasPilotAccess) {
+    return (
+      <PilotAccessDenied userEmail={currentUser.email || undefined} onRetry={() => logout()} />
+    );
+  }
+
+  // Show loading if checking pilot access
+  if (currentUser && pilotAccessLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Checking access...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex">

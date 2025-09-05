@@ -1,6 +1,6 @@
 import os
 import firebase_admin
-from firebase_admin import credentials, auth
+from firebase_admin import credentials, auth, firestore
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer
 
@@ -16,6 +16,9 @@ try:
     
     cred = credentials.Certificate(cred_path)
     firebase_admin.initialize_app(cred)
+    
+    # Initialize Firestore
+    db = firestore.client()
 except Exception as e:
     print(f"FATAL: Could not initialize Firebase Admin SDK: {e}")
     

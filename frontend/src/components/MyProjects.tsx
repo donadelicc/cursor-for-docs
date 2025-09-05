@@ -40,12 +40,27 @@ export default function MyProjects() {
   };
 
   const handleNewProject = async () => {
-    if (!currentUser) return;
+    console.log('🚀 Creating new project...');
+    if (!currentUser) {
+      console.log('❌ No current user found');
+      return;
+    }
+
+    console.log('👤 Current user:', currentUser.uid, currentUser.email);
     setLoading(true);
+
     try {
+      console.log('📝 Calling createProject...');
       const id = await createProject(currentUser.uid, 'My Project');
+      console.log('✅ Project created with ID:', id);
+
+      console.log('🔄 Reloading projects...');
       await loadProjects();
+
+      console.log('🧭 Navigating to project page...');
       router.push(`/project?id=${id}`);
+    } catch (error) {
+      console.error('❌ Error creating project:', error);
     } finally {
       setLoading(false);
     }
@@ -274,8 +289,12 @@ export default function MyProjects() {
                         Create your first project to start organizing documents and sources.
                       </p>
                       <button
-                        onClick={handleNewProject}
-                        className="inline-flex items-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transform hover:scale-[1.02] transition-all duration-200"
+                        onClick={() => {
+                          console.log('🖱️ Create project button clicked!');
+                          handleNewProject();
+                        }}
+                        disabled={loading}
+                        className="inline-flex items-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <svg
                           className="w-5 h-5 mr-2"

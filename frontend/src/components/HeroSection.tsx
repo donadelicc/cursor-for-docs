@@ -1,23 +1,23 @@
 'use client';
 
-import { useEffect, useState, useCallback } from "react";
-import WaitlistButton from "./WaitlistButton";
+import { useEffect, useState, useCallback } from 'react';
+import WaitlistButton from './WaitlistButton';
 
 export default function HeroSection() {
   const [showTyping, setShowTyping] = useState(false);
   const [showSuggestion, setShowSuggestion] = useState(false);
-  const [typedText, setTypedText] = useState("");
+  const [typedText, setTypedText] = useState('');
   const [currentIndex, setCurrentIndex] = useState(0);
   const [animationCycle, setAnimationCycle] = useState(0);
 
   const fullText =
-    "This warming trend is primarily attributed to human activities, particularly the burning of fossil fuels.";
+    'This warming trend is primarily attributed to human activities, particularly the burning of fossil fuels.';
 
   // Reset animation state
   const resetAnimation = () => {
     setShowTyping(false);
     setShowSuggestion(false);
-    setTypedText("");
+    setTypedText('');
     setCurrentIndex(0);
   };
 
@@ -70,13 +70,7 @@ export default function HeroSection() {
             xmlns="http://www.w3.org/2000/svg"
           >
             <defs>
-              <linearGradient
-                id="waveGradient"
-                x1="0%"
-                y1="0%"
-                x2="100%"
-                y2="0%"
-              >
+              <linearGradient id="waveGradient" x1="0%" y1="0%" x2="100%" y2="0%">
                 <stop offset="0%" stopColor="#29a7ac" stopOpacity="0.15" />
                 <stop offset="33%" stopColor="#2b7ab0" stopOpacity="0.2" />
                 <stop offset="66%" stopColor="#513fbd" stopOpacity="0.15" />
@@ -141,9 +135,8 @@ export default function HeroSection() {
         <div
           className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full opacity-8"
           style={{
-            background:
-              "radial-gradient(circle, rgba(41,167,172,0.08) 0%, transparent 70%)",
-            transform: "translate(-50%, -50%)",
+            background: 'radial-gradient(circle, rgba(41,167,172,0.08) 0%, transparent 70%)',
+            transform: 'translate(-50%, -50%)',
           }}
         />
 
@@ -151,9 +144,8 @@ export default function HeroSection() {
         <div
           className="absolute bottom-1/4 right-1/4 w-80 h-80 rounded-full opacity-6"
           style={{
-            background:
-              "radial-gradient(circle, rgba(81,63,189,0.06) 0%, transparent 70%)",
-            transform: "translate(50%, 50%)",
+            background: 'radial-gradient(circle, rgba(81,63,189,0.06) 0%, transparent 70%)',
+            transform: 'translate(50%, 50%)',
           }}
         />
 
@@ -161,9 +153,8 @@ export default function HeroSection() {
         <div
           className="absolute top-1/2 right-1/3 w-72 h-72 rounded-full opacity-5"
           style={{
-            background:
-              "radial-gradient(circle, rgba(43,122,176,0.05) 0%, transparent 70%)",
-            transform: "translate(50%, -50%)",
+            background: 'radial-gradient(circle, rgba(43,122,176,0.05) 0%, transparent 70%)',
+            transform: 'translate(50%, -50%)',
           }}
         />
       </div>
@@ -176,27 +167,23 @@ export default function HeroSection() {
               Elevate your writing
             </h1>
             <p className="mt-6 text-lg sm:text-xl text-gray-300 leading-relaxed max-w-2xl mx-auto lg:mx-0">
-              Create compelling content with AI that references your sources,
-              suggests improvements, and helps you write like a professional.
+              Create compelling content with AI that references your sources, suggests improvements,
+              and helps you write like a professional.
             </p>
             <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
               <WaitlistButton
                 className="inline-flex items-center justify-center px-8 py-4 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 text-lg backdrop-blur-md border border-white/20 hover:border-white/40 hover:scale-105"
                 style={{
-                  backgroundColor: "rgba(41,167,172,0.15)",
-                  boxShadow: "0 4px 16px rgba(41,167,172,0.15)",
+                  backgroundColor: 'rgba(41,167,172,0.15)',
+                  boxShadow: '0 4px 16px rgba(41,167,172,0.15)',
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor =
-                    "rgba(41,167,172,0.25)";
-                  e.currentTarget.style.boxShadow =
-                    "0 6px 20px rgba(41,167,172,0.2)";
+                  e.currentTarget.style.backgroundColor = 'rgba(41,167,172,0.25)';
+                  e.currentTarget.style.boxShadow = '0 6px 20px rgba(41,167,172,0.2)';
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor =
-                    "rgba(41,167,172,0.15)";
-                  e.currentTarget.style.boxShadow =
-                    "0 4px 16px rgba(41,167,172,0.15)";
+                  e.currentTarget.style.backgroundColor = 'rgba(41,167,172,0.15)';
+                  e.currentTarget.style.boxShadow = '0 4px 16px rgba(41,167,172,0.15)';
                 }}
               >
                 Join Waitlist
@@ -208,7 +195,7 @@ export default function HeroSection() {
           <div className="flex justify-center lg:justify-end">
             <div
               className="w-full max-w-lg aspect-square rounded-2xl shadow-xl flex items-center justify-center backdrop-blur-sm border border-gray-700/30 overflow-hidden"
-              style={{ backgroundColor: "rgba(255, 255, 255, 0.05)" }}
+              style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)' }}
             >
               {/* Animated Document Content */}
               <div className="w-full h-full p-6 flex flex-col">
@@ -217,20 +204,18 @@ export default function HeroSection() {
                   <div className="flex items-center space-x-2">
                     <div
                       className="w-3 h-3 rounded-full"
-                      style={{ backgroundColor: "#29a7ac" }}
+                      style={{ backgroundColor: '#29a7ac' }}
                     ></div>
                     <div
                       className="w-3 h-3 rounded-full"
-                      style={{ backgroundColor: "#2b7ab0" }}
+                      style={{ backgroundColor: '#2b7ab0' }}
                     ></div>
                     <div
                       className="w-3 h-3 rounded-full"
-                      style={{ backgroundColor: "#513fbd" }}
+                      style={{ backgroundColor: '#513fbd' }}
                     ></div>
                   </div>
-                  <div className="text-xs text-gray-400">
-                    Research Paper.docx
-                  </div>
+                  <div className="text-xs text-gray-400">Research Paper.docx</div>
                 </div>
 
                 {/* Document Content */}
@@ -245,13 +230,12 @@ export default function HeroSection() {
                     <div className="min-h-[120px]">
                       {/* Initial text */}
                       <div className="text-gray-300 leading-relaxed">
-                        Climate change represents one of the most pressing
-                        challenges of our time.
+                        Climate change represents one of the most pressing challenges of our time.
                       </div>
 
                       <div className="text-gray-300 leading-relaxed">
-                        Recent studies indicate that global temperatures keeps
-                        rising at a steady growth rate.
+                        Recent studies indicate that global temperatures keeps rising at a steady
+                        growth rate.
                       </div>
 
                       {/* Typewriter text */}
@@ -271,22 +255,19 @@ export default function HeroSection() {
                           <div className="flex items-start space-x-3">
                             <div
                               className="w-2 h-2 rounded-full mt-2 animate-pulse"
-                              style={{ backgroundColor: "#29a7ac" }}
+                              style={{ backgroundColor: '#29a7ac' }}
                             ></div>
                             <div className="flex-1">
                               <div className="text-xs font-medium text-teal-400 mb-2">
                                 AI Assistant
                               </div>
                               <div className="text-sm text-gray-300">
-                                <span className="text-teal-400">
-                                  💡 Suggestion:
-                                </span>{" "}
-                                Consider adding data from your uploaded IPCC
-                                report.
+                                <span className="text-teal-400">💡 Suggestion:</span> Consider
+                                adding data from your uploaded IPCC report.
                                 <br />
                                 <span className="text-gray-400 italic">
-                                  &ldquo;Global temperatures have risen by 1.1°C
-                                  since pre-industrial levels...&rdquo;
+                                  &ldquo;Global temperatures have risen by 1.1°C since
+                                  pre-industrial levels...&rdquo;
                                 </span>
                                 <br />
                                 <span className="text-blue-400 text-xs cursor-pointer hover:text-blue-300 transition-colors">

@@ -102,81 +102,100 @@ const EditorContainer = ({
   const hasInitializedProjectRef = React.useRef(false);
   React.useEffect(() => {
     const run = async () => {
-      if (!userId) return;
-      if (hasInitializedProjectRef.current) return; // Avoid StrictMode double-run creating duplicates
-      hasInitializedProjectRef.current = true;
+      try {
+        if (!userId) return;
+        if (hasInitializedProjectRef.current) return; // Avoid StrictMode double-run creating duplicates
+        hasInitializedProjectRef.current = true;
 
-      let pid = providedProjectId;
-      if (!pid) {
-        const projects = await getUserProjects(userId);
-        pid = projects[0]?.id;
-        if (!pid) pid = await createProject(userId, 'My Project');
-      }
-      setProjectId(pid);
+        console.log('🚀 [Project Init] Starting project initialization for user:', userId);
 
-      const [docs, sources, deleted] = await Promise.all([
-        getProjectDocuments(pid),
-        listProjectSources(pid),
-        getDeletedItems(pid),
-      ]);
-      setProjectDocs(docs);
-      setProjectSources(sources);
-      setDeletedItems(deleted);
-
-      // If no documents exist, create the first one
-      if (docs.length === 0) {
-        console.log('📋 [Project Init] No documents found, creating first document');
-        const firstDocId = await createProjectDocument(pid, { title: 'Untitled', content: '' });
-        const updatedDocs = await getProjectDocuments(pid);
-        setProjectDocs(updatedDocs);
-
-        // Set up the first document
-        setActiveDocumentIdWithLogging(firstDocId);
-        setOpenItems((prev) =>
-          prev.map((item) =>
-            item.id === 'document' && item.kind === 'editor'
-              ? { ...item, title: 'Untitled', documentId: firstDocId }
-              : item,
-          ),
-        );
-        onContentChange?.('');
-        setDocumentContents((prev) => {
-          const newMap = new Map(prev);
-          newMap.set(firstDocId, '');
-          return newMap;
-        });
-      } else {
-        // Load the first document (treat all documents equally)
-        const firstDoc = docs[0];
-        console.log('📂 [Document Loading] Loading first document:', firstDoc);
-
-        setActiveDocumentIdWithLogging(firstDoc.id);
-
-        try {
-          const full = await getProjectDocument(pid, firstDoc.id);
-          console.log('📄 [Document Loading] Retrieved document:', {
-            hasDocument: !!full,
-            contentLength: full?.content?.length,
-          });
-
-          if (full) {
-            onContentChange?.(full.content);
-            setDocumentContents((prev) => {
-              const newMap = new Map(prev);
-              newMap.set(firstDoc.id, full.content);
-              return newMap;
-            });
-            setOpenItems((prev) =>
-              prev.map((item) =>
-                item.id === 'document' && item.kind === 'editor'
-                  ? { ...item, title: firstDoc.title, documentId: firstDoc.id }
-                  : item,
-              ),
-            );
+        let pid = providedProjectId;
+        if (!pid) {
+          console.log('📋 [Project Init] No project ID provided, getting user projects...');
+          const projects = await getUserProjects(userId);
+          pid = projects[0]?.id;
+          if (!pid) {
+            console.log('📋 [Project Init] No projects found, creating new project...');
+            pid = await createProject(userId, 'My Project');
           }
-        } catch (e) {
-          console.error('❌ [Document Loading] Failed to load document:', e);
         }
+        console.log('📋 [Project Init] Using project ID:', pid);
+        setProjectId(pid);
+
+        console.log('📋 [Project Init] Loading project data...');
+        const [docs, sources, deleted] = await Promise.all([
+          getProjectDocuments(pid),
+          listProjectSources(pid),
+          getDeletedItems(pid),
+        ]);
+        setProjectDocs(docs);
+        setProjectSources(sources);
+        setDeletedItems(deleted);
+
+        console.log('📋 [Project Init] Project data loaded:', {
+          docsCount: docs.length,
+          sourcesCount: sources.length,
+        });
+
+        // If no documents exist, create the first one
+        if (docs.length === 0) {
+          console.log('📋 [Project Init] No documents found, creating first document');
+          const firstDocId = await createProjectDocument(pid, { title: 'Untitled', content: '' });
+          const updatedDocs = await getProjectDocuments(pid);
+          setProjectDocs(updatedDocs);
+
+          // Set up the first document
+          setActiveDocumentIdWithLogging(firstDocId);
+          setOpenItems((prev) =>
+            prev.map((item) =>
+              item.id === 'document' && item.kind === 'editor'
+                ? { ...item, title: 'Untitled', documentId: firstDocId }
+                : item,
+            ),
+          );
+          onContentChange?.('');
+          setDocumentContents((prev) => {
+            const newMap = new Map(prev);
+            newMap.set(firstDocId, '');
+            return newMap;
+          });
+        } else {
+          // Load the first document (treat all documents equally)
+          const firstDoc = docs[0];
+          console.log('📂 [Document Loading] Loading first document:', firstDoc);
+
+          setActiveDocumentIdWithLogging(firstDoc.id);
+
+          try {
+            const full = await getProjectDocument(pid, firstDoc.id);
+            console.log('📄 [Document Loading] Retrieved document:', {
+              hasDocument: !!full,
+              contentLength: full?.content?.length,
+            });
+
+            if (full) {
+              onContentChange?.(full.content);
+              setDocumentContents((prev) => {
+                const newMap = new Map(prev);
+                newMap.set(firstDoc.id, full.content);
+                return newMap;
+              });
+              setOpenItems((prev) =>
+                prev.map((item) =>
+                  item.id === 'document' && item.kind === 'editor'
+                    ? { ...item, title: firstDoc.title, documentId: firstDoc.id }
+                    : item,
+                ),
+              );
+            }
+          } catch (e) {
+            console.error('❌ [Document Loading] Failed to load document:', e);
+          }
+        }
+
+        console.log('✅ [Project Init] Project initialization completed successfully');
+      } catch (error) {
+        console.error('❌ [Project Init] Error during project initialization:', error);
       }
     };
     run().catch((e) => console.error('Project init error', e));
@@ -628,18 +647,14 @@ const EditorContainer = ({
       if (!selection.storedSource) continue;
 
       try {
-        console.log('🔄 Downloading stored source via API:', selection.storedSource.name);
+        console.log('🔄 Downloading stored source client-side:', selection.storedSource.name);
 
-        const response = await fetch('/api/download-source', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            storagePath: selection.storedSource.storagePath,
-            filename: selection.storedSource.name,
-          }),
-        });
+        // Generate download URL client-side (with user authentication context)
+        const downloadURL = await getProjectSourceDownloadURL(selection.storedSource.storagePath);
+        console.log('📁 Got download URL client-side');
+
+        // Fetch the file directly using the download URL
+        const response = await fetch(downloadURL);
 
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -654,6 +669,10 @@ const EditorContainer = ({
         files.push(file);
       } catch (error) {
         console.error('❌ Failed to download stored source:', selection.storedSource.name, error);
+        // If it's a permission error, show a helpful message
+        if (error instanceof Error && error.message.includes('unauthorized')) {
+          console.error('❌ Permission denied - check Firebase Storage rules and authentication');
+        }
       }
     }
 
@@ -695,12 +714,25 @@ const EditorContainer = ({
       // Persist as project sources if we have a projectId
       if (projectId) {
         Promise.all(
-          files.map((file) =>
-            uploadProjectSource(projectId, file).catch((e) => {
-              console.error('Upload to storage failed', e);
+          files.map(async (file) => {
+            try {
+              console.log('🔧 [EditorContainer] Uploading file to storage:', file.name);
+              const result = await uploadProjectSource(projectId, file);
+              console.log('✅ [EditorContainer] Successfully uploaded:', result);
+              return result;
+            } catch (e) {
+              console.error(
+                '❌ [EditorContainer] Upload to storage failed for file:',
+                file.name,
+                e,
+              );
+              // Show error to user
+              alert(
+                `Failed to upload ${file.name}: ${e instanceof Error ? e.message : 'Unknown error'}`,
+              );
               return null;
-            }),
-          ),
+            }
+          }),
         )
           .then(() => reloadProjectData())
           .catch(() => undefined);
@@ -723,12 +755,20 @@ const EditorContainer = ({
         return;
       }
       Promise.all(
-        files.map((file) =>
-          uploadProjectSource(projectId, file).catch((e) => {
-            console.error('[KB Upload] upload failed', e);
+        files.map(async (file) => {
+          try {
+            console.log('🔧 [KnowledgeBase] Uploading file to storage:', file.name);
+            const result = await uploadProjectSource(projectId, file);
+            console.log('✅ [KnowledgeBase] Successfully uploaded:', result);
+            return result;
+          } catch (e) {
+            console.error('❌ [KnowledgeBase] Upload to storage failed for file:', file.name, e);
+            alert(
+              `Failed to upload ${file.name}: ${e instanceof Error ? e.message : 'Unknown error'}`,
+            );
             return null;
-          }),
-        ),
+          }
+        }),
       )
         .then(() => reloadProjectData())
         .catch((e) => console.warn('[KB Upload] reload failed', e));

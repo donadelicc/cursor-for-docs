@@ -11,11 +11,13 @@ import {
   onAuthStateChanged,
 } from 'firebase/auth';
 import { auth, googleProvider } from '@/lib/firebase';
-import { createUserProfile } from '@/utils/firestore';
+import { createUserProfile, checkPilotAccess } from '@/utils/firestore';
 
 interface AuthContextType {
   currentUser: User | null;
   loading: boolean;
+  hasPilotAccess: boolean;
+  pilotAccessLoading: boolean;
   signInWithGoogle: () => Promise<void>;
   signInWithEmail: (email: string, password: string) => Promise<void>;
   signUpWithEmail: (email: string, password: string) => Promise<void>;
@@ -40,6 +42,8 @@ interface AuthProviderProps {
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [hasPilotAccess, setHasPilotAccess] = useState(false);
+  const [pilotAccessLoading, setPilotAccessLoading] = useState(false);
 
   const signInWithGoogle = async () => {
     try {
@@ -80,9 +84,32 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const logout = async () => {
     try {
       await signOut(auth);
+      setHasPilotAccess(false);
     } catch (error) {
       console.error('Error signing out:', error);
       throw error;
+    }
+  };
+
+  const checkUserPilotAccess = async (user: User | null) => {
+    if (!user || !user.email) {
+      console.log('🔍 Pilot Access Check: No user or email');
+      setHasPilotAccess(false);
+      setPilotAccessLoading(false);
+      return;
+    }
+
+    console.log('🔍 Pilot Access Check: Checking access for', user.email);
+    setPilotAccessLoading(true);
+    try {
+      const hasAccess = await checkPilotAccess(user.email);
+      console.log('🔍 Pilot Access Check: Result for', user.email, '=', hasAccess);
+      setHasPilotAccess(hasAccess);
+    } catch (error) {
+      console.error('❌ Error checking pilot access:', error);
+      setHasPilotAccess(false);
+    } finally {
+      setPilotAccessLoading(false);
     }
   };
 
@@ -95,6 +122,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         } catch (error) {
           console.error('Error creating user profile:', error);
         }
+
+        // Check pilot access for authenticated users
+        await checkUserPilotAccess(user);
+      } else {
+        setHasPilotAccess(false);
+        setPilotAccessLoading(false);
       }
       setCurrentUser(user);
       setLoading(false);
@@ -106,6 +139,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const value: AuthContextType = {
     currentUser,
     loading,
+    hasPilotAccess,
+    pilotAccessLoading,
     signInWithGoogle,
     signInWithEmail,
     signUpWithEmail,
