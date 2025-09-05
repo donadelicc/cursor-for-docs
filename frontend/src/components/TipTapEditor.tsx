@@ -24,10 +24,17 @@ export const TiptapEditor = ({
   const editor = useEditor({
     extensions,
     content: initialContent || '',
+    immediatelyRender: false,
     editorProps: {
       attributes: {
         class: 'tiptap-editor-content',
       },
+    },
+    onUpdate: ({ editor }) => {
+      if (onContentChange) {
+        const content = editor.getHTML();
+        onContentChange(content);
+      }
     },
     onCreate: ({ editor }) => {
       // Initialize content change handler
@@ -58,20 +65,13 @@ export const TiptapEditor = ({
         }
       }, 200);
     },
-    onUpdate: ({ editor }) => {
-      // Update content when editor content changes
-      if (onContentChange) {
-        const content = editor.getHTML();
-        onContentChange(content);
-      }
-    },
   });
 
   // Update editor content when initialContent changes
   React.useEffect(() => {
     if (editor && initialContent && editor.getHTML() !== initialContent) {
       // Only update if content is different to avoid infinite loops
-      editor.commands.setContent(initialContent, false);
+      editor.commands.setContent(initialContent, { emitUpdate: false });
     }
   }, [editor, initialContent]);
 
@@ -121,7 +121,17 @@ export const TiptapEditor = ({
         className="flex flex-col w-full max-w-full h-full bg-white dark:bg-gray-900 rounded-bl-lg rounded-br-lg border border-gray-300 dark:border-gray-700 border-t-0 shadow-lg overflow-x-hidden overflow-y-auto relative mt-0 transition-colors duration-200"
         ref={editorContainerRef}
       >
-        <div className="prose prose-lg dark:prose-invert max-w-none p-6 focus:outline-none prose-headings:text-gray-900 dark:prose-headings:text-gray-100 prose-p:text-gray-800 dark:prose-p:text-gray-200 prose-li:text-gray-800 dark:prose-li:text-gray-200 prose-strong:text-gray-900 dark:prose-strong:text-gray-100 prose-em:text-gray-800 dark:prose-em:text-gray-200">
+        <div
+          className="max-w-none focus:outline-none"
+          style={{
+            padding: '96px',
+            minHeight: 'calc(100vh - 200px)',
+            fontFamily: 'Arial, sans-serif',
+            fontSize: '11pt',
+            lineHeight: 1.15,
+            color: '#000',
+          }}
+        >
           <EditorContent editor={editor} />
         </div>
       </div>

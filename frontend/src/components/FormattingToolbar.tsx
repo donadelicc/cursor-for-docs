@@ -171,6 +171,74 @@ const FormattingToolbar: React.FC<FormattingToolbarProps> = ({
         <div className="w-px h-6 bg-gray-300 mx-1.5 shrink-0"></div>
 
         <div className="flex items-center gap-0.5 shrink-0">
+          {/* Font Size Dropdown */}
+          <select
+            className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-300 cursor-pointer min-w-[80px] w-[80px] h-9 shrink-0 font-medium shadow-sm transition-all duration-200 hover:border-blue-600 dark:hover:border-blue-400 hover:shadow-md focus:outline-none focus:border-blue-600 dark:focus:border-blue-400 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-800 xl:min-w-[70px] xl:w-[70px] xl:h-[34px] xl:text-xs lg:min-w-[60px] lg:w-[60px] lg:h-[30px] lg:text-xs"
+            value={(() => {
+              const fontSize = editor.getAttributes('textStyle').fontSize;
+              if (!fontSize) return '11pt';
+              return fontSize;
+            })()}
+            onChange={(e) => {
+              const value = e.target.value;
+              if (value === '11pt') {
+                editor.chain().focus().unsetFontSize().run();
+              } else {
+                editor.chain().focus().setFontSize(value).run();
+              }
+            }}
+            title="Font Size"
+          >
+            <option value="8pt">8pt</option>
+            <option value="9pt">9pt</option>
+            <option value="10pt">10pt</option>
+            <option value="11pt">11pt</option>
+            <option value="12pt">12pt</option>
+            <option value="14pt">14pt</option>
+            <option value="16pt">16pt</option>
+            <option value="18pt">18pt</option>
+            <option value="20pt">20pt</option>
+            <option value="22pt">22pt</option>
+            <option value="24pt">24pt</option>
+            <option value="26pt">26pt</option>
+            <option value="28pt">28pt</option>
+            <option value="36pt">36pt</option>
+            <option value="48pt">48pt</option>
+            <option value="72pt">72pt</option>
+          </select>
+        </div>
+
+        <div className="w-px h-6 bg-gray-300 mx-1.5 shrink-0"></div>
+
+        <div className="flex items-center gap-0.5 shrink-0">
+          {/* Line Spacing Dropdown */}
+          <select
+            className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-300 cursor-pointer min-w-[80px] w-[80px] h-9 shrink-0 font-medium shadow-sm transition-all duration-200 hover:border-blue-600 dark:hover:border-blue-400 hover:shadow-md focus:outline-none focus:border-blue-600 dark:focus:border-blue-400 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-800 xl:min-w-[70px] xl:w-[70px] xl:h-[34px] xl:text-xs lg:min-w-[60px] lg:w-[60px] lg:h-[30px] lg:text-xs"
+            value={(() => {
+              const lineHeight = editor.getAttributes('textStyle').lineHeight;
+              if (!lineHeight) return '1.15';
+              return lineHeight;
+            })()}
+            onChange={(e) => {
+              const value = e.target.value;
+              if (value === '1.15') {
+                editor.chain().focus().unsetLineHeight().run();
+              } else {
+                editor.chain().focus().setLineHeight(value).run();
+              }
+            }}
+            title="Line Spacing"
+          >
+            <option value="1.0">Single</option>
+            <option value="1.15">1.15</option>
+            <option value="1.5">1.5</option>
+            <option value="2.0">Double</option>
+          </select>
+        </div>
+
+        <div className="w-px h-6 bg-gray-300 mx-1.5 shrink-0"></div>
+
+        <div className="flex items-center gap-0.5 shrink-0">
           {/* Text Formatting Buttons */}
           <button
             className={`flex items-center justify-center w-8 h-8 border-none bg-transparent rounded-md cursor-pointer text-gray-700 dark:text-gray-300 transition-all duration-200 p-0 relative z-[101] pointer-events-auto shrink-0 hover:bg-blue-50 dark:hover:bg-blue-900 hover:text-blue-600 dark:hover:text-blue-400 active:bg-blue-100 dark:active:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-gray-700 dark:disabled:hover:text-gray-300 xl:w-8 xl:h-8 lg:w-7 lg:h-7 ${editor.isActive('bold') ? 'bg-blue-200 dark:bg-blue-700 text-blue-800 dark:text-blue-200 border-blue-400 dark:border-blue-500 shadow-md' : ''}`}
