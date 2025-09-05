@@ -7,8 +7,7 @@ interface PilotAccessDeniedProps {
   onRetry?: () => void;
 }
 
-const PilotAccessDenied: React.FC<PilotAccessDeniedProps> = ({ userEmail, onRetry: _onRetry }) => {
-  // eslint-disable-line @typescript-eslint/no-unused-vars
+const PilotAccessDenied: React.FC<PilotAccessDeniedProps> = ({ userEmail }) => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
       <div className="max-w-md w-full mx-auto">
