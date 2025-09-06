@@ -29,6 +29,7 @@ import {
   ProjectDocumentMeta,
   ProjectDocumentData,
   ProjectSource,
+  ProjectImage,
   DeletedItem,
 } from '@/types/projects';
 import { ref, uploadBytes, deleteObject, getDownloadURL, getBytes } from 'firebase/storage';
@@ -39,6 +40,7 @@ const USERS_COLLECTION = 'users';
 const PROJECTS_COLLECTION = 'projects';
 const DOCUMENTS_COLLECTION = 'documents'; // legacy
 const SOURCES_SUBCOLLECTION = 'sources';
+const IMAGES_SUBCOLLECTION = 'images';
 const PROJECT_DOCUMENTS_SUBCOLLECTION = 'documents';
 const DELETED_ITEMS_SUBCOLLECTION = 'deleted_items';
 const PILOT_USERS_COLLECTION = 'pilotUsers';
@@ -316,7 +318,7 @@ export const createProjectDocument = async (
   const filename = `${data.title.replace(/[^a-zA-Z0-9]/g, '_')}.html`;
   const blob = new Blob([htmlContent], { type: 'text/html' });
 
-  const storagePath = `${projectId}/documents/${Date.now()}_${filename}`;
+  const storagePath = `projects/${projectId}/documents/${Date.now()}_${filename}`;
   const storageRef = ref(storage, storagePath);
 
   await uploadBytes(storageRef, blob);
@@ -455,7 +457,7 @@ export const updateProjectDocument = async (
     if (!storagePath) {
       // For old documents without storage path, create new one
       const filename = `${(updateData.title || data.title || 'document').replace(/[^a-zA-Z0-9]/g, '_')}.html`;
-      storagePath = `${projectId}/documents/${Date.now()}_${filename}`;
+      storagePath = `projects/${projectId}/documents/${Date.now()}_${filename}`;
       updates.storagePath = storagePath;
       updates.mimeType = 'text/html';
     }
@@ -520,7 +522,7 @@ export const uploadProjectSource = async (
 
     console.log('🔧 [Storage] User authenticated:', auth.currentUser.uid);
 
-    const path = `${projectId}/sources/${Date.now()}_${file.name}`;
+    const path = `projects/${projectId}/sources/${Date.now()}_${file.name}`;
     console.log('🔧 [Storage] Upload path:', path);
 
     const storageRef = ref(storage, path);
@@ -866,4 +868,163 @@ export const removePilotUser = async (pilotUserId: string): Promise<void> => {
     console.error('Error removing pilot user:', error);
     throw error;
   }
+};
+
+// ============================================
+// PROJECT IMAGES
+// ============================================
+
+export const listProjectImages = async (projectId: string): Promise<ProjectImage[]> => {
+  try {
+    const imagesRef = collection(db, PROJECTS_COLLECTION, projectId, IMAGES_SUBCOLLECTION);
+    const q = query(imagesRef, orderBy('createdAt', 'desc'));
+    const querySnapshot = await getDocs(q);
+
+    return querySnapshot.docs.map((doc) => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        name: data.name,
+        size: data.size,
+        mimeType: data.mimeType,
+        storagePath: data.storagePath,
+        thumbnailPath: data.thumbnailPath,
+        width: data.width,
+        height: data.height,
+        createdAt: data.createdAt?.toDate() || new Date(),
+        updatedAt: data.updatedAt?.toDate() || new Date(),
+      } as ProjectImage;
+    });
+  } catch (error) {
+    console.error('Error listing project images:', error);
+    return [];
+  }
+};
+
+export const uploadProjectImage = async (projectId: string, file: File): Promise<ProjectImage> => {
+  try {
+    // Generate unique filename
+    const timestamp = Date.now();
+    const fileExtension = file.name.split('.').pop() || '';
+    const fileName = `${timestamp}_${Math.random().toString(36).substring(2)}.${fileExtension}`;
+    const storagePath = `projects/${projectId}/images/${fileName}`;
+
+    // Upload to Firebase Storage
+    const storageRef = ref(storage, storagePath);
+    const uploadResult = await uploadBytes(storageRef, file);
+    console.log('Image uploaded to storage:', uploadResult.metadata.fullPath);
+
+    // Get image dimensions if possible
+    let width: number | undefined;
+    let height: number | undefined;
+    
+    if (file.type.startsWith('image/')) {
+      try {
+        const imageDimensions = await getImageDimensions(file);
+        width = imageDimensions.width;
+        height = imageDimensions.height;
+      } catch (error) {
+        console.warn('Could not get image dimensions:', error);
+      }
+    }
+
+    // Create Firestore document
+    const imageData = {
+      name: file.name,
+      size: file.size,
+      mimeType: file.type,
+      storagePath: storagePath,
+      width,
+      height,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    };
+
+    const imagesRef = collection(db, PROJECTS_COLLECTION, projectId, IMAGES_SUBCOLLECTION);
+    const docRef = await addDoc(imagesRef, imageData);
+
+    return {
+      id: docRef.id,
+      ...imageData,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    } as ProjectImage;
+  } catch (error) {
+    console.error('Error uploading project image:', error);
+    throw error;
+  }
+};
+
+export const deleteProjectImage = async (projectId: string, imageId: string): Promise<void> => {
+  try {
+    // Get image metadata first
+    const imageRef = doc(db, PROJECTS_COLLECTION, projectId, IMAGES_SUBCOLLECTION, imageId);
+    const imageDoc = await getDoc(imageRef);
+    
+    if (imageDoc.exists()) {
+      const imageData = imageDoc.data();
+      
+      // Move to deleted items for potential recovery
+      const deletedItemsRef = collection(db, PROJECTS_COLLECTION, projectId, DELETED_ITEMS_SUBCOLLECTION);
+      await addDoc(deletedItemsRef, {
+        name: imageData.name,
+        type: 'image',
+        size: imageData.size,
+        mimeType: imageData.mimeType,
+        storagePath: imageData.storagePath,
+        deletedAt: serverTimestamp(),
+        originalData: imageData,
+      });
+
+      // Delete from Firestore
+      await deleteDoc(imageRef);
+      
+      // Delete from Storage
+      const storageRef = ref(storage, imageData.storagePath);
+      await deleteObject(storageRef);
+      
+      // Delete thumbnail if exists
+      if (imageData.thumbnailPath) {
+        const thumbnailRef = ref(storage, imageData.thumbnailPath);
+        try {
+          await deleteObject(thumbnailRef);
+        } catch (error) {
+          console.warn('Could not delete thumbnail:', error);
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error deleting project image:', error);
+    throw error;
+  }
+};
+
+export const getProjectImageDownloadURL = async (storagePath: string): Promise<string> => {
+  try {
+    const storageRef = ref(storage, storagePath);
+    return await getDownloadURL(storageRef);
+  } catch (error) {
+    console.error('Error getting image download URL:', error);
+    throw error;
+  }
+};
+
+// Helper function to get image dimensions
+const getImageDimensions = (file: File): Promise<{ width: number; height: number }> => {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve({ width: img.naturalWidth, height: img.naturalHeight });
+    };
+    
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error('Failed to load image'));
+    };
+    
+    img.src = url;
+  });
 };

@@ -32,11 +32,24 @@ export interface ProjectSource {
   updatedAt: Date;
 }
 
+export interface ProjectImage {
+  id: string;
+  name: string;
+  size: number;
+  mimeType: string;
+  storagePath: string;
+  thumbnailPath?: string; // Optional thumbnail for performance
+  width?: number;
+  height?: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 // For recently deleted items that can be restored
 export interface DeletedItem {
   id: string;
   name: string;
-  type: 'document' | 'source';
+  type: 'document' | 'source' | 'image';
   size: number;
   mimeType: string;
   storagePath: string;

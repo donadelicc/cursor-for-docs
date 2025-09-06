@@ -1,11 +1,12 @@
 import React, { useState, useCallback, useRef } from 'react';
 import { Editor } from '@tiptap/react';
 import CollapsiblePanel from './CollapsiblePanel';
-import KnowledgeBase, { SourceSelection } from './KnowledgeBase';
+import KnowledgeBase, { SourceSelection, UploadedImage } from './KnowledgeBase';
 import MainChatbot from './MainChatbot';
 import { TiptapEditor } from './TipTapEditor';
 import PdfViewer from './PdfViewer';
 import WorkspaceTabs, { OpenItem } from './WorkspaceTabs';
+import ImagePreviewModal from './ImagePreviewModal';
 import {
   createProject,
   getUserProjects,
@@ -55,11 +56,13 @@ const EditorContainer = ({
   const [projectDocs, setProjectDocs] = useState<ProjectDocumentMeta[]>([]);
   const [projectSources, setProjectSources] = useState<ProjectSource[]>([]);
   const [deletedItems, setDeletedItems] = useState<DeletedItem[]>([]);
+  const [previewImage, setPreviewImage] = useState<UploadedImage | null>(null);
 
   // Document state management
   const [activeDocumentId, setActiveDocumentId] = useState<string | undefined>(undefined);
   const [documentContents, setDocumentContents] = useState<Map<string, string>>(new Map());
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const currentEditorRef = useRef<Editor | null>(null);
 
   // Track activeDocumentId changes with wrapper function
   const setActiveDocumentIdWithLogging = React.useCallback(
@@ -96,6 +99,50 @@ const EditorContainer = ({
       }
     },
     [projectId],
+  );
+
+  // Handle editor ready and capture editor instance
+  const handleEditorReady = useCallback(
+    (editor: Editor) => {
+      currentEditorRef.current = editor;
+      onEditorReady?.(editor);
+    },
+    [onEditorReady]
+  );
+
+  // Image insertion callback for KnowledgeBase
+  const handleInsertImage = useCallback(
+    (imageDataUrl: string, imageName: string) => {
+      const editor = currentEditorRef.current;
+      if (!editor) {
+        console.warn('⚠️ [Image Insert] No editor available');
+        return;
+      }
+
+      try {
+        editor
+          .chain()
+          .focus()
+          .setImage({
+            src: imageDataUrl,
+            alt: imageName,
+            title: imageName,
+          })
+          .run();
+        console.log('✅ [Image Insert] Image inserted successfully:', imageName);
+      } catch (error) {
+        console.error('❌ [Image Insert] Error inserting image:', error);
+      }
+    },
+    []
+  );
+
+  // Image preview callback for KnowledgeBase
+  const handleImagePreview = useCallback(
+    (image: UploadedImage | null) => {
+      setPreviewImage(image);
+    },
+    []
   );
 
   // Load or create a default project for the user, then load docs and sources
@@ -809,6 +856,7 @@ const EditorContainer = ({
             ]}
           >
             <KnowledgeBase
+              projectId={projectId || ''}
               onFileUpload={handleKnowledgeBaseFileUpload}
               onSelectedSourcesChange={handleSelectedSourcesChange}
               externalFiles={chatbotUploadedFiles}
@@ -952,6 +1000,8 @@ const EditorContainer = ({
               }))}
               onRestoreItem={handleRestoreItem}
               onPermanentlyDeleteItem={handlePermanentlyDeleteItem}
+              onInsertImage={handleInsertImage}
+              onImagePreview={handleImagePreview}
             />
           </CollapsiblePanel>
         </div>
@@ -1002,7 +1052,7 @@ const EditorContainer = ({
                     key={activeItem.id} // Force re-render when switching between documents
                     onContentChange={handleContentChange}
                     initialContent={documentContent}
-                    onEditorReady={onEditorReady}
+                    onEditorReady={handleEditorReady}
                   />
                 ) : (
                   <PdfViewer
@@ -1029,6 +1079,13 @@ const EditorContainer = ({
           </CollapsiblePanel>
         </div>
       </div>
+
+      {/* Image Preview Modal */}
+      <ImagePreviewModal
+        image={previewImage}
+        onClose={() => setPreviewImage(null)}
+        onInsert={handleInsertImage}
+      />
     </div>
   );
 };

@@ -1,4 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { uploadProjectImage, listProjectImages, deleteProjectImage, getProjectImageDownloadURL } from '../utils/firestore';
+import { ProjectImage } from '../types/projects';
 
 interface UnifiedSource {
   id: string;
@@ -11,6 +13,18 @@ interface UnifiedSource {
   storagePath?: string; // For stored files from Firestore
   sourceType: 'local' | 'stored' | 'external'; // Track source origin
   isUploading?: boolean; // Loading state
+}
+
+export interface UploadedImage {
+  id: string;
+  name: string;
+  dataUrl: string;
+  uploadDate: Date;
+  // Optional Firebase metadata for stored images
+  projectImageId?: string;
+  storagePath?: string;
+  width?: number;
+  height?: number;
 }
 
 // New type to handle both File objects and stored source references
@@ -40,9 +54,15 @@ interface KnowledgeBaseProps {
   // New callback for converting documents to sources
   onConvertDocumentToSource?: (docId: string, docTitle: string) => Promise<void>;
   // New callbacks for deleted items management
-  deletedItems?: { id: string; name: string; type: 'document' | 'source'; deletedAt: Date }[];
+  deletedItems?: { id: string; name: string; type: 'document' | 'source' | 'image'; deletedAt: Date }[];
   onRestoreItem?: (deletedItemId: string) => Promise<void>;
   onPermanentlyDeleteItem?: (deletedItemId: string) => Promise<void>;
+  // New callback for inserting images into TipTap editor
+  onInsertImage?: (imageDataUrl: string, imageName: string) => void;
+  // New callback for image preview
+  onImagePreview?: (image: UploadedImage | null) => void;
+  // Project ID for Firebase operations
+  projectId: string;
 }
 
 const KnowledgeBase = ({
@@ -65,8 +85,13 @@ const KnowledgeBase = ({
   deletedItems = [],
   onRestoreItem,
   onPermanentlyDeleteItem,
+  onInsertImage,
+  onImagePreview,
+  projectId,
 }: KnowledgeBaseProps) => {
   const [allSources, setAllSources] = useState<UnifiedSource[]>([]);
+  const [images, setImages] = useState<UploadedImage[]>([]);
+  const [isLoadingImages, setIsLoadingImages] = useState(true);
   const [isDragOver, setIsDragOver] = useState(false);
   const [notification, setNotification] = useState<string | null>(null);
   const [editingDocId, setEditingDocId] = useState<string | null>(null);
@@ -77,25 +102,74 @@ const KnowledgeBase = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const docInputRef = useRef<HTMLInputElement>(null);
 
+  // Load images from Firebase when component mounts or projectId changes
+  useEffect(() => {
+    const loadImages = async () => {
+      if (!projectId) {
+        setIsLoadingImages(false);
+        return;
+      }
+
+      try {
+        setIsLoadingImages(true);
+        const projectImages = await listProjectImages(projectId);
+        
+        const uploadedImages: UploadedImage[] = await Promise.all(
+          projectImages.map(async (img: ProjectImage) => {
+            try {
+              const dataUrl = await getProjectImageDownloadURL(img.storagePath);
+              return {
+                id: img.id,
+                name: img.name,
+                dataUrl,
+                uploadDate: img.createdAt,
+                projectImageId: img.id,
+                storagePath: img.storagePath,
+                width: img.width,
+                height: img.height
+              };
+            } catch (error) {
+              console.error(`❌ [Load Images] Error loading image ${img.name}:`, error);
+              return null;
+            }
+          })
+        );
+
+        // Filter out null values (failed downloads)
+        const validImages = uploadedImages.filter((img): img is UploadedImage => img !== null);
+        setImages(validImages);
+      } catch (error) {
+        console.error('❌ [Load Images] Error loading project images:', error);
+        setImages([]);
+      } finally {
+        setIsLoadingImages(false);
+      }
+    };
+
+    loadImages();
+  }, [projectId]);
+
   const handleFileUpload = async (files: FileList | null) => {
     if (!files) return;
 
     const validPdfFiles: File[] = [];
     const validDocxFiles: File[] = [];
+    const validImageFiles: File[] = [];
     const fileArray = Array.from(files);
     const duplicateFiles: string[] = [];
     const invalidFiles: string[] = [];
 
     fileArray.forEach((file) => {
-      // Check if file is PDF, DOCX, HTML, or Markdown
+      // Check if file is PDF, DOCX, HTML, Markdown, or Image
       const isPdf = file.type === 'application/pdf';
       const isDocx =
         file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
         file.name.toLowerCase().endsWith('.docx');
       const isHtml = file.type === 'text/html' || file.name.toLowerCase().endsWith('.html');
       const isMarkdown = file.type === 'text/markdown' || file.name.toLowerCase().endsWith('.md');
+      const isImage = file.type.startsWith('image/') && (file.type === 'image/png' || file.type === 'image/jpeg' || file.type === 'image/jpg');
 
-      if (!isPdf && !isDocx && !isHtml && !isMarkdown) {
+      if (!isPdf && !isDocx && !isHtml && !isMarkdown && !isImage) {
         invalidFiles.push(file.name);
         return;
       }
@@ -113,6 +187,17 @@ const KnowledgeBase = ({
         validPdfFiles.push(file); // Treat HTML and Markdown as sources like PDFs
       } else if (isDocx) {
         validDocxFiles.push(file);
+      } else if (isImage) {
+        // Check for duplicate images by name (Firebase images don't have file.size)
+        const isDuplicate = images.some(
+          (image) => image.name === file.name,
+        );
+
+        if (isDuplicate) {
+          duplicateFiles.push(file.name);
+          return;
+        }
+        validImageFiles.push(file);
       }
     });
 
@@ -124,7 +209,7 @@ const KnowledgeBase = ({
       }
       if (invalidFiles.length > 0) {
         messages.push(
-          `Invalid files (only PDF, DOCX, HTML, and Markdown supported): ${invalidFiles.join(', ')}`,
+          `Invalid files (only PDF, DOCX, HTML, Markdown, PNG, and JPG supported): ${invalidFiles.join(', ')}`,
         );
       }
 
@@ -183,6 +268,58 @@ const KnowledgeBase = ({
           console.error('❌ [DOCX Upload] Error converting file:', file.name, error);
         }
       }
+    }
+
+    // Handle Image files - upload to Firebase Storage
+    if (validImageFiles.length > 0) {
+      const uploadImageToFirebase = async (file: File) => {
+        try {
+          // Show temporary uploading state
+          const tempImage: UploadedImage = {
+            id: `temp-${Date.now()}-${Math.random().toString(36).substring(2)}`,
+            name: file.name,
+            dataUrl: URL.createObjectURL(file), // Temporary preview
+            uploadDate: new Date(),
+          };
+          
+          setImages((prev) => [...prev, tempImage]);
+
+          // Upload to Firebase
+          const projectImage = await uploadProjectImage(projectId, file);
+          
+          // Get download URL for display
+          const dataUrl = await getProjectImageDownloadURL(projectImage.storagePath);
+          
+          const uploadedImage: UploadedImage = {
+            id: projectImage.id,
+            name: projectImage.name,
+            dataUrl,
+            uploadDate: projectImage.createdAt,
+            projectImageId: projectImage.id,
+            storagePath: projectImage.storagePath,
+            width: projectImage.width,
+            height: projectImage.height
+          };
+
+          // Replace temporary image with uploaded image
+          setImages((prev) => prev.map((img) => 
+            img.id === tempImage.id ? uploadedImage : img
+          ));
+
+          console.log('✅ [Image Upload] Successfully uploaded:', file.name);
+        } catch (error) {
+          console.error('❌ [Image Upload] Error uploading image:', file.name, error);
+          
+          // Remove temporary image on error
+          setImages((prev) => prev.filter((img) => img.id !== tempImage.id));
+          
+          setNotification(`Failed to upload image: ${file.name}`);
+          setTimeout(() => setNotification(null), 5000);
+        }
+      };
+
+      // Upload all images concurrently
+      await Promise.all(validImageFiles.map(uploadImageToFirebase));
     }
   };
 
@@ -542,7 +679,7 @@ const KnowledgeBase = ({
         ref={fileInputRef}
         type="file"
         multiple
-        accept=".pdf,.docx,.html,.md"
+        accept=".pdf,.docx,.html,.md,.png,.jpg,.jpeg"
         onChange={handleInputChange}
         className="hidden"
       />
@@ -695,6 +832,143 @@ const KnowledgeBase = ({
           </div>
         )}
 
+        {/* Images Section */}
+        {(images.length > 0 || isLoadingImages) && (
+          <div className="border-b border-gray-200 dark:border-gray-700">
+            <div className="p-4 pb-2">
+              <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wide">
+                Images {isLoadingImages && <span className="text-xs text-gray-500">(Loading...)</span>}
+              </h3>
+            </div>
+            <div className="pb-4">
+              {isLoadingImages && images.length === 0 && (
+                <div className="flex items-center justify-center py-4 px-4">
+                  <svg className="w-5 h-5 text-gray-400 animate-spin mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" strokeDasharray="32" strokeDashoffset="32" />
+                  </svg>
+                  <span className="text-sm text-gray-500">Loading images...</span>
+                </div>
+              )}
+              {images.map((image) => (
+                <div
+                  key={image.id}
+                  className="flex items-center justify-between px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer transition-colors duration-200 group"
+                  onDoubleClick={() => onImagePreview?.(image)}
+                >
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <svg
+                      className="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0"
+                      fill="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zM16 18H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z" />
+                      <circle cx="10.5" cy="12.5" r="1.5" />
+                      <polyline points="8,15 10.5,12.5 13,15" />
+                    </svg>
+                    <span
+                      className="text-sm text-gray-800 dark:text-gray-200 truncate flex-1 min-w-0"
+                      title={image.name}
+                    >
+                      {truncateFilename(image.name, 30)}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all duration-200">
+                    <button
+                      className="appearance-none border-none bg-transparent text-gray-400 dark:text-gray-500 cursor-pointer p-1 rounded hover:bg-green-200 dark:hover:bg-green-800 hover:text-green-600 dark:hover:text-green-400 transition-all duration-200"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (onInsertImage) {
+                          onInsertImage(image.dataUrl, image.name);
+                        }
+                      }}
+                      title="Insert image into document"
+                    >
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                        />
+                      </svg>
+                    </button>
+                    <button
+                      className="appearance-none border-none bg-transparent text-gray-400 dark:text-gray-500 cursor-pointer p-1 rounded hover:bg-blue-200 dark:hover:bg-blue-800 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-200"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onImagePreview?.(image);
+                      }}
+                      title="Preview image"
+                    >
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                        />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                        />
+                      </svg>
+                    </button>
+                    <button
+                      className="appearance-none border-none bg-transparent text-gray-400 dark:text-gray-500 cursor-pointer p-1 rounded hover:bg-red-200 dark:hover:bg-red-800 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        
+                        // If this is a stored Firebase image, delete from Firebase
+                        if (image.projectImageId) {
+                          try {
+                            await deleteProjectImage(projectId, image.projectImageId);
+                            console.log('✅ [Image Delete] Successfully deleted from Firebase:', image.name);
+                          } catch (error) {
+                            console.error('❌ [Image Delete] Error deleting from Firebase:', error);
+                            setNotification(`Failed to delete image: ${image.name}`);
+                            setTimeout(() => setNotification(null), 5000);
+                            return; // Don't remove from local state if Firebase delete failed
+                          }
+                        }
+                        
+                        // Remove from local state
+                        setImages((prev) => prev.filter((img) => img.id !== image.id));
+                      }}
+                      title="Delete image"
+                    >
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M6 18L18 6M6 6l12 12"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Sources Section */}
         <div>
           <div className="p-4 pb-2">
@@ -709,7 +983,7 @@ const KnowledgeBase = ({
                   No sources uploaded yet
                 </p>
                 <p className="text-gray-400 dark:text-gray-500 text-xs">
-                  Drop PDF, DOCX, HTML, or Markdown files here to get started
+                  Drop PDF, DOCX, HTML, Markdown, PNG, or JPG files here to get started
                 </p>
               </div>
             ) : (
@@ -847,6 +1121,16 @@ const KnowledgeBase = ({
                         >
                           <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zM16 18H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z" />
                         </svg>
+                      ) : item.type === 'image' ? (
+                        <svg
+                          className="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0"
+                          fill="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zM16 18H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z" />
+                          <circle cx="10.5" cy="12.5" r="1.5" />
+                          <polyline points="8,15 10.5,12.5 13,15" />
+                        </svg>
                       ) : (
                         <svg
                           className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0"
@@ -891,6 +1175,7 @@ const KnowledgeBase = ({
           </div>
         )}
       </div>
+
     </div>
   );
 };
