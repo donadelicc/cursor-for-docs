@@ -1,12 +1,12 @@
 import React, { useState, useCallback, useRef } from 'react';
 import { Editor } from '@tiptap/react';
-import CollapsiblePanel from './CollapsiblePanel';
-import KnowledgeBase, { SourceSelection, UploadedImage } from './KnowledgeBase';
-import MainChatbot from './MainChatbot';
-import { TiptapEditor } from './TipTapEditor';
-import PdfViewer from './PdfViewer';
+import CollapsiblePanel from './chatbot/CollapsiblePanel';
+import KnowledgeBase, { SourceSelection, UploadedImage } from './knowledgeBase/KnowledgeBase';
+import MainChatbot from './chatbot/MainChatbot';
+import { TiptapEditor } from './tiptap/TipTapEditor';
+import PdfViewer from './knowledgeBase/PdfViewer';
 import WorkspaceTabs, { OpenItem } from './WorkspaceTabs';
-import ImagePreviewModal from './ImagePreviewModal';
+import ImagePreviewModal from './knowledgeBase/ImagePreviewModal';
 import {
   createProject,
   getUserProjects,

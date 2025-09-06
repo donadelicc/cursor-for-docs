@@ -1,5 +1,5 @@
 /* TipTap Editor Styles */
-@import '../styles/tiptap.css';
+@import './project/editor/tiptap/tiptap.css';
 
 @tailwind base;
 @tailwind components;

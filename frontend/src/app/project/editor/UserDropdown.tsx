@@ -3,7 +3,7 @@
 import React from 'react';
 import { useDarkMode } from '@/contexts/DarkModeContext';
 import { useAuth } from '@/contexts/AuthContext';
-import Avatar from './Avatar';
+import Avatar from '../../../components/Avatar';
 
 interface UserDropdownProps {
   showUserMenu: boolean;

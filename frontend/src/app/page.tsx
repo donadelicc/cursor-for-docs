@@ -1,12 +1,13 @@
 'use client';
 
-import HeaderHome from '@/components/HeaderHome';
-import HeaderLoggedIn from '@/components/HeaderLoggedIn';
-import HeroSection from '@/components/HeroSection';
-import FeaturesSection from '@/components/FeaturesSection';
-import WelcomeSection from '@/components/WelcomeSection';
-import MyProjects from '@/components/MyProjects';
+import HeaderHome from '@/app/landingPage/HeaderHome' ;
+import HeaderLoggedIn from '@/app/dashboard/HeaderLoggedIn';
+import HeroSection from '@/app/landingPage/HeroSection';
+import FeaturesSection from '@/app/landingPage/FeaturesSection';
+import WelcomeSection from '@/app/dashboard/WelcomeSection';
+import MyProjects from '@/app/dashboard/MyProjects';
 import { useAuth } from '@/contexts/AuthContext';
+
 
 export default function Home() {
   const { currentUser } = useAuth();
@@ -21,6 +22,7 @@ export default function Home() {
       </div>
     );
   }
+
 
   // Logged-in user's home page
   return (

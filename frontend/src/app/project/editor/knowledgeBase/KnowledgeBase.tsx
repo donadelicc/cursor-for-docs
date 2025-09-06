@@ -1,6 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { uploadProjectImage, listProjectImages, deleteProjectImage, getProjectImageDownloadURL } from '../utils/firestore';
-import { ProjectImage } from '../types/projects';
+import { 
+  uploadProjectImage, 
+  listProjectImages, 
+  deleteProjectImage, 
+  getProjectImageDownloadURL } from '../../../../utils/firestore';
+import { ProjectImage } from '../../../../types/projects';
 
 interface UnifiedSource {
   id: string;

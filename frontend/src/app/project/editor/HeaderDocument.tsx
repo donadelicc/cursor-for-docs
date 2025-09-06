@@ -7,9 +7,9 @@ import { Editor } from '@tiptap/react';
 import { useAuth } from '@/contexts/AuthContext';
 import { updateDocument } from '@/utils/firestore';
 import { AutoSaveStatus } from '@/hooks/useAutoSave';
-import { SaveFormat } from './SaveButton';
+import { SaveFormat } from './tiptap/SaveButton';
 import UserDropdown from './UserDropdown';
-import FormattingToolbar from './FormattingToolbar';
+import FormattingToolbar from './tiptap/FormattingToolbar';
 
 interface HeaderDocumentProps {
   title: string;

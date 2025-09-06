@@ -9,7 +9,7 @@ import Color from '@tiptap/extension-color';
 import Image from '@tiptap/extension-image';
 import { Dropcursor } from '@tiptap/extension-dropcursor';
 import { SuggestionMark, OriginalTextMark } from '@/utils/suggestion-mark';
-import { FontSizeLineHeight } from '@/extensions/FontSize';
+import { FontSizeLineHeight } from '@/app/project/editor/tiptap/FontSize';
 
 export const useTipTapExtensions = () => {
   const extensions = [

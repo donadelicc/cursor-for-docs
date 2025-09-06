@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import UserDropdown from './UserDropdown';
+import UserDropdown from '../project/editor/UserDropdown';
 
 export default function HeaderLoggedIn() {
   const router = useRouter();

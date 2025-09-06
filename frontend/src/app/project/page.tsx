@@ -3,9 +3,9 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Editor } from '@tiptap/react';
-import EditorContainer from '@/components/EditorContainer';
-import HeaderDocument from '@/components/HeaderDocument';
-import { SaveFormat } from '@/components/SaveButton';
+import EditorContainer from '@/app/project/editor/EditorContainer';
+import HeaderDocument from '@/app/project/editor/HeaderDocument';
+import { SaveFormat } from '@/app/project/editor/tiptap/SaveButton';
 
 import { getProject, renameProject } from '@/utils/firestore';
 import { useAuth } from '@/contexts/AuthContext';
