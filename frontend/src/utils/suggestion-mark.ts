@@ -3,7 +3,6 @@ import { Mark } from '@tiptap/core';
 // Mark for original text that will be replaced (gray styling)
 export const OriginalTextMark = Mark.create({
   name: 'original-text',
-  exclusive: true,
   group: 'suggestion',
 
   parseHTML() {
@@ -22,7 +21,6 @@ export const OriginalTextMark = Mark.create({
 // Mark for suggested text (blue background)
 export const SuggestionMark = Mark.create({
   name: 'suggestion',
-  exclusive: true,
   group: 'suggestion',
 
   parseHTML() {
