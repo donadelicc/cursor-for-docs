@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
-import PilotAccessDenied from '@/components/PilotAccessDenied';
+import PilotAccessDenied from '@/auth/PilotAccessDenied';
 
 export default function LoginPage() {
   const {

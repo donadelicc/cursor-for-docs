@@ -7,10 +7,10 @@ import {
   DialogDescription,
   DialogFooter,
   DialogClose,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
+} from '@/components/dialog';
+import { Input } from '@/components/input';
+import { Label } from '@/components/label';
+import { Button } from '@/components/button';
 import { addToWaitlist } from '@/lib/waitlistService';
 import { CheckCircle } from 'lucide-react';
 
