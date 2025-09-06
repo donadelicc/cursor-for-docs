@@ -114,8 +114,8 @@ const KnowledgeBase = ({
         setIsLoadingImages(true);
         const projectImages = await listProjectImages(projectId);
         
-        const uploadedImages: UploadedImage[] = await Promise.all(
-          projectImages.map(async (img: ProjectImage) => {
+        const uploadedImages: (UploadedImage | null)[] = await Promise.all(
+          projectImages.map(async (img: ProjectImage): Promise<UploadedImage | null> => {
             try {
               const dataUrl = await getProjectImageDownloadURL(img.storagePath);
               return {
@@ -273,17 +273,17 @@ const KnowledgeBase = ({
     // Handle Image files - upload to Firebase Storage
     if (validImageFiles.length > 0) {
       const uploadImageToFirebase = async (file: File) => {
-        try {
-          // Show temporary uploading state
-          const tempImage: UploadedImage = {
-            id: `temp-${Date.now()}-${Math.random().toString(36).substring(2)}`,
-            name: file.name,
-            dataUrl: URL.createObjectURL(file), // Temporary preview
-            uploadDate: new Date(),
-          };
-          
-          setImages((prev) => [...prev, tempImage]);
+        // Show temporary uploading state
+        const tempImage: UploadedImage = {
+          id: `temp-${Date.now()}-${Math.random().toString(36).substring(2)}`,
+          name: file.name,
+          dataUrl: URL.createObjectURL(file), // Temporary preview
+          uploadDate: new Date(),
+        };
+        
+        setImages((prev) => [...prev, tempImage]);
 
+        try {
           // Upload to Firebase
           const projectImage = await uploadProjectImage(projectId, file);
           
